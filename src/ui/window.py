@@ -361,16 +361,9 @@ class ChatPage(Gtk.Box):
 
         label = find_label(child)
         if label:
-            # Use cached markdown if available, otherwise parse and cache
-            if text not in self._markdown_cache:
-                self._markdown_cache[text] = markdown_to_pango(text)
-                self._markdown_cache_order.append(text)
-                # Prune cache if it exceeds limit
-                if len(self._markdown_cache_order) > self._markdown_cache_size_limit:
-                    oldest = self._markdown_cache_order.pop(0)
-                    if oldest in self._markdown_cache:
-                        del self._markdown_cache[oldest]
-            label.set_markup(self._markdown_cache[text])
+            # Parse markdown (don't cache for streaming as content changes frequently)
+            parsed_text = markdown_to_pango(text)
+            label.set_markup(parsed_text)
             
             # Dynamic Proceed Button: Check if we need to add the button during streaming
             # Logic: If [/PLAN] is in text AND button is not already in bubble
@@ -811,6 +804,15 @@ class ChatPage(Gtk.Box):
                             has_started_text = True
                         else:
                             GLib.idle_add(self.update_last_message, follow_up_content)
+                
+                # Check for plan in follow-up content and add button if needed
+                plan_match = re.search(r'\[PLAN\](.*?)(?:\[/PLAN\]|$)', follow_up_content, re.DOTALL)
+                if plan_match:
+                    plan_text = plan_match.group(1).strip()
+                    if plan_text and 'plan' not in current_metadata:
+                        current_metadata['plan'] = plan_text
+                        GLib.idle_add(self.update_last_message_metadata, current_metadata)
+                        GLib.idle_add(self._refresh_last_bubble_with_plan, plan_text)
 
                 # Finally add cards to UI
                 if all_sources:
