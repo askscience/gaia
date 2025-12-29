@@ -318,7 +318,7 @@ class ProjectCard(Gtk.Box):
             # 4. Create .desktop file
             desktop_dir = os.path.expanduser("~/.local/share/applications")
             os.makedirs(desktop_dir, exist_ok=True)
-            desktop_file = os.path.join(desktop_dir, f"gaia_{slug}.desktop")
+            desktop_file = os.path.join(desktop_dir, f"com.gaia.{slug}.desktop")
             
             with open(desktop_file, "w") as f:
                 f.write(f"""[Desktop Entry]
@@ -329,6 +329,8 @@ Icon={icon_path}
 Terminal=false
 Type=Application
 Categories=Utility;
+StartupNotify=true
+StartupWMClass=com.gaia.{slug}
 keywords=Gaia;Web;
 """)
                 
