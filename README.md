@@ -17,6 +17,7 @@ Gaia is a fast, beautiful, and private AI assistant that lives on your Linux des
 *   **🛠️ Powerful Tools**:
     *   **Web Builder**: Create and edit HTML/CSS/JS projects instantly.
     *   **File Manager**: Read, write, and organize files.
+    *   **App Generator**: Turn your web prototypes into standalone, native-like GNOME apps with a single click.
     *   **Web Search**: Access the internet for up-to-date information.
     *   **System Awareness**: Check the time and understand your environment.
 
