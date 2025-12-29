@@ -22,17 +22,24 @@ class ChatStorage:
         
         self.storage_dir.mkdir(parents=True, exist_ok=True)
     
-    def create_chat(self, title: str = "New Chat") -> dict:
-        """Create a new chat with a unique ID."""
+    def create_chat(self, title: str = "New Chat", save: bool = True) -> dict:
+        """Create a new chat with a unique ID.
+        
+        Args:
+            title: The title of the chat
+            save: If True, immediately save to disk. If False, defer saving until first message.
+        """
         chat_id = str(uuid.uuid4())
         chat = {
             'id': chat_id,
             'title': title,
             'created_at': datetime.now().isoformat(),
             'updated_at': datetime.now().isoformat(),
-            'history': []
+            'history': [],
+            '_is_persisted': save  # Track if this chat has been saved to disk
         }
-        self.save_chat(chat)
+        if save:
+            self.save_chat(chat)
         return chat
     
     def save_chat(self, chat: dict) -> None:

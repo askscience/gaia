@@ -196,7 +196,7 @@ class ArtifactCard(Gtk.Box):
 
 class ProjectCard(Gtk.Box):
     """A card for a website project with Preview and Export buttons."""
-    def __init__(self, title: str, folder_path: str, index_path: str):
+    def __init__(self, title: str, folder_path: str, index_path: str, artifacts: list = None):
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
         self.add_css_class("project-card")
         self.add_css_class("source-card")
@@ -205,6 +205,7 @@ class ProjectCard(Gtk.Box):
         
         self.folder_path = folder_path
         self.index_path = index_path
+        self.artifacts = artifacts or []
 
         # Content
         content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
@@ -256,6 +257,67 @@ class ProjectCard(Gtk.Box):
         button_box.append(create_app_btn)
 
         self.append(button_box)
+        
+        # Files List (Integrated)
+        if self.artifacts:
+            # Separator
+            sep = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+            sep.set_margin_start(12)
+            sep.set_margin_end(12)
+            sep.set_opacity(0.1) # Subtle separator
+            self.append(sep)
+            
+            files_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+            files_box.set_spacing(2) # Tight spacing
+            files_box.set_margin_top(8)
+            files_box.set_margin_bottom(8)
+            files_box.set_margin_start(8)
+            files_box.set_margin_end(8)
+            
+            for art in self.artifacts:
+                filename = art.get('filename', 'Unknown')
+                path = art.get('path', '')
+                language = art.get('language', '')
+                
+                # Flat Button for file
+                btn = Gtk.Button()
+                btn.add_css_class("flat") # No border/bg by default
+                btn.set_has_frame(False)
+                btn.set_halign(Gtk.Align.FILL) # Stretch to width
+                
+                # Custom content for button (Icon + Text)
+                btn_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+                btn_content.set_spacing(10)
+                
+                # Icon
+                icon_name = "text-x-generic-symbolic"
+                if language == "html": icon_name = "text-html-symbolic"
+                elif language == "css": icon_name = "text-css-symbolic"
+                elif language == "javascript": icon_name = "text-x-javascript-symbolic"
+                
+                f_icon = Gtk.Image.new_from_icon_name(icon_name)
+                f_icon.set_pixel_size(16) # Compact icon
+                f_icon.set_opacity(0.7)
+                btn_content.append(f_icon)
+                
+                f_label = Gtk.Label(label=filename)
+                f_label.set_halign(Gtk.Align.START)
+                btn_content.append(f_label)
+                
+                btn.set_child(btn_content)
+                
+                # Connect click
+                # Capture path/language in closure
+                def on_file_click(b, p=path, l=language):
+                    root = self.get_native()
+                    if hasattr(root, "artifacts_panel"):
+                        root.artifacts_panel.load_artifact(p, l)
+                        root.show_artifacts()
+                        
+                btn.connect("clicked", on_file_click)
+                files_box.append(btn)
+                
+            self.append(files_box)
 
     def on_create_app_clicked(self, button):
         """Ask for app name and create the GNOME app."""

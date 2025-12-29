@@ -204,10 +204,16 @@ class ChatPage(Gtk.Box):
             return False
         
         try:
-            chat = self.storage.load_chat(self.chat_data['id'])
-            if chat and chat['history']:
-                chat['history'] = self.history.copy()
-                self.storage.save_chat(chat)
+            # Only save if chat has been persisted (first message sent)
+            if not self.chat_data.get('_is_persisted', True):
+                # Still unsaved (no messages), skip
+                self._save_pending = False
+                self._save_timeout_id = None
+                return False
+            
+            # Update chat_data with current history and save
+            self.chat_data['history'] = self.history.copy()
+            self.storage.save_chat(self.chat_data)
         except Exception as e:
             print(f"[DEBUG] Error saving chat: {e}")
         
@@ -258,6 +264,16 @@ class ChatPage(Gtk.Box):
 
     def add_message(self, role: str, text: str, metadata: dict = None):
         """Add a message, save to storage, and update UI."""
+        # Defensive filter: never save tool call XML to history
+        if '<tool_call>' in text:
+            text = text.split('<tool_call>')[0].strip()
+        
+        # Persist unsaved chats on first message
+        if not self.chat_data.get('_is_persisted', True):
+            self.chat_data['_is_persisted'] = True
+            self.storage.save_chat(self.chat_data)
+            print(f"[DEBUG] Chat {self.chat_data['id']} persisted on first message")
+        
         # Update local history
         msg = {'role': role, 'content': text}
         if metadata:
@@ -347,6 +363,10 @@ class ChatPage(Gtk.Box):
         """Update the last AI message during streaming."""
         from src.ui.utils import markdown_to_pango
         
+        # Defensive filter: strip any tool call XML that might sneak through
+        if '<tool_call>' in text:
+            text = text.split('<tool_call>')[0].strip()
+        
         child = self.chat_box.get_last_child()
         # Find the last message label
         def find_label(widget):
@@ -432,7 +452,7 @@ class ChatPage(Gtk.Box):
         spinner.start()
         self.spinner_box.append(spinner)
         
-        label = Gtk.Label(label="Thinking...")
+        label = Gtk.Label(label="Processing...")
         label.set_margin_start(10)
         label.add_css_class("dim-label")
         self.spinner_box.append(label)
@@ -526,17 +546,18 @@ class ChatPage(Gtk.Box):
             if first_path:
                 project_dir = os.path.dirname(first_path)
                 index_path = next((art.get('path') for art in artifacts if art.get('filename') == 'index.html'), first_path)
-                project_card = ProjectCard("Website Project", project_dir, index_path)
+                # Pass all artifacts to the project card
+                project_card = ProjectCard("Website Project", project_dir, index_path, artifacts=artifacts)
                 artifacts_box.append(project_card)
-
-        # Add individual file cards
-        for art in artifacts:
-            card = ArtifactCard(
-                filename=art.get('filename', 'Unknown'),
-                path=art.get('path', ''),
-                language=art.get('language', '')
-            )
-            artifacts_box.append(card)
+        else:
+            # Only add individual file cards if NOT a web project (or add mixed logic later)
+            for art in artifacts:
+                card = ArtifactCard(
+                    filename=art.get('filename', 'Unknown'),
+                    path=art.get('path', ''),
+                    language=art.get('language', '')
+                )
+                artifacts_box.append(card)
         
         msg_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         msg_row.set_halign(Gtk.Align.START)
@@ -545,7 +566,7 @@ class ChatPage(Gtk.Box):
         
         self.chat_box.append(msg_row)
         self._scroll_to_bottom()
-
+ 
         self._scroll_to_bottom()
 
     def run_ai(self, user_text: str, is_hidden: bool = False):
@@ -563,29 +584,34 @@ class ChatPage(Gtk.Box):
         print(f"[DEBUG run_ai] Tool definitions: {len(tools_def)} tools")
         
         messages = []
-        # Add system prompt
+        # Add system prompt with exact tool parameter names
         messages.append({
             'role': 'system', 
             'content': (
                 "You are Dust AI, a helpful assistant for building web projects. "
-                "You have access to these tools:\n"
-                "- web_builder: Create files (HTML, CSS, JS). Call this tool for EACH file you need to create.\n"
-                "- file_reader: Read existing file content before modifying.\n"
-                "- file_editor: Edit files using search/replace. Use for small changes.\n"
-                "- file_list: List all files in the project.\n\n"
-                "GUIDELINES:\n"
-                "1. For COMPLEX requests (e.g. \"Build a todo app\", \"Create a landing page\"), provide an [PLAN]...[/PLAN] first.\n"
-                "   - Wait for user approval.\n"
-                "   - Then create ALL necessary files (e.g. index.html, style.css, script.js) without stopping between them.\n"
-                "2. For SIMPLE requests (e.g. \"Search for X\", \"Fix this typo\"), DO NOT plan. Just execute.\n"
-                "3. When building websites, ALWAYS create at least index.html. Create style.css and script.js if needed.\n"
-                "   - Do not merge CSS/JS into HTML unless explicitly asked.\n"
-                "4. Use the `web_builder` tool for NEW files or REWRITING files.\n"
-                "5. Use `file_editor` only for small, targeted edits.\n\n"
-                "6. Use `web_search` ONLY for external information (e.g. libraries, docs). NEVER use it to 'search' for files in this project.\n\n"
+                "You have access to these tools:\n\n"
+                "TOOL CALLING FORMAT:\n"
+                "<tool_call>tool_name<arg_key>param</arg_key><arg_value>value</arg_value></tool_call>\n\n"
+                "AVAILABLE TOOLS:\n\n"
+                "1. web_builder - Create/overwrite files\n"
+                "   Parameters: filename, code\n"
+                "   Example: <tool_call>web_builder<arg_key>filename</arg_key><arg_value>index.html</arg_value>"
+                "<arg_key>code</arg_key><arg_value><!DOCTYPE html>...</arg_value></tool_call>\n\n"
+                "2. file_reader - Read file contents\n"
+                "   Parameters: filename\n"
+                "   Example: <tool_call>file_reader<arg_key>filename</arg_key><arg_value>style.css</arg_value></tool_call>\n\n"
+                "3. file_editor - Edit files with search/replace\n"
+                "   Parameters: filename, search, replace\n"
+                "   Example: <tool_call>file_editor<arg_key>filename</arg_key><arg_value>style.css</arg_value>"
+                "<arg_key>search</arg_key><arg_value>old text</arg_value>"
+                "<arg_key>replace</arg_key><arg_value>new text</arg_value></tool_call>\n\n"
+                "4. file_list - List all project files\n"
+                "   Example: <tool_call>file_list</tool_call>\n\n"
                 "CRITICAL RULES:\n"
-                "- DO NOT use XML tags like <tool_call> in your text response. Use standard tool usage.\n"
-                "- DO NOT write code blocks in chat if you are creating a file. Use the tool.\n"
+                "1. ALWAYS use `file_reader` to read a file BEFORE using `file_editor` on it. You must see the exact content to match the `search` string.\n"
+                "2. The `search` parameter in `file_editor` must match the file content EXACTLY (including whitespace). Do not guess.\n"
+                "3. Use `web_builder` to overwrite/create new files (better than editing for large changes).\n"
+                "4. Tool call tags will be hidden from user - just use them.\n"
             )
         })
         
@@ -618,113 +644,82 @@ class ChatPage(Gtk.Box):
 
                     if content_chunk:
                         full_content += content_chunk
+                        
+                        # Real-time filter: hide tool call XML from display during streaming
+                        # Only show content up to the first <tool_call> tag
+                        display_content = full_content
+                        if '<tool_call>' in full_content:
+                            # Show only the part before the tool call
+                            display_content = full_content.split('<tool_call>')[0].strip()
+                        
                         if not has_started_text:
-                            GLib.idle_add(self.replace_spinner_with_msg, "assistant", full_content)
-                            has_started_text = True
-                            last_update_time = time.time()
+                            if display_content:  # Only show if there's actual content
+                                GLib.idle_add(self.replace_spinner_with_msg, "assistant", display_content)
+                                has_started_text = True
+                                last_update_time = time.time()
                         else:
                             # Throttle updates to ~20 FPS (0.05s) to prevent UI freezing
                             current_time = time.time()
                             if current_time - last_update_time > 0.05:
-                                GLib.idle_add(self.update_last_message, full_content)
+                                GLib.idle_add(self.update_last_message, display_content)
                                 last_update_time = current_time
                                 
-                # Ensure final state is shown after loop
-                if has_started_text:
-                    GLib.idle_add(self.update_last_message, full_content)
+                # Final state will be shown after parsing cleans the content
                     
             except Exception as e:
                 print(f"[DEBUG] Stream loop error: {e}")
                 import traceback
                 traceback.print_exc()
-
-
-
-
-
-            # Check for text-based tool calls (Z.ai / GLM format) - ALWAYS check this to handle mixed responses
-            print(f"[DEBUG] Full content analysis. Len: {len(full_content)}")
-            if len(full_content) > 200:
-                print(f"[DEBUG] Tail: {full_content[-200:]}")
+            # Parse text-based tool calls using the modular parser
+            from src.core.tool_call_parser import ToolCallParser
             
-            # Robust regex to find tool calls with permissive whitespace
-            # We look for ANY tool_call pattern
-            tool_matches = list(re.finditer(r'<\s*tool_call\s*>(.*?)<\s*/\s*tool_call\s*>', full_content, re.DOTALL))
-            print(f"[DEBUG] Found {len(tool_matches)} text tool matches")
+            print(f"[DEBUG] Pre-parse content length: {len(full_content)}")
+            print(f"[DEBUG] Has tool_call tags: {ToolCallParser.has_tool_calls(full_content)}")
             
-            # Additional fallback: Check if we have closing tag but no matches (broken opening tag)
-            if not tool_matches and ("tool_call>" in full_content):
-                 print("[DEBUG] Possible broken XML detected. Attempting fallback parse.")
-                 # Try to find content before <arg_key>
-                 if "<arg_key>" in full_content and "</arg_value>" in full_content:
-                      # Assume the whole tail is a tool call? 
-                      # This is risky but better than broken UI.
-                      # Let's try to match arguments at least.
-                      pass
-
-            if tool_matches:
-                # Split content to hide tool calls from UI
-                clean_content = full_content
-                
-                for match in tool_matches:
-                    tool_xml = match.group(0) # Full XML string
-                    tool_body = match.group(1) # Content inside tags
-                    
-                    # Remove from UI text
-                    clean_content = clean_content.replace(tool_xml, "").strip()
-                    
-                    # Extract tool name
-                    # Try two patterns:
-                    # 1. Name is text before first <arg_key>
-                    # 2. Name is inside <tool_name> tag (sometimes used)
-                    tool_name = None
-                    
-                    # Pattern 1
-                    name_match = re.search(r'^(.*?)<\s*arg_key', tool_body, re.DOTALL)
-                    if name_match:
-                        tool_name = name_match.group(1).strip()
-                    
-                    if not tool_name:
-                         # Fallback: just take the first word
-                         first_word = tool_body.split('<')[0].strip()
-                         if first_word: tool_name = first_word
-
-                    if tool_name:
-                        print(f"[DEBUG] Parsing text tool: {tool_name}")
-                        # Parse args
-                        args = {}
-                        
-                        # Use project_id from context automatically for file tools
-                        if tool_name in ["web_builder", "file_reader", "file_editor", "file_list"]:
-                            args['project_id'] = self.chat_data['id']
-                            
-                        arg_matches = re.finditer(r'<\s*arg_key\s*>(.*?)<\s*/\s*arg_key\s*>\s*<\s*arg_value\s*>(.*?)<\s*/\s*arg_value\s*>', tool_body, re.DOTALL)
-                        for arg in arg_matches:
-                            key = arg.group(1).strip()
-                            val = arg.group(2).strip()
-                            args[key] = val
-                        
-                        # Add to pending calls
-                        pending_tool_calls.append({
-                            "id": f"call_{tool_name}_{len(pending_tool_calls)}", # Fake ID
-                            "type": "function",
-                            "function": {
-                                "name": tool_name,
-                                "arguments": args # Already dict
-                            }
-                        })
-                    else:
-                        print("[DEBUG] Could not extract tool name from body")
-                
-                # Update UI to remove raw XML
-                if clean_content != full_content:
-                    full_content = clean_content
-                    # Don't overwrite if it became empty to avoid blank bubbles, unless it was only tool calls
-                    if clean_content or not pending_tool_calls:
-                         GLib.idle_add(self.update_last_message, clean_content)
+            clean_content, parsed_calls = ToolCallParser.parse_tool_calls(
+                full_content,
+                project_id=self.chat_data['id']
+            )
+            
+            print(f"[DEBUG] Parsed {len(parsed_calls)} tool calls")
+            print(f"[DEBUG] Clean content length: {len(clean_content)}")
+            
+            if parsed_calls:
+                for tc in parsed_calls:
+                    print(f"[DEBUG] Tool call: {tc['function']['name']} with args: {tc['function']['arguments']}")
+                pending_tool_calls.extend(parsed_calls)
+            
+            # Update UI with final content (cleaned or original)
+            if clean_content != full_content:
+                full_content = clean_content
+                print(f"[DEBUG] Updating UI with clean content (tool XML removed)")
+            
+            # Handle case where response was only tool calls (no visible text)
+            if pending_tool_calls and not full_content.strip():
+                # Keep spinner visible, update text to show executing
+                if not has_started_text:
+                    def update_spinner_text():
+                        if hasattr(self, 'spinner_box') and self.spinner_box:
+                            # Find and update the label in spinner
+                            child = self.spinner_box.get_first_child()
+                            while child:
+                                if isinstance(child, Gtk.Label):
+                                    child.set_text("Executing tools...")
+                                    break
+                                child = child.get_next_sibling()
+                        return False
+                    GLib.idle_add(update_spinner_text)
+                full_content = ""  # Will be replaced with tool follow-up
+            elif has_started_text:
+                # Normal case: update with cleaned content
+                def final_update():
+                    self.update_last_message(full_content)
+                    return False
+                GLib.idle_add(final_update)
 
             # Handle all tool calls AFTER the main stream finishes
             if pending_tool_calls:
+                print(f"[DEBUG] Executing {len(pending_tool_calls)} tool calls")
                 all_artifacts = []
                 all_sources = []
                 
@@ -735,8 +730,10 @@ class ChatPage(Gtk.Box):
                     # Inject project_id for relevant tools
                     if fname in ["web_builder", "file_reader", "file_editor", "file_list"]:
                         args["project_id"] = self.chat_data["id"]
-                        
+                    
+                    print(f"[DEBUG] Executing tool: {fname} with args: {args}")
                     result = tm.execute_tool(fname, **args)
+                    print(f"[DEBUG] Tool result: {str(result)[:200]}...")
                     
                     # Parse all sources in this result
                     sources_matches = re.finditer(r'\[SOURCES\](.*?)\[/SOURCES\]', str(result), re.DOTALL)
@@ -821,10 +818,16 @@ class ChatPage(Gtk.Box):
                     GLib.idle_add(self.add_artifacts_to_ui, all_artifacts)
 
             if not has_started_text:
-                if current_metadata:
-                    # Case: Tool-only response (or tools first followed by empty text). 
-                    # We must save this message to persist sources/artifacts.
-                    GLib.idle_add(self.replace_spinner_with_msg, "assistant", "", current_metadata)
+                # Determine if we should show a message even if text is empty
+                fallback_text = ""
+                if pending_tool_calls and not full_content.strip():
+                    fallback_text = "✓ Task completed"
+                
+                if fallback_text or current_metadata:
+                    # Case: Tool-only response or empty follow-up
+                    # specific check: if fallback_text is used, ensure we pass it
+                    msg_text = full_content.strip() or fallback_text
+                    GLib.idle_add(self.replace_spinner_with_msg, "assistant", msg_text, current_metadata)
                 else:
                     GLib.idle_add(self.remove_spinner)
 
@@ -1014,8 +1017,9 @@ class MainWindow(Adw.ApplicationWindow):
         print(f"[DEBUG] _create_initial_chat called, _creating_chat={self._creating_chat}")
         if not self._creating_chat:
             self._creating_chat = True
-            chat = self.storage.create_chat()
-            print(f"[DEBUG] Created initial chat: {chat['id']}")
+            # Create unsaved chat - will be persisted on first message
+            chat = self.storage.create_chat(save=False)
+            print(f"[DEBUG] Created initial chat: {chat['id']} (unsaved)")
             self._add_chat_tab(chat)
             self._creating_chat = False
 
@@ -1060,8 +1064,9 @@ class MainWindow(Adw.ApplicationWindow):
         
         self._creating_chat = True
         try:
-            chat = self.storage.create_chat()
-            print(f"[DEBUG] create_new_chat: created {chat['id']}")
+            # Create unsaved chat - will be persisted on first message
+            chat = self.storage.create_chat(save=False)
+            print(f"[DEBUG] create_new_chat: created {chat['id']} (unsaved)")
             tab_page = self._add_chat_tab(chat)
             self.tab_view.set_selected_page(tab_page)
             return tab_page
