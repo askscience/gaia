@@ -63,4 +63,7 @@ Bind `Super+Space` to open Gaia instantly!
 1.  Go to **Settings** -> **Keyboard** -> **View and Customize Shortcuts** -> **Custom Shortcuts**.
 2.  Add a shortcut:
     *   **Command**: `/path/to/gaia/src/main.py` (ensure you use the absolute path to the python interpreter in the venv)
-    *   **Shortcut**: `Super+Space`
+
+## License
+
+This project is licensed under the [GNU General Public License v3.0](LICENSE).
