@@ -2,17 +2,16 @@
 
 **Your personal AI companion, built for GNOME.**
 
-Gaia is a fast, beautiful, and private AI assistant that lives on your Linux desktop. It integrates seamlessly with your system, offering a native experience powered by local LLMs.
+Gaia is a fast, beautiful, and private AI assistant that lives on your Linux desktop. It integrates seamlessly with your system, offering a native experience powered by local LLMs or top-tier cloud models.
 
-<div align="center">
   <video src="demo.webm" width="100%" controls autoplay loop muted></video>
   <br>
-  <em>See Gaia in action</em>
+  <em>See Gaia in action</em> | <a href="demo.webm">Download Video</a>
 </div>
 
 ## Why Gaia?
 
-*   **🔒 Private & Local**: Powered by [Ollama](https://ollama.ai/), your data never leaves your device.
+*   **🧠 Flexible AI Backend**: Use local models via **Ollama** for privacy, or connect to powerful cloud providers like **OpenAI, Anthropic (Claude), Google (Gemini), and Mistral**.
 *   **🎨 Native Design**: Built with GTK4 and Libadwaita, Gaia looks and feels like it belongs on your desktop.
 *   **🛠️ Powerful Tools**:
     *   **Web Builder**: Create and edit HTML/CSS/JS projects instantly.
