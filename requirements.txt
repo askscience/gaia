@@ -1,0 +1,10 @@
+PyGObject
+ollama
+duckduckgo-search
+ddgs
+beautifulsoup4
+requests
+lxml
+openai
+anthropic
+google-genai
