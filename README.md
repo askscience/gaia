@@ -32,14 +32,27 @@ ollama pull granite4:latest
 ### 2. Installation
 Gaia relies on standard system libraries.
 
+**Ubuntu / Debian:**
+```bash
+sudo apt install libgtk-4-dev libadwaita-1-dev python3-dev gobject-introspection libcairo2-dev
+```
+
 **Fedora:**
 ```bash
 sudo dnf install gtk4-devel libadwaita-devel python3-devel gobject-introspection-devel cairo-gobject-devel
 ```
 
-**Install Python Dependencies:**
+**Arch Linux:**
 ```bash
-./.venv/bin/pip install -r requirements.txt
+sudo pacman -S gtk4 libadwaita python python-gobject cairo
+```
+
+### 3. Setup Python Environment
+Create a virtual environment and install dependencies:
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
 ### 3. Run Gaia
