@@ -1,5 +1,6 @@
 import gi
 import json
+import threading
 
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
@@ -13,12 +14,28 @@ from src.ui.artifacts.panel import ArtifactsPanel
 class ChatPage(Gtk.Box):
     """A single chat page containing the chat UI."""
     
-    def __init__(self, chat_data: dict, storage: ChatStorage, *args, **kwargs):
+    def __init__(self, chat_data: dict, storage: ChatStorage, lazy_loading: bool = False, *args, **kwargs):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, *args, **kwargs)
         
         self.chat_data = chat_data
         self.storage = storage
         self.history = chat_data.get('history', [])
+        self.lazy_loading = lazy_loading
+        
+        self.loaded_messages = 0
+        self.max_visible_messages = 100
+        self.batch_size = 20
+        self._markdown_cache_size_limit = 200
+        self._markdown_cache = {}
+        self._markdown_cache_order = []
+        self._deferred_sources_artifacts = []  # Store sources/artifacts to add later
+        
+        # Watch for tab changes to clean up resources
+        self.connect("unmap", self._on_unmap)
+        
+        # Storage save throttling for streaming
+        self._save_pending = False
+        self._save_timeout_id = None
         
         # Chat Area
         self.scrolled = Gtk.ScrolledWindow()
@@ -57,24 +74,145 @@ class ChatPage(Gtk.Box):
         
         self.append(self.input_box)
         
-        # Input Area (already set up)
-        
-        # Load existing messages immediately? 
-        # Better to do it on idle to ensure FlowBox can calculate sizes if needed
-        GLib.idle_add(self._load_history)
+        # Load existing messages in batches on idle (only if not lazy loading)
+        if not self.lazy_loading:
+            GLib.idle_add(self._load_history_batch)
     
-    def _load_history(self):
-        """Load existing messages from history."""
-        for msg in self.history:
-            self._add_message_ui(msg['role'], msg['content'], metadata=msg.get('metadata'), save=False)
-            if 'metadata' in msg:
-                if 'sources' in msg['metadata']:
-                    self.add_sources_to_ui(msg['metadata']['sources'])
-                if 'artifacts' in msg['metadata']:
-                    self.add_artifacts_to_ui(msg['metadata']['artifacts'])
+    def _load_history_batch(self):
+        """Load existing messages from history in batches using threading."""
+        if not hasattr(self, '_loading_thread') or not self._loading_thread.is_alive():
+            self._loading_thread = threading.Thread(target=self._load_messages_in_thread, daemon=True)
+            self._loading_thread.start()
+    
+    def _load_messages_in_thread(self):
+        """Load messages in a background thread, then update UI on main thread."""
+        import time
+        from src.ui.utils import markdown_to_pango
+        
+        batch_size = self.batch_size
+        total_messages = len(self.history)
+        
+        # Only load the most recent max_visible_messages messages for performance
+        start_index = max(0, total_messages - self.max_visible_messages)
+        self.loaded_messages = start_index
+        
+        while self.loaded_messages < total_messages:
+            start = self.loaded_messages
+            end = min(start + batch_size, total_messages)
             
-            # If load is expensive, we might want to return True/False for idle_add, 
-            # but for now run once (return False implicitly or explicit)
+            # Prepare batch data with markdown parsed in background thread
+            batch_messages = []
+            for i in range(start, end):
+                msg = self.history[i]
+                metadata = msg.get('metadata')
+                content = msg['content']
+                
+                # Parse markdown in background thread with LRU caching
+                if content not in self._markdown_cache:
+                    self._markdown_cache[content] = markdown_to_pango(content)
+                    self._markdown_cache_order.append(content)
+                    # Prune cache if it exceeds limit
+                    if len(self._markdown_cache_order) > self._markdown_cache_size_limit:
+                        oldest = self._markdown_cache_order.pop(0)
+                        if oldest in self._markdown_cache:
+                            del self._markdown_cache[oldest]
+                parsed_content = self._markdown_cache[content]
+                
+                batch_messages.append((
+                    msg['role'],
+                    parsed_content,
+                    content,
+                    metadata,
+                    metadata and 'sources' in metadata,
+                    metadata and 'artifacts' in metadata,
+                    metadata.get('sources', []) if metadata else [],
+                    metadata.get('artifacts', []) if metadata else []
+                ))
+            
+            self.loaded_messages = end
+            
+            # Schedule UI update on main thread
+            GLib.idle_add(self._add_batch_to_ui, batch_messages)
+            
+            # Small sleep to prevent overwhelming the UI
+            time.sleep(0.003)
+        
+        # All loaded, scroll to bottom on main thread
+        GLib.idle_add(self._scroll_to_bottom)
+        # Add sources and artifacts after all messages loaded
+        GLib.idle_add(self._add_deferred_artifacts)
+    
+    def _add_batch_to_ui(self, batch_messages):
+        """Add a batch of messages to the UI (runs on main thread)."""
+        # Check if UI is still valid to avoid updates on closed tabs
+        if not hasattr(self, 'chat_box') or not self.chat_box:
+            return
+            
+        for role, parsed_content, original_content, metadata, has_sources, has_artifacts, sources, artifacts in batch_messages:
+            # Create message with pre-parsed markdown
+            self._add_message_with_parsed_content(role, parsed_content, original_content, metadata=metadata, save=False, scroll=False)
+            # Defer sources/artifacts for smoother initial load
+            if has_sources and sources:
+                self._deferred_sources_artifacts.append(('sources', sources))
+            if has_artifacts and artifacts:
+                self._deferred_sources_artifacts.append(('artifacts', artifacts))
+                
+        # Force a UI update to show progress
+        return False
+    
+    def _add_deferred_artifacts(self):
+        """Add deferred sources and artifacts after all messages are loaded."""
+        for art_type, data in self._deferred_sources_artifacts:
+            if art_type == 'sources':
+                self.add_sources_to_ui(data)
+            elif art_type == 'artifacts':
+                self.add_artifacts_to_ui(data)
+        self._deferred_sources_artifacts.clear()
+        return False
+    
+    def _on_unmap(self, widget):
+        """Clean up resources when page is unmapped (e.g., switching tabs)."""
+        # Cancel any pending saves
+        if self._save_timeout_id:
+            GLib.source_remove(self._save_timeout_id)
+            self._save_timeout_id = None
+        
+        # Save pending changes if any
+        if self._save_pending:
+            self._do_save()
+        
+        # Clear markdown cache to free memory
+        self._markdown_cache.clear()
+        self._markdown_cache_order.clear()
+        return False
+    
+    def _schedule_save(self):
+        """Schedule a throttled save operation."""
+        if not self._save_pending:
+            self._save_pending = True
+        
+        # Cancel any existing timeout
+        if self._save_timeout_id:
+            GLib.source_remove(self._save_timeout_id)
+        
+        # Schedule save with a delay to batch rapid updates
+        self._save_timeout_id = GLib.timeout_add(2000, self._do_save)
+    
+    def _do_save(self):
+        """Actually save to storage."""
+        if not self._save_pending:
+            return False
+        
+        try:
+            chat = self.storage.load_chat(self.chat_data['id'])
+            if chat and chat['history']:
+                chat['history'] = self.history.copy()
+                self.storage.save_chat(chat)
+        except Exception as e:
+            print(f"[DEBUG] Error saving chat: {e}")
+        
+        self._save_pending = False
+        self._save_timeout_id = None
         return False
     
     def on_entry_activate(self, entry):
@@ -120,20 +258,26 @@ class ChatPage(Gtk.Box):
 
     def add_message(self, role: str, text: str, metadata: dict = None):
         """Add a message, save to storage, and update UI."""
-        # Save to storage
-        self.storage.add_message(self.chat_data['id'], role, text, metadata=metadata)
         # Update local history
         msg = {'role': role, 'content': text}
         if metadata:
             msg['metadata'] = metadata
         self.history.append(msg)
+        
+        # Schedule throttled save instead of immediate save
+        self._schedule_save()
+        
         # Update UI
         self._add_message_ui(role, text, metadata=metadata, save=False)
     
-    def _add_message_ui(self, role: str, text: str, metadata: dict = None, save: bool = True):
+    def _add_message_ui(self, role: str, text: str, metadata: dict = None, save: bool = True, scroll: bool = True):
         """Add a message bubble to the chat UI."""
         from src.ui.utils import markdown_to_pango
-        
+        parsed_text = markdown_to_pango(text)
+        return self._add_message_with_parsed_content(role, parsed_text, text, metadata, save, scroll)
+    
+    def _add_message_with_parsed_content(self, role: str, parsed_text: str, original_text: str, metadata: dict = None, save: bool = True, scroll: bool = True):
+        """Add a message bubble to the chat UI with pre-parsed markdown (optimized for batch loading)."""
         # Create message row
         msg_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         msg_row.add_css_class("message-row")
@@ -155,7 +299,7 @@ class ChatPage(Gtk.Box):
         # Message label
         msg_label = Gtk.Label()
         msg_label.set_use_markup(True)
-        msg_label.set_markup(markdown_to_pango(text))
+        msg_label.set_markup(parsed_text)
         msg_label.set_wrap(True)
         msg_label.set_max_width_chars(50)
         msg_label.set_xalign(0)
@@ -185,7 +329,8 @@ class ChatPage(Gtk.Box):
         msg_row.append(bubble)
         
         self.chat_box.append(msg_row)
-        self._scroll_to_bottom()
+        if scroll:
+            self._scroll_to_bottom()
         
         return msg_label
     
@@ -193,9 +338,10 @@ class ChatPage(Gtk.Box):
         """Scroll chat to the bottom."""
         def do_scroll():
             adj = self.scrolled.get_vadjustment()
-            adj.set_value(adj.get_upper())
+            if adj:
+                adj.set_value(adj.get_upper() - adj.get_page_size())
             return False
-        GLib.timeout_add(50, do_scroll)
+        GLib.idle_add(do_scroll)
 
     def update_last_message(self, text: str):
         """Update the last AI message during streaming."""
@@ -215,7 +361,16 @@ class ChatPage(Gtk.Box):
 
         label = find_label(child)
         if label:
-            label.set_markup(markdown_to_pango(text))
+            # Use cached markdown if available, otherwise parse and cache
+            if text not in self._markdown_cache:
+                self._markdown_cache[text] = markdown_to_pango(text)
+                self._markdown_cache_order.append(text)
+                # Prune cache if it exceeds limit
+                if len(self._markdown_cache_order) > self._markdown_cache_size_limit:
+                    oldest = self._markdown_cache_order.pop(0)
+                    if oldest in self._markdown_cache:
+                        del self._markdown_cache[oldest]
+            label.set_markup(self._markdown_cache[text])
             
             # Dynamic Proceed Button: Check if we need to add the button during streaming
             # Logic: If [/PLAN] is in text AND button is not already in bubble
@@ -252,14 +407,11 @@ class ChatPage(Gtk.Box):
                     # Update metadata so it persists after restart
                     self.update_last_message_metadata({'plan': True})
         
-        # Update history and storage
+        # Update history and schedule throttled save
         if self.history and self.history[-1]['role'] == 'assistant':
             self.history[-1]['content'] = text
-            # Reload and save
-            chat = self.storage.load_chat(self.chat_data['id'])
-            if chat and chat['history']:
-                chat['history'][-1]['content'] = text
-                self.storage.save_chat(chat)
+            # Use throttled save to avoid disk I/O on every streaming update
+            self._schedule_save()
         
         self._scroll_to_bottom()
     def update_last_message_metadata(self, metadata: dict):
@@ -758,6 +910,7 @@ class MainWindow(Adw.ApplicationWindow):
         
         self.storage = storage
         self.chat_pages = {}  # chat_id -> ChatPage
+        self.all_chats = []  # Store all chat data for lazy loading
         self._creating_chat = False  # Flag to prevent recursive creation
 
         # Tab View
@@ -833,12 +986,11 @@ class MainWindow(Adw.ApplicationWindow):
         # Tab View goes after header
         self.main_box.append(self.tab_view)
         
-        # Load existing chats
-        self._load_chats()
+        # Always create a new chat first
+        self._create_initial_chat()
         
-        # If no chats exist, create a new one
-        if self.tab_view.get_n_pages() == 0:
-            self._create_initial_chat()
+        # Then load existing chats in background
+        GLib.idle_add(self._load_existing_chats)
 
 
     def toggle_artifact_fullscreen(self):
@@ -865,17 +1017,30 @@ class MainWindow(Adw.ApplicationWindow):
             self._add_chat_tab(chat)
             self._creating_chat = False
 
-    def _load_chats(self):
-        """Load all existing chats from storage."""
+    def _load_existing_chats(self):
+        """Load existing chat data - create tabs for all but lazy-load only active one."""
         chats = self.storage.list_chats()
-        print(f"[DEBUG] _load_chats: found {len(chats)} chats")
-        for chat in chats:
-            print(f"[DEBUG] Loading chat: {chat['id']}")
-            self._add_chat_tab(chat)
+        print(f"[DEBUG] _load_existing_chats: found {len(chats)} chats")
+        
+        # Store all chats for lazy loading
+        self.all_chats = chats
+        
+        # Create tabs for all existing chats (all lazy loaded since we have a new chat active)
+        for i, chat in enumerate(chats):
+            print(f"[DEBUG] Creating tab for chat: {chat['id']}")
+            self._add_chat_tab(chat, lazy=True)
+        
+        return False
     
-    def _add_chat_tab(self, chat: dict) -> Adw.TabPage:
+    def _add_chat_tab(self, chat: dict, lazy: bool = False) -> Adw.TabPage:
         """Add a chat as a new tab."""
-        page = ChatPage(chat, self.storage)
+        # If chat is just metadata (no history), load full data if not lazy
+        if 'history' not in chat and not lazy:
+            full_chat = self.storage.load_chat(chat['id'])
+            if full_chat:
+                chat = full_chat
+        
+        page = ChatPage(chat, self.storage, lazy_loading=lazy)
         self.chat_pages[chat['id']] = page
         
         tab_page = self.tab_view.append(page)
@@ -951,7 +1116,21 @@ class MainWindow(Adw.ApplicationWindow):
             self.main_paned.set_position(self.get_width() - 400)
 
     def on_tab_changed(self, *args):
-        """Handle tab changes."""
+        """Handle tab changes and trigger lazy loading."""
         self.artifacts_panel.clear()
-        # Preview might be re-loaded by Clicking ProjectCard in the active tab history
+        
+        # Trigger lazy loading for the selected tab if needed
+        selected_page = self.tab_view.get_selected_page()
+        if selected_page:
+            child = selected_page.get_child()
+            if isinstance(child, ChatPage) and child.lazy_loading:
+                child.lazy_loading = False
+                # Load limited chat data if we only have metadata
+                if 'history' not in child.chat_data:
+                    # Only load the most recent messages for performance
+                    full_chat = self.storage.load_chat(child.chat_data['id'], limit_messages=child.max_visible_messages)
+                    if full_chat:
+                        child.chat_data = full_chat
+                        child.history = full_chat.get('history', [])
+                GLib.idle_add(child._load_history_batch)
 

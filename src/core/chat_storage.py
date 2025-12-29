@@ -42,12 +42,16 @@ class ChatStorage:
         with open(file_path, 'w', encoding='utf-8') as f:
             json.dump(chat, f, indent=2, ensure_ascii=False)
     
-    def load_chat(self, chat_id: str) -> Optional[dict]:
-        """Load a single chat by ID."""
+    def load_chat(self, chat_id: str, limit_messages: Optional[int] = None) -> Optional[dict]:
+        """Load a single chat by ID. If limit_messages is provided, only load the most recent messages."""
         file_path = self.storage_dir / f"{chat_id}.json"
         if file_path.exists():
             with open(file_path, 'r', encoding='utf-8') as f:
-                return json.load(f)
+                chat = json.load(f)
+                # If limit is set, truncate history to the most recent messages
+                if limit_messages and 'history' in chat and len(chat['history']) > limit_messages:
+                    chat['history'] = chat['history'][-limit_messages:]
+                return chat
         return None
     
     def delete_chat(self, chat_id: str) -> bool:
@@ -59,13 +63,20 @@ class ChatStorage:
         return False
     
     def list_chats(self) -> list[dict]:
-        """List all saved chats, sorted by updated_at (newest first)."""
+        """List all saved chats with metadata only (no history), sorted by updated_at (newest first)."""
         chats = []
         for file_path in self.storage_dir.glob('*.json'):
             try:
                 with open(file_path, 'r', encoding='utf-8') as f:
                     chat = json.load(f)
-                    chats.append(chat)
+                    # Only return metadata, not full history for better performance
+                    chats.append({
+                        'id': chat['id'],
+                        'title': chat.get('title', 'New Chat'),
+                        'created_at': chat.get('created_at', ''),
+                        'updated_at': chat.get('updated_at', ''),
+                        '_history_length': len(chat.get('history', []))
+                    })
             except (json.JSONDecodeError, KeyError):
                 # Skip corrupted files
                 continue
