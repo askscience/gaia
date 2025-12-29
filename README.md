@@ -4,9 +4,10 @@
 
 Gaia is a fast, beautiful, and private AI assistant that lives on your Linux desktop. It integrates seamlessly with your system, offering a native experience powered by local LLMs or top-tier cloud models.
 
-  <video src="demo.webm" width="100%" controls autoplay loop muted></video>
+<div align="center">
+  <img src="demo.gif" width="100%" alt="Gaia Demo" />
   <br>
-  <em>See Gaia in action</em> | <a href="demo.webm">Download Video</a>
+  <em>See Gaia in action</em>
 </div>
 
 ## Why Gaia?
