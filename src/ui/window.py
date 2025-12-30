@@ -262,7 +262,7 @@ class ChatPage(Gtk.Box):
         self.send_button.set_sensitive(True)
         self.entry.grab_focus()
 
-    def add_message(self, role: str, text: str, metadata: dict = None):
+    def add_message(self, role: str, text: str, metadata: dict = None, parsed_text: str = None):
         """Add a message, save to storage, and update UI."""
         # Defensive filter: never save tool call XML to history
         if '<tool_call>' in text:
@@ -284,12 +284,13 @@ class ChatPage(Gtk.Box):
         self._schedule_save()
         
         # Update UI
-        self._add_message_ui(role, text, metadata=metadata, save=False)
+        self._add_message_ui(role, text, metadata=metadata, save=False, parsed_text=parsed_text)
     
-    def _add_message_ui(self, role: str, text: str, metadata: dict = None, save: bool = True, scroll: bool = True):
+    def _add_message_ui(self, role: str, text: str, metadata: dict = None, save: bool = True, scroll: bool = True, parsed_text: str = None):
         """Add a message bubble to the chat UI."""
         from src.ui.utils import markdown_to_pango
-        parsed_text = markdown_to_pango(text)
+        if parsed_text is None:
+            parsed_text = markdown_to_pango(text)
         return self._add_message_with_parsed_content(role, parsed_text, text, metadata, save, scroll)
     
     def _add_message_with_parsed_content(self, role: str, parsed_text: str, original_text: str, metadata: dict = None, save: bool = True, scroll: bool = True):
@@ -359,8 +360,13 @@ class ChatPage(Gtk.Box):
             return False
         GLib.idle_add(do_scroll)
 
-    def update_last_message(self, text: str):
-        """Update the last AI message during streaming."""
+    def update_last_message(self, text: str, parsed_text: str = None):
+        """Update the last AI message during streaming.
+        
+        Args:
+            text: The raw text content.
+            parsed_text: Optional pre-parsed Pango markup. If provided, avoids main-thread parsing.
+        """
         from src.ui.utils import markdown_to_pango
         
         # Defensive filter: strip any tool call XML that might sneak through
@@ -368,6 +374,17 @@ class ChatPage(Gtk.Box):
             text = text.split('<tool_call>')[0].strip()
         
         child = self.chat_box.get_last_child()
+        
+        # Search backwards for the actual message row (skipping sources/artifacts/spinners)
+        # This fixes the truncation bug when sources are appended *after* the text bubble
+        while child:
+            if child.has_css_class("message-row"):
+                break
+            child = child.get_prev_sibling()
+            
+        if not child:
+            return
+
         # Find the last message label
         def find_label(widget):
             if isinstance(widget, Gtk.Label): return widget
@@ -381,8 +398,10 @@ class ChatPage(Gtk.Box):
 
         label = find_label(child)
         if label:
-            # Parse markdown (don't cache for streaming as content changes frequently)
-            parsed_text = markdown_to_pango(text)
+            # Parse markdown only if not provided
+            if parsed_text is None:
+                parsed_text = markdown_to_pango(text)
+            
             label.set_markup(parsed_text)
             
             # Dynamic Proceed Button: Check if we need to add the button during streaming
@@ -441,7 +460,17 @@ class ChatPage(Gtk.Box):
                 chat['history'][-1]['metadata'].update(metadata)
                 self.storage.save_chat(chat)
 
-    def show_spinner(self):
+    def show_spinner(self, text: str = "Thinking..."):
+        if hasattr(self, 'spinner_box') and self.spinner_box:
+            # Update existing spinner text
+            child = self.spinner_box.get_first_child()
+            while child:
+                if isinstance(child, Gtk.Label):
+                    child.set_text(text)
+                    return
+                child = child.get_next_sibling()
+            return
+
         self.spinner_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.spinner_box.set_halign(Gtk.Align.START)
         self.spinner_box.set_margin_start(10)
@@ -452,7 +481,7 @@ class ChatPage(Gtk.Box):
         spinner.start()
         self.spinner_box.append(spinner)
         
-        label = Gtk.Label(label="Processing...")
+        label = Gtk.Label(label=text)
         label.set_margin_start(10)
         label.add_css_class("dim-label")
         self.spinner_box.append(label)
@@ -465,9 +494,9 @@ class ChatPage(Gtk.Box):
             self.chat_box.remove(self.spinner_box)
             self.spinner_box = None
 
-    def replace_spinner_with_msg(self, role: str, text: str, metadata: dict = None):
+    def replace_spinner_with_msg(self, role: str, text: str, metadata: dict = None, parsed_text: str = None):
         self.remove_spinner()
-        self.add_message(role, text, metadata=metadata)
+        self.add_message(role, text, metadata=metadata, parsed_text=parsed_text)
 
     def add_sources_to_ui(self, sources: list):
         """Add source cards to the chat UI."""
@@ -562,6 +591,7 @@ class ChatPage(Gtk.Box):
         msg_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         msg_row.set_halign(Gtk.Align.START)
         msg_row.set_margin_start(40)
+        msg_row.set_margin_top(16) # Ensure visual separation from text bubble
         msg_row.append(artifacts_box)
         
         self.chat_box.append(msg_row)
@@ -575,6 +605,7 @@ class ChatPage(Gtk.Box):
         import re
         import json
         import time
+        from src.core.tool_call_parser import ToolCallParser
         
         client = AIClient()
         tm = ToolManager()
@@ -583,8 +614,8 @@ class ChatPage(Gtk.Box):
         tools_def = tm.get_ollama_tools_definitions()
         print(f"[DEBUG run_ai] Tool definitions: {len(tools_def)} tools")
         
+        # Prepare messages
         messages = []
-        # Add system prompt with exact tool parameter names
         messages.append({
             'role': 'system', 
             'content': (
@@ -608,240 +639,260 @@ class ChatPage(Gtk.Box):
                 "4. file_list - List all project files\n"
                 "   Example: <tool_call>file_list</tool_call>\n\n"
                 "CRITICAL RULES:\n"
-                "1. ALWAYS use `file_reader` to read a file BEFORE using `file_editor` on it. You must see the exact content to match the `search` string.\n"
-                "2. The `search` parameter in `file_editor` must match the file content EXACTLY (including whitespace). Do not guess.\n"
-                "3. Use `web_builder` to overwrite/create new files (better than editing for large changes).\n"
-                "4. Tool call tags will be hidden from user - just use them.\n"
+                "1. BEFORE creating/editing files, you MUST proposed a plan using `[PLAN] description [/PLAN]`.\n"
+                "   - Wait for the user to click 'Proceed' (which sends you a confirmation message) before executing the plan with tools.\n"
+                "   - Do NOT call `web_builder` or `file_editor` in the same response as the plan.\n"
+                "2. ALWAYS use `file_reader` to read a file BEFORE using `file_editor` on it.\n"
+                "3. The `search` parameter in `file_editor` must match the file content EXACTLY.\n"
+                "4. Use `web_builder` to overwrite/create new files.\n"
+                "5. Tool call tags will be hidden from user - just use them.\n"
             )
         })
         
-        # Add full history
-        for msg in self.history:
-            # We only send role and content to the API
-            messages.append({'role': msg['role'], 'content': msg['content']})
-            
-        # Add current message
-        messages.append({'role': 'user', 'content': user_text})
+        # Add history
+        messages.extend(self.history)
+        if not is_hidden:
+            messages.append({'role': 'user', 'content': user_text})
+
+        # --- RECURSIVE EXECUTION LOOP ---
+        MAX_TURNS = 5
+        turn = 0
+        has_shown_initial_ui = False
+        current_metadata = {}
+        accumulated_ui_text = ""
         
         try:
-            GLib.idle_add(self.show_spinner)
-            
-            full_content = ""
-            has_started_text = False
-            current_metadata = {}
-            stream = client.stream_response(messages, tools=tools_def)
-            
-            pending_tool_calls = []
-            last_update_time = 0
-            
-            try:
-                for chunk in stream:
-                    msg_chunk = chunk.get('message', {})
-                    content_chunk = msg_chunk.get('content', '')
-                    
-                    if msg_chunk.get('tool_calls'):
-                        pending_tool_calls.extend(msg_chunk['tool_calls'])
+            while turn < MAX_TURNS:
+                turn += 1
+                print(f"[DEBUG] Starting Turn {turn}")
+                
+                # Show spinner if not already showing text
+                if not has_shown_initial_ui:
+                    GLib.idle_add(self.show_spinner)
 
-                    if content_chunk:
-                        full_content += content_chunk
-                        
-                        # Real-time filter: hide tool call XML from display during streaming
-                        # Only show content up to the first <tool_call> tag
-                        display_content = full_content
-                        if '<tool_call>' in full_content:
-                            # Show only the part before the tool call
-                            display_content = full_content.split('<tool_call>')[0].strip()
-                        
-                        if not has_started_text:
-                            if display_content:  # Only show if there's actual content
-                                GLib.idle_add(self.replace_spinner_with_msg, "assistant", display_content)
-                                has_started_text = True
-                                last_update_time = time.time()
-                        else:
-                            # Throttle updates to ~20 FPS (0.05s) to prevent UI freezing
-                            current_time = time.time()
-                            if current_time - last_update_time > 0.05:
-                                GLib.idle_add(self.update_last_message, display_content)
-                                last_update_time = current_time
-                                
-                # Final state will be shown after parsing cleans the content
+                full_content = ""
+                pending_tool_calls = []
+                last_update_time = 0
+                
+                try:
+                    # Stream response
+                    stream = client.stream_response(messages, tools=tools_def)
                     
-            except Exception as e:
-                print(f"[DEBUG] Stream loop error: {e}")
-                import traceback
-                traceback.print_exc()
-            # Parse text-based tool calls using the modular parser
-            from src.core.tool_call_parser import ToolCallParser
-            
-            print(f"[DEBUG] Pre-parse content length: {len(full_content)}")
-            print(f"[DEBUG] Has tool_call tags: {ToolCallParser.has_tool_calls(full_content)}")
-            
-            clean_content, parsed_calls = ToolCallParser.parse_tool_calls(
-                full_content,
-                project_id=self.chat_data['id']
-            )
-            
-            print(f"[DEBUG] Parsed {len(parsed_calls)} tool calls")
-            print(f"[DEBUG] Clean content length: {len(clean_content)}")
-            
-            if parsed_calls:
-                for tc in parsed_calls:
-                    print(f"[DEBUG] Tool call: {tc['function']['name']} with args: {tc['function']['arguments']}")
-                pending_tool_calls.extend(parsed_calls)
-            
-            # Update UI with final content (cleaned or original)
-            if clean_content != full_content:
-                full_content = clean_content
-                print(f"[DEBUG] Updating UI with clean content (tool XML removed)")
-            
-            # Handle case where response was only tool calls (no visible text)
-            if pending_tool_calls and not full_content.strip():
-                # Keep spinner visible, update text to show executing
-                if not has_started_text:
-                    def update_spinner_text():
-                        if hasattr(self, 'spinner_box') and self.spinner_box:
-                            # Find and update the label in spinner
-                            child = self.spinner_box.get_first_child()
-                            while child:
-                                if isinstance(child, Gtk.Label):
-                                    child.set_text("Executing tools...")
-                                    break
-                                child = child.get_next_sibling()
-                        return False
-                    GLib.idle_add(update_spinner_text)
-                full_content = ""  # Will be replaced with tool follow-up
-            elif has_started_text:
-                # Normal case: update with cleaned content
-                def final_update():
-                    self.update_last_message(full_content)
-                    return False
-                GLib.idle_add(final_update)
+                    for chunk in stream:
+                        msg_chunk = chunk.get('message', {})
+                        content_chunk = msg_chunk.get('content', '')
+                        
+                        if msg_chunk.get('tool_calls'):
+                            pending_tool_calls.extend(msg_chunk['tool_calls'])
 
-            # Handle all tool calls AFTER the main stream finishes
-            if pending_tool_calls:
-                print(f"[DEBUG] Executing {len(pending_tool_calls)} tool calls")
-                all_artifacts = []
+                        if content_chunk:
+                            full_content += content_chunk
+                            
+                            # Real-time filter: hide tool call XML (streaming friendly)
+                            # Remove complete tags and partial tags at end of string
+                            streaming_display = re.sub(r'<tool_call>[^<]*(?:</tool_call>|$)', '', full_content, flags=re.DOTALL)
+                            # Handle partial open tags like "<tool"
+                            streaming_display = re.sub(r'<tool_call.*$', '', streaming_display, flags=re.DOTALL) 
+                            
+                            # Combine with history from previous turns
+                            display_text = accumulated_ui_text + streaming_display
+                            
+                            if not has_shown_initial_ui:
+                                if display_text.strip():
+                                    GLib.idle_add(self.replace_spinner_with_msg, "assistant", display_text)
+                                    has_shown_initial_ui = True
+                                    
+                                    # FLUSH BUFFERED SOURCES/ARTIFACTS from previous turns
+                                    if current_metadata.get('sources'):
+                                        GLib.idle_add(self.add_sources_to_ui, current_metadata['sources'])
+                                    if current_metadata.get('artifacts'):
+                                        GLib.idle_add(self.add_artifacts_to_ui, current_metadata['artifacts'])
+                                    last_update_time = time.time()
+                            else:
+                                # Update existing bubble
+                                current_time = time.time()
+                                if current_time - last_update_time > 0.05:
+                                    # Pre-parse markdown in background thread
+                                    from src.ui.utils import markdown_to_pango
+                                    parsed_display = markdown_to_pango(display_text)
+
+                                    GLib.idle_add(self.update_last_message, display_text, parsed_display)
+                                    last_update_time = current_time
+
+                except Exception as e:
+                    print(f"[DEBUG] Stream error: {e}")
+                    import traceback
+                    traceback.print_exc()
+
+                # Parse & Clean final content for this turn
+                clean_content, parsed_calls = ToolCallParser.parse_tool_calls(
+                    full_content,
+                    project_id=self.chat_data['id']
+                )
+                
+                if clean_content.strip():
+                    accumulated_ui_text += clean_content + "\n"
+                    # Force update to ensure clean state is shown
+                    if has_shown_initial_ui:
+                        # Pre-parse for accumulated update
+                        from src.ui.utils import markdown_to_pango
+                        parsed_accumulated = markdown_to_pango(accumulated_ui_text)
+                        GLib.idle_add(self.update_last_message, accumulated_ui_text, parsed_accumulated)
+                
+                if parsed_calls:
+                    pending_tool_calls.extend(parsed_calls)
+                
+                # --- DECISION POINT ---
+                
+                if not pending_tool_calls:
+                    # No tools -> We are done
+                    print(f"[DEBUG] Turn {turn} finished with no tools. Exiting loop.")
+                    break
+                
+                # We have tools -> Execute and Loop
+                print(f"[DEBUG] Turn {turn}: Executing {len(pending_tool_calls)} tools")
+                
+                # Update UI to prevent empty bubble/spinner confusion
+                if not has_shown_initial_ui:
+                    # Show spinner with descriptive text
+                    feature_name = "Executing tools..." # default
+                    if pending_tool_calls:
+                         # Get first tool name for status
+                         first_tool = pending_tool_calls[0]['function']['name']
+                         readable_tools = {
+                             "web_builder": "Building web pages...",
+                             "file_reader": "Reading files...",
+                             "file_editor": "Editing files...", 
+                             "file_list": "Scanning directory...",
+                             "web_search": "Searching the web...",
+                             "get_current_time": "Checking time..."
+                         }
+                         feature_name = readable_tools.get(first_tool, f"Running {first_tool}...")
+
+                    GLib.idle_add(self.show_spinner, feature_name)
+                
+                # Add assistant message with tool calls to history
+                assistant_msg = {
+                    'role': 'assistant',
+                    'content': clean_content if clean_content.strip() else None,
+                    'tool_calls': pending_tool_calls
+                }
+                messages.append(assistant_msg)
+                
+                # Execute Tools
                 all_sources = []
+                all_artifacts = []
                 
                 for tool_call in pending_tool_calls:
                     fname = tool_call['function']['name']
                     args = tool_call['function']['arguments']
                     
-                    # Inject project_id for relevant tools
                     if fname in ["web_builder", "file_reader", "file_editor", "file_list"]:
                         args["project_id"] = self.chat_data["id"]
                     
-                    print(f"[DEBUG] Executing tool: {fname} with args: {args}")
+                    print(f"[DEBUG] Executing tool: {fname}")
                     result = tm.execute_tool(fname, **args)
-                    print(f"[DEBUG] Tool result: {str(result)[:200]}...")
                     
-                    # Parse all sources in this result
+                    # Extract Sources/Artifacts
                     sources_matches = re.finditer(r'\[SOURCES\](.*?)\[/SOURCES\]', str(result), re.DOTALL)
                     for match in sources_matches:
-                        try:
-                            all_sources.extend(json.loads(match.group(1).strip()))
+                        try: all_sources.extend(json.loads(match.group(1).strip()))
                         except: pass
-                    
-                    # Parse all artifacts in this result
+
                     artifact_matches = re.finditer(r'\[ARTIFACT\](.*?)\[/ARTIFACT\]', str(result), re.DOTALL)
                     for match in artifact_matches:
                         try:
-                            artifact_data = json.loads(match.group(1).strip())
-                            all_artifacts.append(artifact_data)
-                            
-                            # Auto-preview the first project file if it's a website
-                            if artifact_data.get('language') == 'html':
+                            datum = json.loads(match.group(1).strip())
+                            all_artifacts.append(datum)
+                            if datum.get('language') == 'html':
                                 root = self.get_native()
                                 if hasattr(root, "artifacts_panel"):
-                                    GLib.idle_add(root.artifacts_panel.load_project, artifact_data['path'])
+                                    GLib.idle_add(root.artifacts_panel.load_project, datum['path'])
                                     GLib.idle_add(root.show_artifacts)
                         except: pass
-
-                    # Generate a unique tool call ID for OpenAI-compatible APIs
-                    tool_call_id = tool_call.get('id', f"call_{fname}_{id(tool_call)}")
                     
                     messages.append({
-                        'role': 'assistant', 
-                        'content': None,
-                        'tool_calls': [{
-                            'id': tool_call_id,
-                            'type': 'function',
-                            'function': {
-                                'name': fname,
-                                'arguments': args # Pass dict directly, let Provider handle serialization if needed
-                            }
-                        }]
-                    })
-                    messages.append({
-                        'role': 'tool', 
-                        'tool_call_id': tool_call_id,
+                        'role': 'tool',
+                        'tool_call_id': tool_call.get('id', f"call_{fname}_{id(tool_call)}"),
                         'content': str(result)
                     })
 
-                # Update metadata for persistence
+                # Update Metadata
                 if all_sources: current_metadata['sources'] = all_sources
                 if all_artifacts: current_metadata['artifacts'] = all_artifacts
                 
-                # Update metadata on disk if the assistant message already exists
-                def safe_update_metadata():
-                    if self.history and self.history[-1]['role'] == 'assistant':
-                        self.update_last_message_metadata(current_metadata)
-                
-                GLib.idle_add(safe_update_metadata)
-
-                # Get the final follow-up from AI
-                final_stream = client.stream_response(messages)
-                follow_up_content = ""
-                for f_chunk in final_stream:
-                    f_content = f_chunk.get('message', {}).get('content', '')
-                    if f_content:
-                        follow_up_content += f_content
-                        if not has_started_text:
-                            GLib.idle_add(self.replace_spinner_with_msg, "assistant", follow_up_content, current_metadata)
-                            has_started_text = True
-                        else:
-                            GLib.idle_add(self.update_last_message, follow_up_content)
-                
-                # Check for plan in follow-up content and add button if needed
-                plan_match = re.search(r'\[PLAN\](.*?)(?:\[/PLAN\]|$)', follow_up_content, re.DOTALL)
-                if plan_match:
-                    plan_text = plan_match.group(1).strip()
-                    if plan_text and 'plan' not in current_metadata:
-                        current_metadata['plan'] = plan_text
+                # Handling UI Updates with correct ordering (Text -> Sources)
+                if has_shown_initial_ui:
+                     # Text bubble already exists, safe to append sources/artifacts below it
+                    if current_metadata:
                         GLib.idle_add(self.update_last_message_metadata, current_metadata)
-                        GLib.idle_add(self._refresh_last_bubble_with_plan, plan_text)
-
-                # Finally add cards to UI
-                if all_sources:
-                    GLib.idle_add(self.add_sources_to_ui, all_sources)
-                if all_artifacts:
-                    GLib.idle_add(self.add_artifacts_to_ui, all_artifacts)
-
-            if not has_started_text:
-                # Determine if we should show a message even if text is empty
-                fallback_text = ""
-                if pending_tool_calls and not full_content.strip():
-                    fallback_text = "✓ Task completed"
-                
-                if fallback_text or current_metadata:
-                    # Case: Tool-only response or empty follow-up
-                    # specific check: if fallback_text is used, ensure we pass it
-                    msg_text = full_content.strip() or fallback_text
-                    GLib.idle_add(self.replace_spinner_with_msg, "assistant", msg_text, current_metadata)
+                    if all_sources: 
+                        GLib.idle_add(self.add_sources_to_ui, all_sources)
+                    if all_artifacts: 
+                        GLib.idle_add(self.add_artifacts_to_ui, all_artifacts)
                 else:
-                    GLib.idle_add(self.remove_spinner)
+                    # Text bubble doesn't exist yet (spinning). 
+                    # Buffer metadata/sources to flush LATER when the text bubble is created.
+                    # This prevents sources from appearing above the text.
+                    pass 
+
+                # --- USER TURN LIMIT LOGIC ---
+                # "use only one turn, use second turn ONLY in case the tool failed"
+                # If we executed tools, we check if any failed.
+                # If all succeeded, we break the loop so the AI doesn't perform a "summary" turn.
+                any_error = False
+                for msg in messages:
+                    if msg.get('role') == 'tool':
+                        content = str(msg.get('content', '')).lower()
+                        if "error" in content or "failed" in content:
+                            any_error = True
+                            break
+                
+                if not any_error:
+                    print(f"[DEBUG] Turn {turn} tool execution successful. Breaking loop as requested.")
+                    # IMPORTANT: We break early here to satisfy the user request for "ONLY ONE TURN".
+                    # This means the AI won't see the tool output to generate a text summary.
+                    break
+            # --- END OF LOOP ---
+            
+            # Handle Final UI State
+            if not has_shown_initial_ui:
+                # If we are here, we finished the loop but haven't shown the text bubble yet.
+                # This happens if response was only tools, or if everything was buffered.
+                
+                final_text = accumulated_ui_text.strip()
+                if not final_text and turn > 1:
+                     final_text = "✓ Task completed"
+                
+                # Now we flush everything: Text -> Metadata -> Sources/Artifacts
+                
+                # 1. Create the text bubble (removes spinner)
+                if final_text or current_metadata:
+                     # Pre-parse final text
+                     from src.ui.utils import markdown_to_pango
+                     parsed_final = markdown_to_pango(final_text) if final_text else None
+                     GLib.idle_add(self.replace_spinner_with_msg, "assistant", final_text, current_metadata, parsed_final)
+                else:
+                     GLib.idle_add(self.remove_spinner)
+                
+                # 2. Flush buffered sources/artifacts (will appear BELOW the new text bubble)
+                if current_metadata.get('sources'):
+                    GLib.idle_add(self.add_sources_to_ui, current_metadata['sources'])
+                if current_metadata.get('artifacts'):
+                    GLib.idle_add(self.add_artifacts_to_ui, current_metadata['artifacts'])
+
+            elif current_metadata:
+                  # If UI was already shown, just update metadata if pending
+                  GLib.idle_add(self.update_last_message_metadata, current_metadata)
 
             # Robust Plan Detection
-            plan_match = re.search(r'\[PLAN\](.*?)(?:\[/PLAN\]|$)', full_content, re.DOTALL)
+            plan_match = re.search(r'\[PLAN\](.*?)(?:\[/PLAN\]|$)', accumulated_ui_text + full_content, re.DOTALL)
             if plan_match:
                 plan_text = plan_match.group(1).strip()
                 if plan_text:
-                    current_metadata['plan'] = plan_text
-                    # Update the UI message to include the button by triggering a metadata refresh
-                    GLib.idle_add(self.update_last_message_metadata, current_metadata)
-                    # We might need to manually refresh the UI bubble to show the button 
-                    # if it was already rendered. 
-                    # For now, reload the message area or append to the last bubble.
+                    if 'plan' not in current_metadata:
+                        current_metadata['plan'] = plan_text
+                        GLib.idle_add(self.update_last_message_metadata, current_metadata)
                     GLib.idle_add(self._refresh_last_bubble_with_plan, plan_text)
 
         except Exception as e:
@@ -1025,17 +1076,30 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _load_existing_chats(self):
         """Load existing chat data - create tabs for all but lazy-load only active one."""
-        chats = self.storage.list_chats()
-        print(f"[DEBUG] _load_existing_chats: found {len(chats)} chats")
-        
-        # Store all chats for lazy loading
-        self.all_chats = chats
-        
+        def load_in_thread():
+            try:
+                # Heavy IO: List all chats
+                chats = self.storage.list_chats()
+                print(f"[DEBUG] _load_existing_chats: found {len(chats)} chats")
+                
+                # Store all chats for lazy loading
+                self.all_chats = chats
+                
+                # Update UI on main thread
+                GLib.idle_add(self._populate_chat_tabs, chats)
+            except Exception as e:
+                print(f"[DEBUG] Error loading chats: {e}")
+
+        thread = threading.Thread(target=load_in_thread, daemon=True)
+        thread.start()
+        return False
+
+    def _populate_chat_tabs(self, chats):
+        """Populate tabs from the loaded chats list (runs on main thread)."""
         # Create tabs for all existing chats (all lazy loaded since we have a new chat active)
         for i, chat in enumerate(chats):
-            print(f"[DEBUG] Creating tab for chat: {chat['id']}")
+            # print(f"[DEBUG] Creating tab for chat: {chat['id']}")
             self._add_chat_tab(chat, lazy=True)
-        
         return False
     
     def _add_chat_tab(self, chat: dict, lazy: bool = False) -> Adw.TabPage:
