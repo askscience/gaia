@@ -1,4 +1,5 @@
 import os
+import json
 from src.tools.base import BaseTool
 from src.core.config import get_artifacts_dir
 
@@ -71,8 +72,19 @@ class FileEditorTool(BaseTool):
             with open(file_path, "w", encoding="utf-8") as f:
                 f.write(new_content)
             
-            return f"Successfully edited '{filename}'. Replaced {count} occurrence(s).\n\nSearch: {search[:50]}{'...' if len(search) > 50 else ''}\nReplace: {replace[:50]}{'...' if len(replace) > 50 else ''}"
+            # Return artifact metadata for UI refresh
+            _, ext = os.path.splitext(filename)
+            language = ext.lower().replace(".", "")
+            if language == "js": language = "javascript"
             
+            artifact_data = {
+                "filename": filename,
+                "path": file_path,
+                "language": language,
+                "type": "code" if language != "html" else "web"
+            }
+            
+            return f"Successfully edited '{filename}'. Replaced {count} occurrence(s). [ARTIFACT]{json.dumps(artifact_data)}[/ARTIFACT]"
         except Exception as e:
             return f"Error editing file {filename}: {str(e)}"
 

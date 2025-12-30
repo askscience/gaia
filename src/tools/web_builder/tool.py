@@ -17,53 +17,73 @@ class WebBuilderTool(BaseTool):
         return {
             "type": "object",
             "properties": {
-                "filename": {
-                    "type": "string",
-                    "description": "The name of the file (e.g., 'index.html', 'style.css')."
-                },
-                "content": {
-                    "type": "string",
-                    "description": "The full content of the file."
-                },
-                "language": {
-                    "type": "string",
-                    "description": "Optional: The programming language (e.g., 'html', 'css', 'javascript')."
+                "files": {
+                    "type": "array",
+                    "description": "A list of files to create.",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "filename": {
+                                "type": "string",
+                                "description": "The name of the file (e.g., 'index.html', 'style.css')."
+                            },
+                            "content": {
+                                "type": "string",
+                                "description": "The full content of the file."
+                            },
+                            "language": {
+                                "type": "string",
+                                "description": "Optional: The programming language (e.g., 'html', 'css', 'javascript')."
+                            }
+                        },
+                        "required": ["filename", "content"]
+                    }
                 },
                 "project_id": {
                     "type": "string",
-                    "description": "The ID of the project (chat) where the file should be saved."
+                    "description": "The ID of the project (chat) where the files should be saved."
                 }
             },
-            "required": ["filename", "content", "project_id"]
+            "required": ["files", "project_id"]
         }
 
-    def execute(self, filename: str, content: str, project_id: str, language: str = None):
-        if not language:
-            _, ext = os.path.splitext(filename)
-            ext = ext.lower().replace(".", "")
-            if ext == "html": language = "html"
-            elif ext == "css": language = "css"
-            elif ext in ["js", "javascript"]: language = "javascript"
-            else: language = "text"
-
+    def execute(self, files: list, project_id: str):
         # Organize artifacts by project_id
         project_dir = os.path.join(get_artifacts_dir(), project_id)
         os.makedirs(project_dir, exist_ok=True)
         
-        file_path = os.path.join(project_dir, filename)
+        results = []
+        artifact_tags = []
         
-        try:
-            with open(file_path, "w") as f:
-                f.write(content)
+        for file_info in files:
+            filename = file_info.get('filename')
+            content = file_info.get('content')
+            language = file_info.get('language')
             
-            # Return a structured response that the UI can parse
-            artifact_data = {
-                "filename": filename,
-                "path": file_path,
-                "language": language,
-                "type": "code" if language != "html" else "web"
-            }
+            if not language:
+                _, ext = os.path.splitext(filename)
+                ext = ext.lower().replace(".", "")
+                if ext == "html": language = "html"
+                elif ext == "css": language = "css"
+                elif ext in ["js", "javascript"]: language = "javascript"
+                else: language = "text"
+
+            file_path = os.path.join(project_dir, filename)
             
-            return f"Successfully created {filename} in project {project_id}. [ARTIFACT]{json.dumps(artifact_data)}[/ARTIFACT]"
-        except Exception as e:
-            return f"Error creating file {filename}: {str(e)}"
+            try:
+                with open(file_path, "w") as f:
+                    f.write(content)
+                
+                artifact_data = {
+                    "filename": filename,
+                    "path": file_path,
+                    "language": language,
+                    "type": "code" if language != "html" else "web"
+                }
+                
+                results.append(f"Successfully created {filename}")
+                artifact_tags.append(f"[ARTIFACT]{json.dumps(artifact_data)}[/ARTIFACT]")
+            except Exception as e:
+                results.append(f"Error creating file {filename}: {str(e)}")
+        
+        return "\n".join(results) + "\n" + "".join(artifact_tags)

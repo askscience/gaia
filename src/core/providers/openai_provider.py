@@ -17,22 +17,31 @@ class OpenAIProvider(BaseProvider):
         return self._client
     
     def _sanitize_messages(self, messages):
-        """Ensure tool call arguments are JSON strings for OpenAI API."""
+        """Clean messages for OpenAI API (strip unknown keys like 'metadata')."""
         sanitized = []
+        allowed_keys = {'role', 'content', 'name', 'tool_calls', 'tool_call_id'}
+        
         for msg in messages:
-            msg_copy = msg.copy()
-            if 'tool_calls' in msg_copy and msg_copy['tool_calls']:
-                new_tool_calls = []
-                for tc in msg_copy['tool_calls']:
+            new_msg = {k: v for k, v in msg.items() if k in allowed_keys}
+            
+            # Ensure tool call arguments are JSON strings
+            if 'tool_calls' in new_msg and new_msg['tool_calls']:
+                clean_tool_calls = []
+                for tc in new_msg['tool_calls']:
                     tc_copy = tc.copy()
                     if 'function' in tc_copy:
                         func = tc_copy['function'].copy()
                         if isinstance(func.get('arguments'), dict):
                             func['arguments'] = json.dumps(func['arguments'])
                         tc_copy['function'] = func
-                    new_tool_calls.append(tc_copy)
-                msg_copy['tool_calls'] = new_tool_calls
-            sanitized.append(msg_copy)
+                    clean_tool_calls.append(tc_copy)
+                new_msg['tool_calls'] = clean_tool_calls
+                
+            # SiliconFlow/Z.ai specific: some models don't like None content with tool_calls
+            if new_msg.get('role') == 'assistant' and new_msg.get('tool_calls') and new_msg.get('content') is None:
+                new_msg['content'] = ""
+                
+            sanitized.append(new_msg)
         return sanitized
 
     def generate_response(self, messages, tools=None):

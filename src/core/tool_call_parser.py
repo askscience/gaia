@@ -42,8 +42,6 @@ class ToolCallParser:
         "replaceText": "replace",
         "search_text": "search",
         "replace_text": "replace",
-        "content": "code",
-        "file_content": "code",
         "file_name": "filename",
         "fileName": "filename",
     }
