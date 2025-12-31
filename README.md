@@ -1,4 +1,4 @@
-# Gaia Assistant
+# Gaia - GNOME AI Assistant
 
 **Your personal AI companion, built for GNOME.**
 
