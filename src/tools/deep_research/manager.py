@@ -5,7 +5,7 @@ import asyncio
 import time
 import gi
 gi.require_version('Notify', '0.7')
-from gi.repository import Notify, GLib
+from gi.repository import Notify, GLib, Gio
 from src.tools.deep_research.graph import DeepResearchGraph
 from src.core.config import get_artifacts_dir
 
@@ -15,7 +15,7 @@ class BackgroundResearchManager:
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(BackgroundResearchManager, cls).__new__(cls)
-            Notify.init("Gaia Research")
+            Notify.init("com.example.gaia")
             cls._instance.active_tasks = {} # chat_id -> {graph, notification, query}
         return cls._instance
 
@@ -30,9 +30,8 @@ class BackgroundResearchManager:
             f"Topic: {query}",
             "system-search-symbolic" 
         )
+        notification.set_hint("desktop-entry", GLib.Variant.new_string("com.example.gaia"))
         notification.set_urgency(Notify.Urgency.NORMAL)
-        # Transient ensures it pops up as a banner/toast
-        notification.set_hint("transient", GLib.Variant.new_boolean(True))
         
         # Add Stop action
         notification.add_action(
@@ -112,7 +111,7 @@ class BackgroundResearchManager:
         # We don't call show() every time to avoid excessive 'toast' animations in GNOME
         # But we show it if it's been a while to keep it relevant if it was dismissed
         now = time.time()
-        if now - task.get("last_show_time", 0) > 30: # Refresh toast every 30s
+        if now - task.get("last_show_time", 0) > 10: # Refresh toast every 10s
             try:
                 notification.show()
                 task["last_show_time"] = now
@@ -153,9 +152,25 @@ class BackgroundResearchManager:
         )
         success_notification.show()
         
+        # Auto-open in Gaia UI
+        GLib.idle_add(self._trigger_ui_open, artifact_data)
+        
         # Cleanup
         task["notification"].close()
         del self.active_tasks[chat_id]
+
+    def _trigger_ui_open(self, artifact_data):
+        """Find the main window and tell it to show the artifact."""
+        try:
+            app = Gio.Application.get_default()
+            if not app: return
+            
+            win = app.get_active_window()
+            if win and hasattr(win, "artifacts_panel"):
+                win.artifacts_panel.load_artifact(artifact_data['path'], artifact_data['language'])
+                win.show_artifacts()
+        except Exception as e:
+            print(f"Error auto-opening artifact: {e}")
 
     def _on_research_failed(self, chat_id, error_msg):
         if chat_id not in self.active_tasks:

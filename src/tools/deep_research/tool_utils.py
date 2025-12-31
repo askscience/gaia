@@ -62,15 +62,11 @@ def save_report_artifact(report_md: str, query: str, project_id: str, notes: lis
     final_html = final_html.replace("{{sources}}", sources_html)
     
     # 4. Save artifact
-    timestamp = int(time.time()) if 'time' in globals() else int(asyncio.get_event_loop().time() if not asyncio.get_event_loop().is_closed() else 0)
-    if timestamp == 0:
-        import time
-        timestamp = int(time.time())
-        
+    timestamp = int(time.time())
     research_folder = f"research_{timestamp}"
     
     base_artifacts = get_artifacts_dir()
-    artifact_dir = os.path.join(base_artifacts, project_id, research_folder)
+    artifact_dir = os.path.join(base_artifacts, project_id, "deepresearch", research_folder)
     os.makedirs(artifact_dir, exist_ok=True)
     
     report_filename = "index.html"

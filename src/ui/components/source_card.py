@@ -5,12 +5,12 @@ import threading
 import requests
 from urllib.parse import urlparse
 
-class SourceCard(Gtk.Box):
+class SourceCard(Gtk.Frame):
     """A native GTK4 widget to display a web source link with images."""
     
     def __init__(self, title: str, url: str, snippet: str = "", image_url: str = None, favicon_url: str = None):
-        super().__init__(orientation=Gtk.Orientation.VERTICAL)
-        self.add_css_class("source-card")
+        super().__init__()
+        self.add_css_class("card")
         self.url = url
         
         # Main content box
@@ -81,7 +81,7 @@ class SourceCard(Gtk.Box):
         self.featured_image.set_valign(Gtk.Align.CENTER)
         content_hbox.append(self.featured_image)
         
-        self.append(content_hbox)
+        self.set_child(content_hbox)
         
         # Async loading
         self._load_images(domain, favicon_url, image_url)

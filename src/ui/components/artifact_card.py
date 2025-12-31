@@ -2,15 +2,18 @@ import gi
 gi.require_version('Gtk', '4.0')
 from gi.repository import Gtk, Gdk
 
-class ArtifactCard(Gtk.Box):
+class ArtifactCard(Gtk.Frame):
     """A card for a single generated file (e.g. style.css)."""
     def __init__(self, filename: str, path: str, language: str):
-        super().__init__(orientation=Gtk.Orientation.HORIZONTAL)
-        self.add_css_class("artifact-card")
-        self.add_css_class("source-card") # Reuse base styling
-        self.set_spacing(12)
-        self.set_margin_top(4)
-        self.set_margin_bottom(4)
+        super().__init__()
+        self.add_css_class("card")
+        
+        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        box.set_spacing(12)
+        box.set_margin_top(8)
+        box.set_margin_bottom(8)
+        box.set_margin_start(8)
+        box.set_margin_end(8)
         
         self.filename = filename
         self.path = path
@@ -22,15 +25,14 @@ class ArtifactCard(Gtk.Box):
         elif language == "javascript": icon.set_from_icon_name("text-x-javascript-symbolic")
         
         icon.set_pixel_size(24)
-        icon.set_margin_start(12)
-        self.append(icon)
+        box.append(icon)
 
         label = Gtk.Label(label=filename)
         label.set_hexpand(True)
         label.set_halign(Gtk.Align.START)
-        label.set_margin_top(12)
-        label.set_margin_bottom(12)
-        self.append(label)
+        box.append(label)
+
+        self.set_child(box)
 
         # Click gesture to open code viewer
         gesture = Gtk.GestureClick()
@@ -41,5 +43,5 @@ class ArtifactCard(Gtk.Box):
     def on_clicked(self, *args):
         root = self.get_native()
         if hasattr(root, "artifacts_panel"):
-            root.artifacts_panel.load_artifact(self.path, self.language)
+            root.artifacts_panel.load_artifact({"path": self.path, "language": self.language, "filename": self.filename})
             root.show_artifacts()

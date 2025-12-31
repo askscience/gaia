@@ -38,7 +38,12 @@ class ToolManager:
 
     def execute_tool(self, tool_name, status_callback=None, **kwargs):
         if tool_name in self.tools:
-            if status_callback:
+            tool = self.tools[tool_name]
+            sig = inspect.signature(tool.execute)
+            
+            # Only pass status_callback if the tool's execute method handles it
+            if status_callback and "status_callback" in sig.parameters:
                 kwargs["status_callback"] = status_callback
-            return self.tools[tool_name].execute(**kwargs)
+                
+            return tool.execute(**kwargs)
         return f"Tool {tool_name} not found."

@@ -11,7 +11,7 @@ from gi.repository import Gtk, GLib, Gio, Gdk
 
 from src.core.chat_storage import ChatStorage
 from src.ui.utils import markdown_to_pango
-from src.ui.components import SourceCard, ArtifactCard, ProjectCard
+from src.ui.components import SourceCard, ArtifactCard, ProjectCard, ResearchCard
 from src.core.ai_client import AIClient
 from src.tools.manager import ToolManager
 from src.core.tool_call_parser import ToolCallParser
@@ -416,10 +416,16 @@ class ChatPage(Gtk.Box):
         if has_web:
             first_path = artifacts[0].get('path')
             if first_path:
-                project_dir = os.path.dirname(first_path)
-                index_path = next((art.get('path') for art in artifacts if art.get('filename') == 'index.html'), first_path)
-                project_card = ProjectCard("Website Project", project_dir, index_path, artifacts=artifacts)
-                artifacts_box.append(project_card)
+                if "deepresearch" in first_path:
+                    # Specialized Research Card
+                    report_title = os.path.basename(os.path.dirname(first_path)).replace("research_", "").replace("_", " ")
+                    card = ResearchCard(f"Report: {report_title}", first_path)
+                    artifacts_box.append(card)
+                else:
+                    project_dir = os.path.dirname(first_path)
+                    index_path = next((art.get('path') for art in artifacts if art.get('filename') == 'index.html'), first_path)
+                    project_card = ProjectCard("Website Project", project_dir, index_path, artifacts=artifacts)
+                    artifacts_box.append(project_card)
         else:
             for art in artifacts:
                 card = ArtifactCard(
@@ -561,7 +567,7 @@ class ChatPage(Gtk.Box):
                         
                         GLib.idle_add(self.show_spinner, status_text)
 
-                        if fname in ["web_builder", "file_reader", "file_editor", "file_list"]:
+                        if fname in ["web_builder", "file_reader", "file_editor", "file_list", "deep_research"]:
                             args["project_id"] = self.chat_data["id"]
                         
                         def update_status(text):

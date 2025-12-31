@@ -8,184 +8,191 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@400;500;600&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=Inter:wght@400;500;600&display=swap"
         rel="stylesheet">
     <style>
         :root {
-            /* Light Theme */
-            --bg: #ffffff;
-            --text-main: #1a1a1a;
-            --text-muted: #6b7280;
-            --accent: #2563eb;
-            --border: #f3f4f6;
-            --card-bg: #f9fafb;
-            --link-color: #2563eb;
-            --font-main: 'Inter', system-ui, sans-serif;
-            --font-heading: 'Outfit', sans-serif;
+            /* Light Theme - Creamy/Soft Professional */
+            --bg: #fcfcfd;
+            --surface: #ffffff;
+            --text-main: #111317;
+            --text-muted: #5d6679;
+            --accent: #0066ff;
+            --accent-soft: rgba(0, 102, 255, 0.05);
+            --border: #eef0f3;
+            --card-bg: #f8fafc;
+            --font-main: 'Inter', system-ui, -apple-system, sans-serif;
+            --font-heading: 'Bricolage Grotesque', sans-serif;
+
+            --max-width: 760px;
+            --spacing-base: 1.5rem;
         }
 
         @media (prefers-color-scheme: dark) {
             :root {
-                --bg: #0b0b0c;
-                --text-main: #f3f4f6;
-                --text-muted: #9ca3af;
-                --accent: #60a5fa;
-                --border: #1f2937;
-                --card-bg: #111827;
-                --link-color: #60a5fa;
+                --bg: #09090b;
+                --surface: #0e0e11;
+                --text-main: #f4f4f5;
+                --text-muted: #a1a1aa;
+                --accent: #3b82f6;
+                --accent-soft: rgba(59, 130, 246, 0.1);
+                --border: #1e1e24;
+                --card-bg: #13131a;
             }
         }
 
         * {
             box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         body {
             background-color: var(--bg);
             color: var(--text-main);
             font-family: var(--font-main);
-            font-size: 1rem;
-            line-height: 1.7;
+            font-size: 1.05rem;
+            line-height: 1.6;
             margin: 0;
-            padding: 5vh 1.5rem;
+            padding: 0;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
+            align-items: center;
         }
 
         .container {
-            max-width: 680px;
+            max-width: var(--max-width);
             width: 100%;
+            padding: 8vh var(--spacing-base);
         }
 
-        header {
-            margin-bottom: 4rem;
-            text-align: left;
+        /* Typography */
+        h1,
+        h2,
+        h3,
+        h4 {
+            font-family: var(--font-heading);
+            font-weight: 700;
+            line-height: 1.2;
+            letter-spacing: -0.03em;
+            margin-top: 3.5rem;
+            margin-bottom: 1.5rem;
         }
 
         h1 {
-            font-family: var(--font-heading);
-            font-size: 2.25rem;
-            font-weight: 500;
-            margin: 0;
-            letter-spacing: -0.02em;
-            line-height: 1.15;
-            color: var(--text-main);
+            font-size: clamp(2.25rem, 5vw, 3.5rem);
+            margin-top: 0;
+            margin-bottom: 3rem;
+            line-height: 1.1;
+            background: linear-gradient(135deg, var(--text-main) 0%, var(--text-muted) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        @media (max-width: 640px) {
-            body {
-                padding: 2rem 1rem;
-            }
-
-            h1 {
-                font-size: 1.75rem;
-            }
-
-            header {
-                margin-bottom: 3rem;
-            }
-
-            .content h2 {
-                font-size: 1.25rem;
-                margin-top: 3rem;
-            }
+        h2 {
+            font-size: 1.75rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.75rem;
+            margin-top: 5rem;
         }
 
-        .report-section {
-            margin-bottom: 4rem;
-        }
-
-        /* Content Styling */
-        .content {
-            color: var(--text-main);
-        }
-
-        .content h2 {
-            font-family: var(--font-heading);
+        h3 {
             font-size: 1.35rem;
-            font-weight: 500;
-            margin-top: 4rem;
-            margin-bottom: 1.5rem;
-            letter-spacing: -0.01em;
         }
 
-        .content h3 {
-            font-family: var(--font-heading);
-            font-size: 1.15rem;
-            font-weight: 500;
-            margin-top: 3rem;
+        p {
+            margin-bottom: 1.75rem;
+            opacity: 0.92;
         }
 
-        .content p {
-            margin-bottom: 1.5rem;
-            color: var(--text-main);
-            opacity: 0.95;
+        /* Layout Elements */
+        .content {
+            margin-bottom: 6rem;
         }
 
+        /* Source Tags in Content */
         .content a {
-            color: var(--link-color);
+            color: var(--accent);
             text-decoration: none;
-            transition: opacity 0.2s;
+            border-bottom: 1px solid transparent;
+            transition: all 0.2s ease;
         }
 
         .content a:hover {
-            opacity: 0.7;
+            border-bottom-color: var(--accent);
         }
 
-        /* Sources Section */
-        .sources-title {
-            font-family: var(--font-heading);
-            font-size: 1rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--text-muted);
-            margin-top: 6rem;
-            margin-bottom: 2rem;
+        /* Source Cards */
+        .sources-section {
+            padding-top: 6rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .sources-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .sources-header h2 {
+            margin: 0;
+            border: none;
+            padding: 0;
+            font-size: 1.5rem;
+        }
+
+        .sources-count {
+            background: var(--accent-soft);
+            color: var(--accent);
+            padding: 0.2rem 0.75rem;
+            border-radius: 99px;
+            font-size: 0.8rem;
             font-weight: 600;
+            font-family: var(--font-heading);
         }
 
         .sources-grid {
             display: grid;
-            grid-template-columns: 1fr;
-            gap: 1rem;
-        }
-
-        @media (min-width: 640px) {
-            .sources-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.25rem;
         }
 
         .source-card {
-            background: var(--card-bg);
+            background: var(--surface);
             border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1.25rem;
+            border-radius: 12px;
+            padding: 1.5rem;
             text-decoration: none;
             color: inherit;
             display: flex;
             flex-direction: column;
-            gap: 0.4rem;
-            transition: border-color 0.2s, background 0.2s;
+            gap: 0.75rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
         }
 
         .source-card:hover {
+            transform: translateY(-4px);
             border-color: var(--accent);
-            background: var(--bg);
+            box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.1);
         }
 
         .source-card .domain {
-            font-size: 0.65rem;
+            font-size: 0.75rem;
             color: var(--accent);
-            font-weight: 600;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.04em;
+            letter-spacing: 0.08em;
+            font-family: var(--font-heading);
         }
 
         .source-card h4 {
             margin: 0;
-            font-size: 0.9rem;
-            font-weight: 500;
+            font-size: 1rem;
+            font-weight: 600;
             line-height: 1.4;
             display: -webkit-box;
             -webkit-line-clamp: 2;
@@ -195,40 +202,92 @@
         }
 
         .source-card .url {
-            font-size: 0.7rem;
+            font-size: 0.75rem;
             color: var(--text-muted);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            margin-top: 0.25rem;
+            margin-top: auto;
+        }
+
+        /* Blocks */
+        blockquote {
+            margin: 2rem 0;
+            padding: 1rem 2rem;
+            border-left: 4px solid var(--accent);
+            background: var(--card-bg);
+            border-radius: 4px 12px 12px 4px;
+            font-style: italic;
+            color: var(--text-muted);
         }
 
         code {
-            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-family: ui-monospace, 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', monospace;
             background: var(--card-bg);
             padding: 0.2rem 0.4rem;
-            border-radius: 4px;
-            font-size: 0.85em;
-            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.9em;
+            color: var(--accent);
         }
 
         pre {
-            background: var(--card-bg);
-            padding: 1.5rem;
-            border-radius: 12px;
+            background: var(--surface);
+            padding: 1.75rem;
+            border-radius: 16px;
             overflow-x: auto;
             border: 1px solid var(--border);
-            margin: 2rem 0;
+            margin: 2.5rem 0;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
         }
 
+        pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        ul,
+        ol {
+            padding-left: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        li {
+            margin-bottom: 0.75rem;
+        }
+
+        /* Footer */
         footer {
-            margin-top: 10rem;
-            padding-top: 2rem;
-            border-top: 1px solid var(--border);
+            margin-top: 8rem;
+            padding-bottom: 4rem;
             text-align: center;
             color: var(--text-muted);
-            font-size: 0.75rem;
-            font-weight: 400;
+            font-size: 0.85rem;
+        }
+
+        .footer-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--card-bg);
+            padding: 0.5rem 1.25rem;
+            border-radius: 99px;
+            border: 1px solid var(--border);
+            font-weight: 500;
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                padding: 4rem 1.25rem;
+            }
+
+            .sources-grid {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 2.5rem;
+            }
         }
     </style>
 </head>
@@ -243,15 +302,23 @@
             {{content}}
         </main>
 
-        <section class="sources-container">
-            <h3 class="sources-title">Sources</h3>
+        <section class="sources-section">
+            <div class="sources-header">
+                <h2>Research Sources</h2>
+            </div>
             <div class="sources-grid">
                 {{sources}}
             </div>
         </section>
 
         <footer>
-            Deep Research Agent &bull; Final Analysis
+            <div class="footer-badge">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+                AI Generated Deep Research Report
+            </div>
         </footer>
     </div>
 </body>
