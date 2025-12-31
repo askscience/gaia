@@ -18,3 +18,8 @@ env/
 # OS
 .DS_Store
 Thumbs.db
+
+# Gaia Data
+artifacts/
+data/
+.gaia/
