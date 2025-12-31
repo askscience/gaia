@@ -87,10 +87,16 @@ class MainWindow(Adw.ApplicationWindow):
         self.header_bar.pack_end(self.tab_overview_button)
         
         # Actions
-        action = Gio.SimpleAction.new("preferences", None)
-        action.connect("activate", self.on_preferences_action)
-        self.add_action(action)
+        action_pref = Gio.SimpleAction.new("preferences", None)
+        action_pref.connect("activate", self.on_preferences_action)
+        self.add_action(action_pref)
+        
+        action_about = Gio.SimpleAction.new("about", None)
+        action_about.connect("activate", self.on_about_action)
+        self.add_action(action_about)
+        
         menu.append("Settings", "win.preferences")
+        menu.append("About", "win.about")
         
         # Tab View goes after header
         self.main_box.append(self.tab_view)
@@ -187,6 +193,22 @@ class MainWindow(Adw.ApplicationWindow):
         from src.ui.settings import SettingsWindow
         settings = SettingsWindow(parent=self)
         settings.present()
+
+    def on_about_action(self, action, param):
+        """Show the About dialog."""
+        about = Adw.AboutWindow(
+            transient_for=self,
+            application_name="Gaia",
+            application_icon="com.example.gaia",
+            developer_name="Askscience",
+            version="1.0",
+            comments="Your personal AI companion, built for GNOME. Fast, beautiful, and private AI on your desktop.",
+            copyright="© 2025 Askscience",
+            website="https://github.com/askscience/gaia",
+            issue_url="https://github.com/askscience/gaia/issues",
+            license_type=Gtk.License.GPL_3_0
+        )
+        about.present()
     
     def on_new_chat_clicked(self, button):
         """Handle new chat button click."""
