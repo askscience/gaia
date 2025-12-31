@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            /* Light Theme */
+            --bg: #ffffff;
+            --text-main: #1a1a1a;
+            --text-muted: #6b7280;
+            --accent: #2563eb;
+            --border: #f3f4f6;
+            --card-bg: #f9fafb;
+            --link-color: #2563eb;
+            --font-main: 'Inter', system-ui, sans-serif;
+            --font-heading: 'Outfit', sans-serif;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #0b0b0c;
+                --text-main: #f3f4f6;
+                --text-muted: #9ca3af;
+                --accent: #60a5fa;
+                --border: #1f2937;
+                --card-bg: #111827;
+                --link-color: #60a5fa;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: var(--font-main);
+            font-size: 1rem;
+            line-height: 1.7;
+            margin: 0;
+            padding: 5vh 1.5rem;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 680px;
+            width: 100%;
+        }
+
+        header {
+            margin-bottom: 4rem;
+            text-align: left;
+        }
+
+        h1 {
+            font-family: var(--font-heading);
+            font-size: 2.25rem;
+            font-weight: 500;
+            margin: 0;
+            letter-spacing: -0.02em;
+            line-height: 1.15;
+            color: var(--text-main);
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 2rem 1rem;
+            }
+
+            h1 {
+                font-size: 1.75rem;
+            }
+
+            header {
+                margin-bottom: 3rem;
+            }
+
+            .content h2 {
+                font-size: 1.25rem;
+                margin-top: 3rem;
+            }
+        }
+
+        .report-section {
+            margin-bottom: 4rem;
+        }
+
+        /* Content Styling */
+        .content {
+            color: var(--text-main);
+        }
+
+        .content h2 {
+            font-family: var(--font-heading);
+            font-size: 1.35rem;
+            font-weight: 500;
+            margin-top: 4rem;
+            margin-bottom: 1.5rem;
+            letter-spacing: -0.01em;
+        }
+
+        .content h3 {
+            font-family: var(--font-heading);
+            font-size: 1.15rem;
+            font-weight: 500;
+            margin-top: 3rem;
+        }
+
+        .content p {
+            margin-bottom: 1.5rem;
+            color: var(--text-main);
+            opacity: 0.95;
+        }
+
+        .content a {
+            color: var(--link-color);
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+
+        .content a:hover {
+            opacity: 0.7;
+        }
+
+        /* Sources Section */
+        .sources-title {
+            font-family: var(--font-heading);
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-top: 6rem;
+            margin-bottom: 2rem;
+            font-weight: 600;
+        }
+
+        .sources-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        @media (min-width: 640px) {
+            .sources-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .source-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.25rem;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .source-card:hover {
+            border-color: var(--accent);
+            background: var(--bg);
+        }
+
+        .source-card .domain {
+            font-size: 0.65rem;
+            color: var(--accent);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .source-card h4 {
+            margin: 0;
+            font-size: 0.9rem;
+            font-weight: 500;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            line-clamp: 2;
+            overflow: hidden;
+        }
+
+        .source-card .url {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-top: 0.25rem;
+        }
+
+        code {
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            background: var(--card-bg);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            border: 1px solid var(--border);
+        }
+
+        pre {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 12px;
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            margin: 2rem 0;
+        }
+
+        footer {
+            margin-top: 10rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-weight: 400;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>{{title}}</h1>
+        </header>
+
+        <main class="content">
+            {{content}}
+        </main>
+
+        <section class="sources-container">
+            <h3 class="sources-title">Sources</h3>
+            <div class="sources-grid">
+                {{sources}}
+            </div>
+        </section>
+
+        <footer>
+            Deep Research Agent &bull; Final Analysis
+        </footer>
+    </div>
+</body>
+
+</html>

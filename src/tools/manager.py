@@ -36,7 +36,9 @@ class ToolManager:
     def get_ollama_tools_definitions(self):
         return [tool.to_ollama_format() for tool in self.tools.values()]
 
-    def execute_tool(self, tool_name, **kwargs):
+    def execute_tool(self, tool_name, status_callback=None, **kwargs):
         if tool_name in self.tools:
+            if status_callback:
+                kwargs["status_callback"] = status_callback
             return self.tools[tool_name].execute(**kwargs)
         return f"Tool {tool_name} not found."

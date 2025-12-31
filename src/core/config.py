@@ -3,10 +3,8 @@ import os
 from pathlib import Path
 
 def get_artifacts_dir():
-    """Get the centralized directory for artifacts."""
-    # Use XDG_DATA_HOME or default to ~/.local/share
-    xdg_data = os.environ.get('XDG_DATA_HOME', os.path.expanduser('~/.local/share'))
-    artifacts_dir = os.path.join(xdg_data, 'gaia', 'artifacts')
+    """Get the centralized directory for artifacts in ~/.gaia/artifacts."""
+    artifacts_dir = os.path.join(Path.home(), ".gaia", "artifacts")
     os.makedirs(artifacts_dir, exist_ok=True)
     return artifacts_dir
 
@@ -15,7 +13,12 @@ class ConfigManager:
     
     DEFAULT_CONFIG = {
         "model": "granite4:latest",
-        "system_prompt": "You are a helpful AI assistant for Linux users."
+        "system_prompt": "You are a helpful AI assistant for Linux users.",
+        "dr_max_loops": 3,
+        "dr_max_results": 3,
+        "dr_outline_steps": 5,
+        "dr_search_breadth": 3,
+        "dr_max_scrape_length": 5000
     }
 
     def __new__(cls):
@@ -25,7 +28,7 @@ class ConfigManager:
         return cls._instance
 
     def initialize(self):
-        self.config_dir = os.path.join(Path.home(), ".config", "gaia")
+        self.config_dir = os.path.join(Path.home(), ".gaia")
         self.config_file = os.path.join(self.config_dir, "config.json")
         self.config = self.DEFAULT_CONFIG.copy()
         self.load()

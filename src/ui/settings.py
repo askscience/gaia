@@ -88,6 +88,78 @@ class SettingsWindow(Adw.PreferencesWindow):
         shortcut_info.set_subtitle("Default: Super+Space (Needs manual setup)")
         shortcut_group.add(shortcut_info)
 
+        # Deep Research Page
+        dr_page = Adw.PreferencesPage()
+        dr_page.set_title("Deep Research")
+        dr_page.set_icon_name("system-search-symbolic")
+        self.add(dr_page)
+
+        # Research Group
+        dr_group = Adw.PreferencesGroup()
+        dr_group.set_title("Research Parameters")
+        dr_group.set_description("Configure the behavior of the Deep Research Agent.")
+        dr_page.add(dr_group)
+
+        # Max Loops
+        self.max_loops_row = Adw.ActionRow()
+        self.max_loops_row.set_title("Max Research Loops")
+        self.max_loops_row.set_subtitle("Maximum number of iterations for refining results")
+        
+        loops_adj = Gtk.Adjustment.new(self.config.get("dr_max_loops", 3), 1, 10, 1, 1, 0)
+        self.loops_spin = Gtk.SpinButton.new(loops_adj, 1, 0)
+        self.loops_spin.set_valign(Gtk.Align.CENTER)
+        self.loops_spin.connect("value-changed", self.on_max_loops_changed)
+        self.max_loops_row.add_suffix(self.loops_spin)
+        dr_group.add(self.max_loops_row)
+
+        # Max Results
+        self.max_results_row = Adw.ActionRow()
+        self.max_results_row.set_title("Max Search Results")
+        self.max_results_row.set_subtitle("Results per sub-query")
+        
+        results_adj = Gtk.Adjustment.new(self.config.get("dr_max_results", 3), 1, 10, 1, 1, 0)
+        self.results_spin = Gtk.SpinButton.new(results_adj, 1, 0)
+        self.results_spin.set_valign(Gtk.Align.CENTER)
+        self.results_spin.connect("value-changed", self.on_max_results_changed)
+        self.max_results_row.add_suffix(self.results_spin)
+        dr_group.add(self.max_results_row)
+
+        # Max Scrape Length
+        self.scrape_len_row = Adw.ActionRow()
+        self.scrape_len_row.set_title("Max Scrape Length")
+        self.scrape_len_row.set_subtitle("Maximum characters to extract per page")
+        
+        scrape_adj = Gtk.Adjustment.new(self.config.get("dr_max_scrape_length", 5000), 1000, 20000, 500, 1000, 0)
+        self.scrape_spin = Gtk.SpinButton.new(scrape_adj, 1, 0)
+        self.scrape_spin.set_valign(Gtk.Align.CENTER)
+        self.scrape_spin.connect("value-changed", self.on_max_scrape_length_changed)
+        self.scrape_len_row.add_suffix(self.scrape_spin)
+        dr_group.add(self.scrape_len_row)
+
+        # Output Depth (Outline Steps)
+        self.outline_steps_row = Adw.ActionRow()
+        self.outline_steps_row.set_title("Outline Depth")
+        self.outline_steps_row.set_subtitle("Number of sections in the generated report")
+        
+        outline_adj = Gtk.Adjustment.new(self.config.get("dr_outline_steps", 5), 3, 15, 1, 1, 0)
+        self.outline_spin = Gtk.SpinButton.new(outline_adj, 1, 0)
+        self.outline_spin.set_valign(Gtk.Align.CENTER)
+        self.outline_spin.connect("value-changed", self.on_outline_steps_changed)
+        self.outline_steps_row.add_suffix(self.outline_spin)
+        dr_group.add(self.outline_steps_row)
+
+        # Search Breadth (Queries per Section)
+        self.search_breadth_row = Adw.ActionRow()
+        self.search_breadth_row.set_title("Search Breadth")
+        self.search_breadth_row.set_subtitle("Number of search queries per section")
+        
+        breadth_adj = Gtk.Adjustment.new(self.config.get("dr_search_breadth", 3), 1, 10, 1, 1, 0)
+        self.breadth_spin = Gtk.SpinButton.new(breadth_adj, 1, 0)
+        self.breadth_spin.set_valign(Gtk.Align.CENTER)
+        self.breadth_spin.connect("value-changed", self.on_search_breadth_changed)
+        self.search_breadth_row.add_suffix(self.breadth_spin)
+        dr_group.add(self.search_breadth_row)
+
     def _update_visibility(self):
         selected = self.provider_row.get_selected()
         # Hide API key for Ollama (index 0)
@@ -179,3 +251,18 @@ class SettingsWindow(Adw.PreferencesWindow):
     def on_zai_coding_changed(self, row, pspec):
         """Handle Z.ai Coding Plan toggle change."""
         self.config.set("zai_coding_plan", row.get_active())
+
+    def on_max_loops_changed(self, spin):
+        self.config.set("dr_max_loops", int(spin.get_value()))
+
+    def on_max_results_changed(self, spin):
+        self.config.set("dr_max_results", int(spin.get_value()))
+
+    def on_max_scrape_length_changed(self, spin):
+        self.config.set("dr_max_scrape_length", int(spin.get_value()))
+
+    def on_outline_steps_changed(self, spin):
+        self.config.set("dr_outline_steps", int(spin.get_value()))
+
+    def on_search_breadth_changed(self, spin):
+        self.config.set("dr_search_breadth", int(spin.get_value()))

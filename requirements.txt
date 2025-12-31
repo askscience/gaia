@@ -8,3 +8,7 @@ lxml
 openai
 anthropic
 google-genai
+aiohttp
+trafilatura
+markdown
+

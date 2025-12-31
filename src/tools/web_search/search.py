@@ -3,7 +3,10 @@ DuckDuckGo search module.
 Handles web search queries and returns structured results.
 """
 
-from ddgs import DDGS
+try:
+    from ddgs import DDGS
+except ImportError:
+    from duckduckgo_search import DDGS
 from typing import List, Dict, Optional
 
 

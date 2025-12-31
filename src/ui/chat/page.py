@@ -564,8 +564,11 @@ class ChatPage(Gtk.Box):
                         if fname in ["web_builder", "file_reader", "file_editor", "file_list"]:
                             args["project_id"] = self.chat_data["id"]
                         
+                        def update_status(text):
+                            GLib.idle_add(self.show_spinner, text)
+                        
                         print(f"[DEBUG] Executing tool {fname} with args: {args}")
-                        result = tm.execute_tool(fname, **args)
+                        result = tm.execute_tool(fname, status_callback=update_status, **args)
                         
                         sources_matches = re.finditer(r'\[SOURCES\](.*?)\[/SOURCES\]', str(result), re.DOTALL)
                         for match in sources_matches:
