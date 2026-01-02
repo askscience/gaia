@@ -115,64 +115,7 @@
             border-bottom-color: var(--accent);
         }
 
-        .sources {
-            margin-top: 5rem;
-            padding-top: 3rem;
-            border-top: 1px solid var(--border);
-        }
 
-        .sources h2 {
-            margin-top: 0;
-            margin-bottom: 2rem;
-            font-size: 1.75rem;
-        }
-
-        .source-grid {
-            display: grid;
-            gap: 1rem;
-        }
-
-        .source-item {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1.25rem;
-            transition: all 0.25s ease;
-            text-decoration: none;
-            display: block;
-        }
-
-        .source-item:hover {
-            border-color: var(--accent);
-            box-shadow: 0 4px 12px var(--shadow);
-            transform: translateY(-2px);
-        }
-
-        .source-domain {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: var(--accent);
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-
-        .source-title {
-            font-family: var(--font-sans);
-            font-size: 1rem;
-            font-weight: 400;
-            color: var(--text-primary);
-            margin-bottom: 0.5rem;
-            line-height: 1.4;
-        }
-
-        .source-url {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
 
         blockquote {
             margin: 2rem 0;
@@ -320,12 +263,7 @@
             {{content}}
         </main>
 
-        <section class="sources">
-            <h2>Sources</h2>
-            <div class="source-grid">
-                {{sources}}
-            </div>
-        </section>
+
 
         <footer>
             <div class="badge">

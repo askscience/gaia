@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.5] - 2026-01-02
+
+### Fixed
+- **Deep Research Report Formatting**: Fixed broken markdown citations and multi-line links that caused rendering issues.
+- **Citation Numbering**: Implemented global citation normalization to ensure citation numbers in the text match the reference list exactly.
+- **Section Titles**: Removed "Step X" prefixes from section headers for a cleaner, more professional look.
+- **Duplicate Sources**: Removed redundant "Sources" sections from both the generated text and the HTML template.
+
 ## [0.1.4] - 2026-01-02
 
 ### Fixed

@@ -20,8 +20,12 @@ async def global_planner(state: AgentState) -> Dict[str, Any]:
     if state["graph"].cancelled: return {}
     
     print(f"--- Global Planning: {query} ---")
-    outline_prompt = f"""Create a detailed, {OUTLINE_STEPS()} step research outline for the topic: "{query}".
-Return ONLY a JSON list of strings (the section titles)."""
+    print(f"--- Global Planning: {query} ---")
+    outline_prompt = f"""Create a detailed, comprehensive research outline for the report: "{query}".
+    The outline should contain {OUTLINE_STEPS()} logical sections.
+    Return ONLY a JSON list of strings (the section titles).
+    
+    IMPORTANT: Do NOT number the sections (e.g. no "1. Introduction", no "Step 1"). Just return the titles."""
     
     outline_resp = ai_client.generate_response([{"role": "user", "content": outline_prompt}])
     content = outline_resp["message"]["content"]
@@ -106,7 +110,8 @@ Text: {res['content'][:3000]}"""
     print(f"--- Subagent Writing Section: {section_title} ---")
     
     writer_prompt = f"""Write a comprehensive, professional section titled "{section_title}" for a research report on "{query}".
-Use these notes and include inline citations like [1], [2].
+Use these notes and include inline citations using markdown links: [Source Title](url).
+Do NOT use numbered citations like [1] or [2] as these will be formatted globally later.
 Avoid introductory filler. Use markdown.
 
 CRITICAL: Do NOT include the title "{section_title}" or any #/## headers with the section name at the beginning. The title is already handled by the system. Start directly with the content.
@@ -122,7 +127,7 @@ CRITICAL: Do NOT include the title "{section_title}" or any #/## headers with th
 
     writer_prompt += "Notes:\n"
     for i, note in enumerate(section_notes, 1):
-        writer_prompt += f"[{i}] {note.title}: {note.content}\n"
+        writer_prompt += f"* {note.title}: {note.content}\n  URL: {note.url}\n"
         
     writer_resp = ai_client.generate_response([{"role": "user", "content": writer_prompt}])
     section_content = f"\n## {section_title}\n\n" + writer_resp["message"]["content"]

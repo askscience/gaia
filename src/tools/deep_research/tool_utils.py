@@ -84,7 +84,48 @@ def save_report_artifact(report_md: str, query: str, project_id: str, notes: lis
             display_title = re.sub(r'^Deep Research Report:\s*', '', display_title, flags=re.IGNORECASE)
             # Remove the title line from markdown to avoid double title in HTML
             report_md = re.sub(r'^#\s*.*', '', report_md, count=1, flags=re.MULTILINE).strip()
+            
+        # 2a. Remove LLM-generated Sources section to avoid duplication
+        report_md = re.sub(r'(?i)^#+\s*(Sources|References|Bibliography).*$', '', report_md, flags=re.MULTILINE|re.DOTALL).strip()
         
+        # 2b. Global Citation Normalizer
+        # The AI now writes [Title](url). We want to convert to [1] and build a bibliography.
+        
+        # Track unique URLs to assign IDs
+        url_to_id = {}
+        next_id = 1
+        references = []
+        
+        def replace_citation(match):
+            nonlocal next_id
+            text = match.group(1).replace('\n', ' ').strip()
+            url = match.group(2).strip()
+            
+            # Normalize URL (basic)
+            if url.endswith("/"): url = url[:-1]
+            
+            if url not in url_to_id:
+                url_to_id[url] = next_id
+                # Use text as title if reasonable length, else cleaned URL or "Source"
+                title = text if len(text) < 100 else "Source"
+                references.append({'id': next_id, 'url': url, 'title': title})
+                next_id += 1
+            
+            ref_id = url_to_id[url]
+            return f" [{ref_id}]"
+
+        # Regex to find markdown links: [text](url)
+        # We need to be careful not to match images ![text](url)
+        # So we use negative lookbehind (?<!!)
+        report_md = re.sub(r'(?<!\!)\[([^\]]+)\]\(([^)]+)\)', replace_citation, report_md)
+        
+        # 2c. Append References Section
+        if references:
+            report_md += "\n\n## References\n\n"
+            for ref in references:
+                domain = urlparse(ref['url']).netloc.replace("www.", "")
+                report_md += f"[{ref['id']}] **{ref['title']}** - [{domain}]({ref['url']})\n\n"
+                
         report_html_body = markdown.markdown(report_md, extensions=['fenced_code', 'tables'])
         
         # Post-process for inline images
