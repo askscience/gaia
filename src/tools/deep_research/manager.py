@@ -154,11 +154,11 @@ class BackgroundResearchManager:
         task["notification"].close()
         
         # Auto-open in Gaia UI (now also handles the success notification for perfect sync)
-        GLib.idle_add(self._trigger_ui_open, artifact_data, query)
+        GLib.idle_add(self._trigger_ui_open, artifact_data, query, chat_id)
         
         del self.active_tasks[chat_id]
 
-    def _trigger_ui_open(self, artifact_data, query):
+    def _trigger_ui_open(self, artifact_data, query, chat_id):
         """Find the main window and tell it to show the artifact."""
         try:
             # 1. Notify user of completion exactly when we open the artifact
@@ -174,10 +174,25 @@ class BackgroundResearchManager:
             app = Gio.Application.get_default()
             if not app: return
             
+            # 2. Open the artifact in the UI
+            app = Gio.Application.get_default()
+            if not app: return
+            
             win = app.get_active_window()
-            if win and hasattr(win, "artifacts_panel"):
-                win.artifacts_panel.load_artifact(artifact_data['path'], artifact_data['language'])
-                win.show_artifacts()
+            if win:
+                # Update Artifacts Panel
+                if hasattr(win, "artifacts_panel"):
+                    win.artifacts_panel.load_artifact(artifact_data['path'], artifact_data['language'])
+                    win.show_artifacts()
+                
+                # Update Chat Persistence
+                if hasattr(win, "chat_pages") and chat_id in win.chat_pages:
+                    chat_page = win.chat_pages[chat_id]
+                    # Save persistence
+                    chat_page.update_last_message_metadata({'artifacts': [artifact_data]})
+                    # Update Live UI
+                    chat_page.add_artifacts_to_ui([artifact_data])
+                    
         except Exception as e:
             print(f"Error auto-opening artifact: {e}")
 

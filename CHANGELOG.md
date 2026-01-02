@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.4] - 2026-01-02
+
+### Fixed
+- **Deep Research Persistence**: Fixed a critical issue where Deep Research reports were not saved to chat history, causing them to fail to load when reopening chats.
+- **Deep Research Auto-Loading**: Improved detection logic to ensure reports automatically open in the Artifacts Panel regardless of how they are loaded.
+
 ## [0.1.3] - 2026-01-02
 
 ### Added

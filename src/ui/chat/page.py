@@ -420,7 +420,6 @@ class ChatPage(Gtk.Box):
                     def load_research_panel():
                         root = self.get_native()
                         if hasattr(root, "artifacts_panel"):
-                            print(f"[DEBUG ChatPage] Loading Deep Research: {project_dir}")
                             root.artifacts_panel.load_project(project_dir, is_research=True)
                             root.show_artifacts()
                             

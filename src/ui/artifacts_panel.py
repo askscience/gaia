@@ -146,7 +146,6 @@ class ArtifactsPanel(Gtk.Box):
         if not is_research and "deepresearch" in folder_path:
             is_research = True
 
-        print(f"[DEBUG ArtifactsPanel] load_project called for {folder_path}, is_research={is_research}")
         self.current_project_path = folder_path
         self.is_research_mode = is_research
         self._internal_change = True  # Block all signal handlers
