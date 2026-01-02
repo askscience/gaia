@@ -7,7 +7,7 @@ gi.require_version('Adw', '1')
 from gi.repository import Gtk, Adw, Gio, GLib, Gdk
 
 from src.core.chat_storage import ChatStorage
-from src.ui.artifacts.panel import ArtifactsPanel
+from src.ui.artifacts_panel import ArtifactsPanel
 from src.ui.chat.page import ChatPage
 
 class MainWindow(Adw.ApplicationWindow):
@@ -201,7 +201,7 @@ class MainWindow(Adw.ApplicationWindow):
             application_name="Gaia",
             application_icon="com.example.gaia",
             developer_name="Askscience",
-            version="0.1.2",
+            version="0.1.3",
             comments="Your personal AI companion, built for GNOME. Fast, beautiful, and private AI on your desktop.",
             copyright="© 2025 Askscience",
             website="https://github.com/askscience/gaia",

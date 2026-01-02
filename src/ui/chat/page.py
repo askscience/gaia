@@ -11,7 +11,7 @@ from gi.repository import Gtk, GLib, Gio, Gdk
 
 from src.core.chat_storage import ChatStorage
 from src.ui.utils import markdown_to_pango
-from src.ui.components import SourceCard, ArtifactCard, ProjectCard, ResearchCard
+from src.ui.components import SourceCard, ArtifactCard, ResearchCard
 from src.core.ai_client import AIClient
 from src.tools.manager import ToolManager
 from src.core.tool_call_parser import ToolCallParser
@@ -414,15 +414,29 @@ class ChatPage(Gtk.Box):
             first_path = artifacts[0].get('path')
             if first_path:
                 if "deepresearch" in first_path:
-                    # Specialized Research Card
-                    report_title = os.path.basename(os.path.dirname(first_path)).replace("research_", "").replace("_", " ")
-                    card = ResearchCard(f"Report: {report_title}", first_path)
-                    artifacts_box.append(card)
-                else:
+                    # Deep Research - Load directly into Artifacts Panel with research mode
                     project_dir = os.path.dirname(first_path)
-                    index_path = next((art.get('path') for art in artifacts if art.get('filename') == 'index.html'), first_path)
-                    project_card = ProjectCard("Website Project", project_dir, index_path, artifacts=artifacts)
-                    artifacts_box.append(project_card)
+                    
+                    def load_research_panel():
+                        root = self.get_native()
+                        if hasattr(root, "artifacts_panel"):
+                            print(f"[DEBUG ChatPage] Loading Deep Research: {project_dir}")
+                            root.artifacts_panel.load_project(project_dir, is_research=True)
+                            root.show_artifacts()
+                            
+                    GLib.idle_add(load_research_panel)
+                else:
+                    # Web Project - Load directly into Artifacts Panel, no chat card
+                    project_dir = os.path.dirname(first_path)
+                    
+                    def load_into_panel():
+                        root = self.get_native()
+                        if hasattr(root, "artifacts_panel"):
+                            root.artifacts_panel.load_project(project_dir)
+                            root.show_artifacts()
+                            
+                    GLib.idle_add(load_into_panel)
+                    # Do not append anything to chat if it's just a web project update
         else:
             for art in artifacts:
                 card = ArtifactCard(
@@ -432,13 +446,13 @@ class ChatPage(Gtk.Box):
                 )
                 artifacts_box.append(card)
         
-        msg_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        msg_row.set_halign(Gtk.Align.START)
-        msg_row.set_margin_start(40)
-        msg_row.set_margin_top(16)
-        msg_row.append(artifacts_box)
-        self.chat_box.append(msg_row)
-        self._scroll_to_bottom()
+            msg_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+            msg_row.set_halign(Gtk.Align.START)
+            msg_row.set_margin_start(40)
+            msg_row.set_margin_top(16)
+            msg_row.append(artifacts_box)
+            self.chat_box.append(msg_row)
+            self._scroll_to_bottom()
 
     def run_ai(self, user_text: str, is_hidden: bool = False):
         client = AIClient()
@@ -633,10 +647,8 @@ class ChatPage(Gtk.Box):
                                     root = self.get_native()
                                     if hasattr(root, "artifacts_panel"):
                                         project_dir = os.path.dirname(datum['path'])
-                                        index_path = os.path.join(project_dir, "index.html")
-                                        if os.path.exists(index_path):
-                                            GLib.idle_add(root.artifacts_panel.load_project, index_path)
-                                            GLib.idle_add(root.show_artifacts)
+                                        GLib.idle_add(root.artifacts_panel.load_project, project_dir)
+                                        GLib.idle_add(root.show_artifacts)
                             except: pass
                         messages.append({'role': 'tool', 'tool_call_id': tool_call.get('id', f"call_{fname}_{id(tool_call)}"), 'content': str(result)})
                         print(f"[DEBUG] Tool {fname} returned: {str(result)[:100]}...")

@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.3] - 2026-01-02
+
+### Added
+- **Artifacts Panel Refactor**:
+    - Centralized project controls (Export, Create App, Fullscreen) in the header toolbar.
+    - Replaced the "Code" tab with a native file selector dropdown.
+    - Added a **Fullscreen** toggle to expand artifacts to the entire window.
+    - Integrated specialized **Research Mode** for Deep Research reports with **PDF Export** support.
+- **UX Improvements**:
+    - Web projects now default to the rendered **Web Preview**.
+    - Removed redundant completion cards from the chat for a cleaner, unified flow.
+    - Updated icons to native GNOME symbolic set (`globe-symbolic`, `view-app-grid-symbolic`).
+
+### Fixed
+- **Artifact Loading**: Resolved race conditions and bytecode caching issues that caused incorrect view states.
+- **Dependency Handling**: Split WebKit and GtkSource imports to ensure the preview works even if coding tools are missing.
+- **State Management**: Implemented `clear()` to prevent data leakage between chats.
+
+
 ## [0.1.2] - 2026-01-02
 
 ### Added
