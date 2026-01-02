@@ -142,26 +142,35 @@ class BackgroundResearchManager:
         from src.tools.deep_research.tool_utils import save_report_artifact
         
         report_md = final_state.get("report", "Error: No report generated.")
-        artifact_data = save_report_artifact(report_md, query, project_id, final_state.get("notes", []))
-        
-        # Notify user of completion
-        success_notification = Notify.Notification.new(
-            "Deep Research Complete!",
-            f"Report on '{query}' is ready in the Artifact Panel.",
-            "emblem-documents-symbolic" # Documentation icon
+        artifact_data = save_report_artifact(
+            report_md, 
+            query, 
+            project_id, 
+            final_state.get("notes", []),
+            images=final_state.get("images", [])
         )
-        success_notification.show()
-        
-        # Auto-open in Gaia UI
-        GLib.idle_add(self._trigger_ui_open, artifact_data)
         
         # Cleanup
         task["notification"].close()
+        
+        # Auto-open in Gaia UI (now also handles the success notification for perfect sync)
+        GLib.idle_add(self._trigger_ui_open, artifact_data, query)
+        
         del self.active_tasks[chat_id]
 
-    def _trigger_ui_open(self, artifact_data):
+    def _trigger_ui_open(self, artifact_data, query):
         """Find the main window and tell it to show the artifact."""
         try:
+            # 1. Notify user of completion exactly when we open the artifact
+            success_notification = Notify.Notification.new(
+                "Deep Research Complete!",
+                f"Report on '{query}' is ready in the Artifact Panel.",
+                "emblem-documents-symbolic" # Documentation icon
+            )
+            success_notification.set_hint("desktop-entry", GLib.Variant.new_string("com.example.gaia"))
+            success_notification.show()
+
+            # 2. Open the artifact in the UI
             app = Gio.Application.get_default()
             if not app: return
             

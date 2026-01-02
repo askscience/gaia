@@ -6,11 +6,55 @@ import time
 from urllib.parse import urlparse
 from src.core.config import get_artifacts_dir
 
-def save_report_artifact(report_md: str, query: str, project_id: str, notes: list):
+def inject_image_attributions(html_content: str, image_pool: list) -> str:
+    """
+    Finds <img> tags in HTML, and if they match an image from the pool,
+    wraps them in a container and adds attribution.
+    """
+    if not image_pool:
+        return html_content
+        
+    try:
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup(html_content, 'html.parser')
+        
+        # Create a lookup for image data by URL
+        image_map = {img['url']: img for img in image_pool}
+        
+        for img_tag in soup.find_all('img'):
+            src = img_tag.get('src')
+            if src in image_map:
+                img_data = image_map[src]
+                
+                # Add class to image
+                img_tag['class'] = img_tag.get('class', []) + ['inline-image']
+                
+                # Create container
+                container = soup.new_tag('div', attrs={'class': 'inline-image-container'})
+                img_tag.wrap(container)
+                
+                # Create attribution
+                attr_div = soup.new_tag('div', attrs={'class': 'inline-attribution'})
+                attr_div.append("Image: ")
+                
+                attr_link = soup.new_tag('a', href=img_data['attribution_url'], target='_blank')
+                attr_link.string = img_data['attribution_name']
+                attr_div.append(attr_link)
+                
+                container.append(attr_div)
+                
+        return str(soup)
+    except Exception as e:
+        print(f"Error injecting attributions: {e}")
+        return html_content
+
+def save_report_artifact(report_md: str, query: str, project_id: str, notes: list, images: list = None):
     """
     Common utility to generate and save the research report HTML.
     Returns artifact metadata.
     """
+    if images is None:
+        images = []
     # 1. Format sources for HTML
     sources_html = ""
     for note in notes:
@@ -19,10 +63,10 @@ def save_report_artifact(report_md: str, query: str, project_id: str, notes: lis
         domain = urlparse(url).netloc.replace("www.", "")
         
         sources_html += f"""
-        <a href="{url}" class="source-card" target="_blank">
-            <div class="domain">{domain}</div>
-            <h4>{title}</h4>
-            <div class="url">{url}</div>
+        <a href="{url}" class="source-item" target="_blank">
+            <div class="source-domain">{domain}</div>
+            <h4 class="source-title">{title}</h4>
+            <div class="source-url">{url}</div>
         </a>
         """
     
@@ -42,22 +86,24 @@ def save_report_artifact(report_md: str, query: str, project_id: str, notes: lis
             report_md = re.sub(r'^#\s*.*', '', report_md, count=1, flags=re.MULTILINE).strip()
         
         report_html_body = markdown.markdown(report_md, extensions=['fenced_code', 'tables'])
+        
+        # Post-process for inline images
+        report_html_body = inject_image_attributions(report_html_body, images)
+        
     except ImportError:
         display_title = query
         report_html_body = report_md.replace("\n", "<br>") # Fallback
 
     # 3. Load template
-    # Template is in the same directory as this utility usually or in the tool directory
-    # Let's assume tool directory for simplicity
     template_path = os.path.join(os.path.dirname(__file__), "report_template.html")
     if not os.path.exists(template_path):
-        # Fallback for when called from different locations
         template_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "report_template.html")
 
     with open(template_path, "r") as f:
         template = f.read()
     
     final_html = template.replace("{{title}}", display_title)
+    final_html = final_html.replace("{{subtitle}}", f"Research report on {query}")
     final_html = final_html.replace("{{content}}", report_html_body)
     final_html = final_html.replace("{{sources}}", sources_html)
     
@@ -74,6 +120,7 @@ def save_report_artifact(report_md: str, query: str, project_id: str, notes: lis
     
     with open(report_path, "w") as f:
         f.write(final_html)
+
     
     # 5. Return metadata
     return {

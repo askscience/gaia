@@ -48,6 +48,16 @@ class WebBuilderTool(BaseTool):
         }
 
     def execute(self, files: list, project_id: str):
+        # Defensive check: if files is a string (due to parsing issues), try to load it as JSON
+        if isinstance(files, str):
+            try:
+                files = json.loads(files)
+            except:
+                return f"Error: 'files' parameter must be a list, but received a string that could not be parsed as JSON: {files[:100]}..."
+
+        if not isinstance(files, list):
+            return f"Error: 'files' parameter must be a list, but received {type(files).__name__}."
+
         # Organize artifacts by project_id
         project_dir = os.path.join(get_artifacts_dir(), project_id)
         os.makedirs(project_dir, exist_ok=True)

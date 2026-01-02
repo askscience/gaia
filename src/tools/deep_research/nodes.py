@@ -6,8 +6,8 @@ import asyncio
 import json
 from typing import List, Dict, Any
 from src.tools.deep_research.state import AgentState, ResearchNote
-from src.tools.deep_research.tools import async_search, async_scrape
-from src.tools.deep_research.config import MAX_LOOPS, MAX_SEARCH_RESULTS, OUTLINE_STEPS, SEARCH_BREADTH
+from src.tools.deep_research.tools import async_search, async_scrape, async_search_unsplash, async_search_pexels
+from src.tools.deep_research.config import MAX_LOOPS, MAX_SEARCH_RESULTS, OUTLINE_STEPS, SEARCH_BREADTH, UNSPLASH_KEY, PEXELS_KEY
 from src.core.ai_client import AIClient
 
 ai_client = AIClient()
@@ -53,7 +53,7 @@ Return ONLY a JSON list of strings."""
         "next_steps_reasoning": f"Generated outline with {len(outline)} sections. Ready for parallel research."
     }
 
-async def section_researcher_node(query: str, section_title: str, sub_queries: List[str], graph: Any) -> Dict[str, Any]:
+async def section_researcher_node(query: str, section_title: str, sub_queries: List[str], graph: Any, image_pool: List[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
     A standalone researcher + writer node for a specific section.
     Designed to be run as a subagent in parallel.
@@ -109,8 +109,18 @@ Text: {res['content'][:3000]}"""
 Use these notes and include inline citations like [1], [2].
 Avoid introductory filler. Use markdown.
 
-Notes:
+CRITICAL: Do NOT include the title "{section_title}" or any #/## headers with the section name at the beginning. The title is already handled by the system. Start directly with the content.
+
 """
+    if image_pool:
+        writer_prompt += "You have a pool of high-quality images available. If an image is highly relevant to a paragraph, insert it using standard markdown: ![description](url).\n"
+        writer_prompt += "Only use images from this list. Do not use more than 1-2 images per section. Place them between paragraphs where they provide visual context.\n"
+        writer_prompt += "Available Images:\n"
+        for img in image_pool:
+            writer_prompt += f"- ![{img['description']}]({img['url']})\n"
+        writer_prompt += "\n"
+
+    writer_prompt += "Notes:\n"
     for i, note in enumerate(section_notes, 1):
         writer_prompt += f"[{i}] {note.title}: {note.content}\n"
         
@@ -123,6 +133,63 @@ Notes:
         "section": section_title
     }
 
+async def image_researcher_node(state: AgentState) -> Dict[str, Any]:
+    """
+    Subagent that searches for relevant high-quality images.
+    """
+    query = state["query"]
+    if state["graph"].cancelled: return {"images": []}
+    
+    unsplash_key = UNSPLASH_KEY()
+    pexels_key = PEXELS_KEY()
+    
+    if not unsplash_key and not pexels_key:
+        return {"images": []}
+        
+    # Generate image search queries
+    img_query_prompt = f"""Generate 2 distinct, high-quality search keywords for a research report on "{query}".
+Each keyword MUST BE short, between 1 and 3 words max.
+Return ONLY a JSON list of strings."""
+    
+    response = ai_client.generate_response([{"role": "user", "content": img_query_prompt}])
+    content = response["message"]["content"]
+    try:
+        if "```json" in content:
+            content = content.split("```json")[1].split("```")[0]
+        img_queries = json.loads(content)
+    except:
+        # Fallback to simple keywords
+        img_queries = [query.split()[:2], "professional context"]
+        img_queries = [" ".join(q) if isinstance(q, list) else q for q in img_queries]
+
+    all_images = []
+    
+    # Run searches in parallel
+    search_tasks = []
+    for q in img_queries:
+        if unsplash_key:
+            search_tasks.append(async_search_unsplash(q, unsplash_key, max_results=3))
+        if pexels_key:
+            search_tasks.append(async_search_pexels(q, pexels_key, max_results=3))
+            
+    if not search_tasks:
+        return {"images": []}
+        
+    search_results = await asyncio.gather(*search_tasks)
+    
+    for results in search_results:
+        all_images.extend(results)
+        
+    # Deduplicate by URL
+    unique_images = []
+    seen_urls = set()
+    for img in all_images:
+        if img["url"] not in seen_urls:
+            unique_images.append(img)
+            seen_urls.add(img["url"])
+            
+    return {"images": unique_images[:10]}
+
 async def synthesizer_node(state: AgentState) -> Dict[str, Any]:
     """
     Compiles the final report by simply unifying sections and appending sources.
@@ -134,6 +201,7 @@ async def synthesizer_node(state: AgentState) -> Dict[str, Any]:
         
     sections = state.get("report_sections", [])
     notes = state.get("notes", [])
+    images = state.get("images", [])
     
     if not sections:
         return {"report": "## Error\nNo content was generated for this report. Please check your connectivity or try a different topic."}
@@ -141,7 +209,8 @@ async def synthesizer_node(state: AgentState) -> Dict[str, Any]:
     final_report = "\n\n".join(sections)
     
     # Append sources at the end
-    final_report += "\n\n## Sources\n"
+    # Note: Header "Sources" is added by the HTML template
+    final_report += "\n\n"
     seen_urls = set()
     source_count = 1
     for note in notes:
@@ -150,4 +219,4 @@ async def synthesizer_node(state: AgentState) -> Dict[str, Any]:
             seen_urls.add(note.url)
             source_count += 1
         
-    return {"report": final_report}
+    return {"report": final_report, "final_images": images}

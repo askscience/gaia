@@ -18,6 +18,12 @@ def OUTLINE_STEPS():
 def SEARCH_BREADTH():
     return config.get("dr_search_breadth", 3)
 
+def UNSPLASH_KEY():
+    return config.get("unsplash_access_key", "")
+
+def PEXELS_KEY():
+    return config.get("pexels_api_key", "")
+
 # LLM Configuration (Fetched from AIClient globally)
 TEMPERATURE = 0.2
 

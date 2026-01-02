@@ -132,7 +132,6 @@ class ChatPage(Gtk.Box):
             time.sleep(0.003)
         
         GLib.idle_add(self._scroll_to_bottom)
-        GLib.idle_add(self._add_deferred_artifacts)
     
     def _add_batch_to_ui(self, batch_messages):
         if not hasattr(self, 'chat_box') or not self.chat_box:
@@ -140,10 +139,12 @@ class ChatPage(Gtk.Box):
             
         for role, parsed_content, original_content, metadata, has_sources, has_artifacts, sources, artifacts in batch_messages:
             self._add_message_with_parsed_content(role, parsed_content, original_content, metadata=metadata, save=False, scroll=False)
+            
+            # Add sources and artifacts AFTER the message bubble
             if has_sources and sources:
-                self._deferred_sources_artifacts.append(('sources', sources))
+                self.add_sources_to_ui(sources)
             if has_artifacts and artifacts:
-                self._deferred_sources_artifacts.append(('artifacts', artifacts))
+                self.add_artifacts_to_ui(artifacts)
         return False
     
     def _add_deferred_artifacts(self):
@@ -364,7 +365,7 @@ class ChatPage(Gtk.Box):
 
     def add_sources_to_ui(self, sources: list):
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        main_box.set_spacing(8)
+        main_box.set_spacing(6)
         main_box.set_margin_top(12)
         main_box.set_margin_bottom(12)
         main_box.set_hexpand(True)
@@ -376,15 +377,10 @@ class ChatPage(Gtk.Box):
         header.set_margin_start(4)
         main_box.append(header)
         
-        flowbox = Gtk.FlowBox()
-        flowbox.set_valign(Gtk.Align.START)
-        flowbox.set_halign(Gtk.Align.FILL)
-        flowbox.set_hexpand(True) 
-        flowbox.set_selection_mode(Gtk.SelectionMode.NONE)
-        flowbox.set_row_spacing(10)
-        flowbox.set_column_spacing(10)
-        flowbox.set_max_children_per_line(10) 
-        flowbox.set_min_children_per_line(1)
+        # Use ListBox for compact vertical list
+        listbox = Gtk.ListBox()
+        listbox.set_selection_mode(Gtk.SelectionMode.NONE)
+        listbox.add_css_class("sources-listbox")
         
         for source in sources:
             card = SourceCard(
@@ -394,8 +390,9 @@ class ChatPage(Gtk.Box):
                 image_url=source.get('image_url'),
                 favicon_url=source.get('favicon_url')
             )
-            flowbox.append(card)
-        main_box.append(flowbox)
+            listbox.append(card)
+        
+        main_box.append(listbox)
         
         msg_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         msg_row.set_halign(Gtk.Align.FILL)
@@ -462,7 +459,10 @@ class ChatPage(Gtk.Box):
                 "2. TARGETED EDITS: For existing projects, prefer `file_editor` for specific changes. If unsure about the current files or their content, use `file_list` and `file_reader` first.\n"
                 "3. PROJECT STATE: Use `file_list` to see which files are currently in the project. Never assume a file exists if you haven't recently listed or read it.\n"
                 "4. Be efficient and precise. Provide full content for new files and clean diffs/edits for existing ones.\n"
-                "5. CONCISE SUMMARY: After you finish implementing changes or edits, provide a very concise summary (1-2 sentences) of what you did. This summary will be shown to the user."
+                "5. CONCISE SUMMARY: After you finish implementing changes or edits, provide a very concise summary (1-2 sentences) of what you did. This summary will be shown to the user.\n"
+                "6. WEB SEARCH: If you need information from the web, use the `web_search` tool exactly ONCE per request with `max_results=3`. "
+                "Call the tool IMMEDIATELY. Do NOT provide any conversational text (like 'Searching...') before calling the tool. "
+                "After the search completes, you MUST provide a detailed, discursive answer based on the results. Do NOT just list sources or say you found them."
             )
         }]
         messages.extend(self.history)

@@ -48,9 +48,15 @@ def scrape_url(url: str, max_length: int = 3000) -> dict:
         max_length: Maximum content length to return
     
     Returns:
-        Dict with 'content', 'image_url', and 'favicon_url'
+        Dict with 'content', 'image_url', 'favicon_url', 'og_title', and 'og_description'
     """
-    result = {"content": None, "image_url": None, "favicon_url": None}
+    result = {
+        "content": None, 
+        "image_url": None, 
+        "favicon_url": None,
+        "og_title": None,
+        "og_description": None
+    }
     try:
         response = requests.get(
             url,
@@ -61,14 +67,27 @@ def scrape_url(url: str, max_length: int = 3000) -> dict:
         
         soup = BeautifulSoup(response.content, "lxml")
         
-        # 1. Extract OpenGraph or Featured Image
+        # 1. Extract OpenGraph Title
+        og_title = (soup.find("meta", property="og:title") or 
+                   soup.find("meta", attrs={"name": "og:title"}))
+        if og_title:
+            result["og_title"] = og_title.get("content")
+        
+        # 2. Extract OpenGraph Description
+        og_desc = (soup.find("meta", property="og:description") or 
+                  soup.find("meta", attrs={"name": "description"}) or
+                  soup.find("meta", attrs={"name": "og:description"}))
+        if og_desc:
+            result["og_description"] = og_desc.get("content")
+        
+        # 3. Extract OpenGraph or Featured Image
         og_image = (soup.find("meta", property="og:image") or 
                    soup.find("meta", attrs={"name": "og:image"}) or
                    soup.find("meta", itemprop="image"))
         if og_image:
             result["image_url"] = og_image.get("content")
         
-        # 2. Extract Favicon (try multiple common patterns)
+        # 4. Extract Favicon (try multiple common patterns)
         icon_patterns = [
             {"rel": "apple-touch-icon"},
             {"rel": "apple-touch-icon-precomposed"},
@@ -88,7 +107,7 @@ def scrape_url(url: str, max_length: int = 3000) -> dict:
                     result["favicon_url"] = icon_url
                     break
 
-        # 3. Clean and extract content
+        # 5. Clean and extract content
         _remove_unwanted_elements(soup)
         main_content = _find_main_content(soup)
         text = _extract_text(main_content)

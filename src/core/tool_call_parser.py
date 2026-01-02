@@ -113,15 +113,56 @@ class ToolCallParser:
         return first_word if first_word else None
     
     @classmethod
-    def _parse_arguments(cls, tool_body: str) -> Dict[str, str]:
+    def _parse_arguments(cls, tool_body: str) -> Dict[str, Any]:
         """Parse all argument key-value pairs from a tool call body and normalize names."""
         args = {}
+        
+        # Check if the body itself is a JSON object (common with Ollama/OpenAI)
+        stripped_body = tool_body.strip()
+        if stripped_body.startswith('{') and stripped_body.endswith('}'):
+            try:
+                import json
+                raw_args = json.loads(stripped_body)
+                for k, v in raw_args.items():
+                    normalized_key = cls.PARAM_ALIASES.get(k, k)
+                    args[normalized_key] = v
+                return args
+            except:
+                pass
+
+        # Traditional XML parsing
         for arg_match in cls.ARG_PATTERN.finditer(tool_body):
             key = arg_match.group(1).strip()
             value = arg_match.group(2).strip()
             # Normalize parameter names using aliases
             normalized_key = cls.PARAM_ALIASES.get(key, key)
-            args[normalized_key] = value
+            
+            # Attempt to parse value as JSON if it looks like a list or object
+            if (value.startswith('[') and value.endswith(']')) or \
+               (value.startswith('{') and value.endswith('}')):
+                try:
+                    import json
+                    args[normalized_key] = json.loads(value)
+                except:
+                    args[normalized_key] = value
+            else:
+                args[normalized_key] = value
+        
+        # Fallback for "blob" style arguments (e.g., raw JSON)
+        if not args and stripped_body:
+            try:
+                import json
+                # Try to find JSON-like structure within the text if it's not strictly { }
+                json_match = re.search(r'(\{.*\}|\[.*\])', stripped_body, re.DOTALL)
+                if json_match:
+                    args_data = json.loads(json_match.group(1))
+                    if isinstance(args_data, dict):
+                        for k, v in args_data.items():
+                            normalized_key = cls.PARAM_ALIASES.get(k, k)
+                            args[normalized_key] = v
+            except:
+                pass
+
         return args
     
     @staticmethod

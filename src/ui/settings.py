@@ -160,6 +160,26 @@ class SettingsWindow(Adw.PreferencesWindow):
         self.search_breadth_row.add_suffix(self.breadth_spin)
         dr_group.add(self.search_breadth_row)
 
+        # Image Search APIs Group
+        img_group = Adw.PreferencesGroup()
+        img_group.set_title("Image Search APIs")
+        img_group.set_description("Provide API keys to include high-quality images with attribution in your reports.")
+        dr_page.add(img_group)
+
+        # Unsplash Key
+        self.unsplash_key_row = Adw.PasswordEntryRow()
+        self.unsplash_key_row.set_title("Unsplash Access Key")
+        self.unsplash_key_row.set_text(self.config.get("unsplash_access_key", ""))
+        self.unsplash_key_row.connect("changed", self.on_unsplash_key_changed)
+        img_group.add(self.unsplash_key_row)
+
+        # Pexels Key
+        self.pexels_key_row = Adw.PasswordEntryRow()
+        self.pexels_key_row.set_title("Pexels API Key")
+        self.pexels_key_row.set_text(self.config.get("pexels_api_key", ""))
+        self.pexels_key_row.connect("changed", self.on_pexels_key_changed)
+        img_group.add(self.pexels_key_row)
+
     def _update_visibility(self):
         selected = self.provider_row.get_selected()
         # Hide API key for Ollama (index 0)
@@ -266,3 +286,9 @@ class SettingsWindow(Adw.PreferencesWindow):
 
     def on_search_breadth_changed(self, spin):
         self.config.set("dr_search_breadth", int(spin.get_value()))
+
+    def on_unsplash_key_changed(self, entry):
+        self.config.set("unsplash_access_key", entry.get_text())
+
+    def on_pexels_key_changed(self, entry):
+        self.config.set("pexels_api_key", entry.get_text())

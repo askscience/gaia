@@ -15,8 +15,10 @@ Gaia is a fast, beautiful, and private AI assistant that lives on your Linux des
 *   **🧠 Flexible AI Backend**: Use local models via **Ollama** for privacy, or connect to powerful cloud providers like **OpenAI, Anthropic (Claude), Google (Gemini), and Mistral**.
 *   **🎨 Native Design**: Built with GTK4 and Libadwaita, Gaia looks and feels like it belongs on your desktop.
     *   **Deep Research Agent**: Unlike standard search, this agent performs an autonomous, multi-turn investigation. It generates a research plan, executes multiple targeted searches, scrapes and analyzes sources, reflects on findings, and finally synthesizes a comprehensive report with citations.
+    *   **Contextual Inline Images**: Reports now integrate high-quality images from Unsplash and Pexels directly within the text sections, complete with automatic attribution links.
     *   **Asynchronous Processing**: Deep Research runs entirely in the background. You can start an investigation and continue your conversation or other tasks while Gaia works.
     *   **Desktop-Native Feedback**: Stay updated with native GNOME notifications showing real-time progress (0-100%). Each notification includes a "Stop" button for instant cancellation from your system tray.
+
 
 ## Getting Started
 

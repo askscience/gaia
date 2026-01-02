@@ -57,3 +57,72 @@ async def async_scrape(url: str) -> Dict[str, Optional[str]]:
     except Exception as e:
         print(f"Error scraping {url}: {e}")
         return result
+
+async def async_search_unsplash(query: str, access_key: str, max_results: int = 5) -> List[Dict[str, str]]:
+    """
+    Search for images on Unsplash.
+    """
+    images = []
+    if not access_key:
+        return images
+
+    url = "https://api.unsplash.com/search/photos"
+    params = {
+        "query": query,
+        "per_page": max_results,
+        "client_id": access_key
+    }
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, params=params, timeout=10) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    for item in data.get("results", []):
+                        user = item.get("user", {})
+                        images.append({
+                            "url": item.get("urls", {}).get("regular"),
+                            "thumb": item.get("urls", {}).get("small"),
+                            "description": item.get("description") or item.get("alt_description") or query,
+                            "attribution_name": f"Unsplash/{user.get('username') or user.get('name')}",
+                            "attribution_url": user.get("links", {}).get("html"),
+                            "source": "Unsplash"
+                        })
+    except Exception as e:
+        print(f"Unsplash API error: {e}")
+    
+    return images
+
+async def async_search_pexels(query: str, api_key: str, max_results: int = 5) -> List[Dict[str, str]]:
+    """
+    Search for images on Pexels.
+    """
+    images = []
+    if not api_key:
+        return images
+
+    url = "https://api.pexels.com/v1/search"
+    headers = {"Authorization": api_key}
+    params = {
+        "query": query,
+        "per_page": max_results
+    }
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, headers=headers, params=params, timeout=10) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    for item in data.get("photos", []):
+                        images.append({
+                            "url": item.get("src", {}).get("large"),
+                            "thumb": item.get("src", {}).get("medium"),
+                            "description": item.get("alt") or query,
+                            "attribution_name": f"Pexels/{item.get('photographer')}",
+                            "attribution_url": item.get("photographer_url"),
+                            "source": "Pexels"
+                        })
+    except Exception as e:
+        print(f"Pexels API error: {e}")
+    
+    return images

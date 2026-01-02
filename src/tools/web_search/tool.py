@@ -14,7 +14,9 @@ class WebSearchTool(BaseTool):
         return (
             "Search the web and retrieve clean content. "
             "Returns results in a structured format: [AI_CONTEXT] for your information, "
-            "and [SOURCES] for the UI to display as cards. Do NOT repeat the URLs in your response."
+            "and [SOURCES] for the UI to display as cards. "
+            "USE THIS TOOL ONLY ONCE per request with max_results=3. "
+            "After calling this, you MUST use the scraped content to provide a detailed discursive answer."
         )
 
     @property
@@ -53,11 +55,11 @@ class WebSearchTool(BaseTool):
                 scrape_res = scrape_url(url)
                 content = scrape_res.get("content")
                 
-                # Add to sources for UI
+                # Add to sources for UI (prefer OpenGraph data when available)
                 sources.append({
-                    "title": res.get("title", "Untitled"),
+                    "title": scrape_res.get("og_title") or res.get("title", "Untitled"),
                     "url": url,
-                    "snippet": res.get("snippet", ""),
+                    "snippet": scrape_res.get("og_description") or res.get("snippet", ""),
                     "image_url": scrape_res.get("image_url"),
                     "favicon_url": scrape_res.get("favicon_url")
                 })
