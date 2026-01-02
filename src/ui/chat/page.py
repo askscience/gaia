@@ -446,24 +446,66 @@ class ChatPage(Gtk.Box):
         tm.load_tools()
         tools_def = tm.get_ollama_tools_definitions()
         
-        messages = [{
-            'role': 'system', 
-            'content': (
-                "You are a professional web developer. "
-                "CRITICAL: When the user asks to build or modify something, you MUST first provide a detailed implementation plan wrapped in [PLAN] and [/PLAN] tags. "
-                "The plan should list the files you will create or modify and the technologies you will use. "
-                "DO NOT call any functional tools (like web_builder, file_editor, etc.) in the same turn you propose a plan. "
-                "Wait for the user to approve the plan before implementing it.\n\n"
-                "EDITING AND BUILDING GUIDELINES:\n"
-                "1. WEB PROJECTS: When creating a website, ALWAYS create or update the HTML, CSS, and JS files together in a SINGLE turn using the `web_builder` tool. Use the `files` array parameter to provide all necessary files.\n"
-                "2. TARGETED EDITS: For existing projects, prefer `file_editor` for specific changes. If unsure about the current files or their content, use `file_list` and `file_reader` first.\n"
-                "3. PROJECT STATE: Use `file_list` to see which files are currently in the project. Never assume a file exists if you haven't recently listed or read it.\n"
-                "4. Be efficient and precise. Provide full content for new files and clean diffs/edits for existing ones.\n"
-                "5. CONCISE SUMMARY: After you finish implementing changes or edits, provide a very concise summary (1-2 sentences) of what you did. This summary will be shown to the user.\n"
-                "6. WEB SEARCH: If you need information from the web, use the `web_search` tool exactly ONCE per request with `max_results=3`. "
+        # Dynamically build system prompt based on enabled tools
+        enabled_map = tm.config.get("enabled_tools", {})
+        def is_tool_enabled(name):
+            return enabled_map.get(name, True)
+
+        guidelines = []
+        
+        # 1. WEB PROJECTS (web_builder)
+        if is_tool_enabled("web_builder"):
+            guidelines.append(
+                "- WEB PROJECTS: When creating a website, ALWAYS create or update the HTML, CSS, and JS files together in a SINGLE turn using the `web_builder` tool. Use the `files` array parameter to provide all necessary files."
+            )
+        else:
+            guidelines.append(
+                "- WEB PROJECTS: The `web_builder` tool is DISABLED. You cannot create or modify web projects. If the user asks, explain that this feature is disabled in settings."
+            )
+
+        # 2. TARGETED EDITS (file_editor / file_list / file_reader)
+        if is_tool_enabled("file_editor"):
+            guidelines.append(
+                "- TARGETED EDITS: For existing projects, prefer `file_editor` for specific changes. If unsure about the current files or their content, use `file_list` and `file_reader` first."
+            )
+            guidelines.append(
+                "- PROJECT STATE: Use `file_list` to see which files are currently in the project. Never assume a file exists if you haven't recently listed or read it."
+            )
+        else:
+             guidelines.append(
+                "- TARGETED EDITS: The `file_editor` tool is DISABLED. You cannot edit files. If asked, explain that this feature is disabled in settings."
+            )
+
+        # 3. Conciseness (Always enabled)
+        guidelines.append(
+            "- CONCISE SUMMARY: After you finish implementing changes or edits, provide a very concise summary (1-2 sentences) of what you did. This summary will be shown to the user."
+        )
+
+        # 4. WEB SEARCH (web_search)
+        if is_tool_enabled("web_search"):
+            guidelines.append(
+                "- WEB SEARCH: If you need information from the web, use the `web_search` tool exactly ONCE per request with `max_results=3`. "
                 "Call the tool IMMEDIATELY. Do NOT provide any conversational text (like 'Searching...') before calling the tool. "
                 "After the search completes, you MUST provide a detailed, discursive answer based on the results. Do NOT just list sources or say you found them."
             )
+        else:
+            guidelines.append(
+                "- WEB SEARCH: The `web_search` tool is DISABLED. You cannot search the web. If the user asks for external information, apologize and explain that web search is disabled in settings."
+            )
+
+        system_prompt = (
+            "You are a professional web developer. "
+            "CRITICAL: When the user asks to build or modify something, you MUST first provide a detailed implementation plan wrapped in [PLAN] and [/PLAN] tags. "
+            "The plan should list the files you will create or modify and the technologies you will use. "
+            "DO NOT call any functional tools in the same turn you propose a plan. "
+            "Wait for the user to approve the plan before implementing it.\n\n"
+            "EDITING AND BUILDING GUIDELINES:\n" + 
+            "\n".join(guidelines)
+        )
+
+        messages = [{
+            'role': 'system', 
+            'content': system_prompt
         }]
         messages.extend(self.history)
         

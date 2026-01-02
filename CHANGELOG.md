@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.2] - 2026-01-02
+
+### Added
+- **Tool Selection Settings**: Users can now enable or disable specific AI tools (like web search or file editing) from the General settings tab.
+
+### Fixed
+- **Disabled Tool Hallucination**: AI is now explicitly instructed when tools are disabled, preventing it from attempting to call them via text and ensuring it provides helpful feedback to the user.
+
 ## [0.1.1] - 2026-01-02
 
 ### Added

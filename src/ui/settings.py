@@ -4,6 +4,7 @@ gi.require_version('Adw', '1')
 from gi.repository import Gtk, Adw
 from src.core.config import ConfigManager
 from src.core.ai_client import AIClient
+from src.tools.manager import ToolManager
 
 class SettingsWindow(Adw.PreferencesWindow):
     def __init__(self, parent=None):
@@ -76,6 +77,40 @@ class SettingsWindow(Adw.PreferencesWindow):
 
         self._update_visibility()
         self._refresh_models()
+        
+        # Tools Group
+        tools_group = Adw.PreferencesGroup()
+        tools_group.set_title("Tools")
+        tools_group.set_description("Enable or disable specific AI tools.")
+        page.add(tools_group)
+
+        # Dynamically load tools and add toggles
+        self.tool_manager = ToolManager()
+        self.tool_manager.load_tools()
+        
+        enabled_tools = self.config.get("enabled_tools", {})
+        
+        # Sort tools by name for consistent display
+        sorted_tool_names = sorted(self.tool_manager.tools.keys())
+        
+        for tool_name in sorted_tool_names:
+            tool = self.tool_manager.tools[tool_name]
+            row = Adw.SwitchRow()
+            row.set_title(tool.name)
+            if hasattr(tool, 'description'):
+                # Truncate description if too long
+                desc = tool.description
+                if len(desc) > 80:
+                    desc = desc[:77] + "..."
+                row.set_subtitle(desc)
+            
+            # Default to True (Active) if not in config
+            is_active = enabled_tools.get(tool_name, True)
+            row.set_active(is_active)
+            
+            # Use a lambda that captures the current tool_name
+            row.connect("notify::active", lambda r, p, name=tool_name: self.on_tool_toggled(r, p, name))
+            tools_group.add(row)
         
         # Shortcuts Group
         shortcut_group = Adw.PreferencesGroup()
@@ -267,6 +302,12 @@ class SettingsWindow(Adw.PreferencesWindow):
                 self.config.set(model_key, selected_model)
                 # Keep global model in sync for simple usage
                 self.config.set("model", selected_model)
+
+    def on_tool_toggled(self, row, pspec, tool_name):
+        """Handle tool toggle changes."""
+        enabled_map = self.config.get("enabled_tools", {}).copy()
+        enabled_map[tool_name] = row.get_active()
+        self.config.set("enabled_tools", enabled_map)
 
     def on_zai_coding_changed(self, row, pspec):
         """Handle Z.ai Coding Plan toggle change."""

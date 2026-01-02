@@ -2,11 +2,13 @@ import os
 import importlib.util
 import inspect
 from src.tools.base import BaseTool
+from src.core.config import ConfigManager
 
 class ToolManager:
     def __init__(self):
         self.tools = {}
         self.tools_dir = os.path.dirname(os.path.abspath(__file__))
+        self.config = ConfigManager()
 
     def load_tools(self):
         self.tools = {}
@@ -34,9 +36,20 @@ class ToolManager:
             print(f"Error loading tool from {path}: {e}")
 
     def get_ollama_tools_definitions(self):
-        return [tool.to_ollama_format() for tool in self.tools.values()]
+        enabled_map = self.config.get("enabled_tools", {})
+        active_tools = []
+        for name, tool in self.tools.items():
+            # Default to True if not in map
+            if enabled_map.get(name, True):
+                active_tools.append(tool.to_ollama_format())
+        return active_tools
 
     def execute_tool(self, tool_name, status_callback=None, **kwargs):
+        # check if enabled
+        enabled_map = self.config.get("enabled_tools", {})
+        if not enabled_map.get(tool_name, True):
+            return f"Tool '{tool_name}' is disabled in settings."
+
         if tool_name in self.tools:
             tool = self.tools[tool_name]
             sig = inspect.signature(tool.execute)

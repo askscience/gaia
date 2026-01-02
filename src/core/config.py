@@ -18,7 +18,8 @@ class ConfigManager:
         "dr_max_results": 3,
         "dr_outline_steps": 5,
         "dr_search_breadth": 3,
-        "dr_max_scrape_length": 5000
+        "dr_max_scrape_length": 5000,
+        "enabled_tools": {}  # Tool name -> boolean. Missing means enabled.
     }
 
     def __new__(cls):
