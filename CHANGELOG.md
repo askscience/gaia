@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased] - 2026-01-02
+## [0.1.1] - 2026-01-02
 
 ### Added
 - **Native Source Cards**: Refactored source display to use compact, native GNOME list rows instead of large cards.

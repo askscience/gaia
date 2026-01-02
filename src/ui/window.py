@@ -201,7 +201,7 @@ class MainWindow(Adw.ApplicationWindow):
             application_name="Gaia",
             application_icon="com.example.gaia",
             developer_name="Askscience",
-            version="1.0",
+            version="0.1.1",
             comments="Your personal AI companion, built for GNOME. Fast, beautiful, and private AI on your desktop.",
             copyright="© 2025 Askscience",
             website="https://github.com/askscience/gaia",
