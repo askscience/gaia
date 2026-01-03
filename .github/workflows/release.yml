@@ -49,6 +49,7 @@ jobs:
         uses: burningalchemist/action-gh-nfpm@v1
         with:
           config: nfpm.yaml
+          packager: 'deb,rpm'
         env:
           VERSION: ${{ env.VERSION }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -18,7 +18,7 @@ contents:
   - src: "data/com.askscience.gaia.desktop"
     dst: "/usr/share/applications/com.askscience.gaia.desktop"
   - src: "icon.png"
-    dst: "/usr/share/icons/hicolor/256x256/apps/com.askscience.gaia.png"
+    dst: "/usr/share/icons/hicolor/512x512/apps/com.askscience.gaia.png"
 
 overrides:
   deb:
