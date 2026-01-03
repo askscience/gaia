@@ -12,6 +12,14 @@ from src.core.ai_client import AIClient
 
 ai_client = AIClient()
 
+
+async def async_generate_response(messages):
+    """
+    Async wrapper for AI client generation to avoid blocking the event loop.
+    """
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, ai_client.generate_response, messages)
+
 async def global_planner(state: AgentState) -> Dict[str, Any]:
     """
     Generates a full research outline and initial sub-queries for EVERY section upfront.
@@ -27,7 +35,7 @@ async def global_planner(state: AgentState) -> Dict[str, Any]:
     
     IMPORTANT: Do NOT number the sections (e.g. no "1. Introduction", no "Step 1"). Just return the titles."""
     
-    outline_resp = ai_client.generate_response([{"role": "user", "content": outline_prompt}])
+    outline_resp = await async_generate_response([{"role": "user", "content": outline_prompt}])
     content = outline_resp["message"]["content"]
     try:
         if "```json" in content:
@@ -41,7 +49,7 @@ async def global_planner(state: AgentState) -> Dict[str, Any]:
     for section in outline:
         sub_query_prompt = f"""Generate {SEARCH_BREADTH()} high-quality search queries to deeply research the section "{section}" for a report on "{query}".
 Return ONLY a JSON list of strings."""
-        response = ai_client.generate_response([{"role": "user", "content": sub_query_prompt}])
+        response = await async_generate_response([{"role": "user", "content": sub_query_prompt}])
         content = response["message"]["content"]
         try:
             if "```json" in content:
@@ -82,23 +90,33 @@ async def section_researcher_node(query: str, section_title: str, sub_queries: L
     scrape_results = await asyncio.gather(*scrape_tasks)
     
     section_notes = []
-    for res in scrape_results:
-        if graph.cancelled: break
-        if not res["content"]: continue
-            
+    
+    # Process extractions concurrently to avoid serial blocking
+    async def process_extraction(res):
+        if not res["content"]: return None
+        
         extract_prompt = f"""Extract 3-5 key facts from the following text for the section "{section_title}" of research on "{query}".
 Source: {res['url']}
 Text: {res['content'][:3000]}"""
         
-        extract_resp = ai_client.generate_response([{"role": "user", "content": extract_prompt}])
+        extract_resp = await async_generate_response([{"role": "user", "content": extract_prompt}])
         extracted_info = extract_resp["message"]["content"]
         
-        section_notes.append(ResearchNote(
+        return ResearchNote(
             title=res.get("title", "Untitled"),
             url=res["url"],
             content=extracted_info,
             relevance=f"Source for {section_title}"
-        ))
+        )
+
+    # Launch extraction tasks in parallel
+    extraction_tasks = [process_extraction(res) for res in scrape_results]
+    extraction_results = await asyncio.gather(*extraction_tasks)
+    
+    for note in extraction_results:
+        if graph.cancelled: break
+        if note:
+            section_notes.append(note)
 
     # 2. Write Section
     if graph.cancelled: return {"notes": section_notes, "content": "", "section": section_title}
@@ -129,7 +147,7 @@ CRITICAL: Do NOT include the title "{section_title}" or any #/## headers with th
     for i, note in enumerate(section_notes, 1):
         writer_prompt += f"* {note.title}: {note.content}\n  URL: {note.url}\n"
         
-    writer_resp = ai_client.generate_response([{"role": "user", "content": writer_prompt}])
+    writer_resp = await async_generate_response([{"role": "user", "content": writer_prompt}])
     section_content = f"\n## {section_title}\n\n" + writer_resp["message"]["content"]
     
     return {
@@ -156,7 +174,7 @@ async def image_researcher_node(state: AgentState) -> Dict[str, Any]:
 Each keyword MUST BE short, between 1 and 3 words max.
 Return ONLY a JSON list of strings."""
     
-    response = ai_client.generate_response([{"role": "user", "content": img_query_prompt}])
+    response = await async_generate_response([{"role": "user", "content": img_query_prompt}])
     content = response["message"]["content"]
     try:
         if "```json" in content:

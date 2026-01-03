@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+
+## [0.1.8] - 2026-01-03
+
+### Changed
+- **Deep Research Architecture**:
+    - **Refactored Scraping**: Unified Deep Research and Web Search tools to use a shared, high-quality scraping module based on `trafilatura` (with `BeautifulSoup` fallback).
+    - **Clean Data Pipeline**: Deep Research now consumes raw scraped data directly, ensuring it receives clean text without the chat-formatted `[SOURCES]` tags.
+    - **Async Writing**: Parallelized the AI writing phase of Deep Research. Subagents now extract facts and draft sections concurrently, significantly speeding up report generation.
+
+
+
+
 ## [0.1.7] - 2026-01-03
 
 ### Added

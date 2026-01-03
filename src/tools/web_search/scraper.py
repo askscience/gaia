@@ -30,6 +30,7 @@ REMOVE_SELECTORS = [
     "[id*='cookie']", "[id*='popup']", "[id*='modal']"
 ]
 
+
 # Selectors to try for finding main content
 MAIN_CONTENT_SELECTORS = [
     "article", "main", "[role='main']", 
@@ -39,13 +40,14 @@ MAIN_CONTENT_SELECTORS = [
 ]
 
 
-def scrape_url(url: str, max_length: int = 3000) -> dict:
+def scrape_url(url: str, max_length: int = 3000, timeout: int = 10) -> dict:
     """
     Scrape and extract clean text content and metadata from a URL.
     
     Args:
         url: URL to scrape
         max_length: Maximum content length to return
+        timeout: Request timeout in seconds
     
     Returns:
         Dict with 'content', 'image_url', 'favicon_url', 'og_title', and 'og_description'
@@ -61,10 +63,24 @@ def scrape_url(url: str, max_length: int = 3000) -> dict:
         response = requests.get(
             url,
             headers={"User-Agent": USER_AGENT},
-            timeout=10
+            timeout=timeout
         )
         response.raise_for_status()
         
+        # Try trafilatura first for high-quality extraction
+        try:
+            import trafilatura
+            # valid_result=True ensures we don't get empty strings if uncertain
+            trafilatura_content = trafilatura.extract(response.content, include_comments=False)
+            if trafilatura_content:
+                if len(trafilatura_content) > max_length:
+                    trafilatura_content = trafilatura_content[:max_length] + "..."
+                result["content"] = trafilatura_content
+        except ImportError:
+            pass
+        except Exception as e:
+            print(f"Trafilatura extraction failed: {e}")
+
         soup = BeautifulSoup(response.content, "lxml")
         
         # 1. Extract OpenGraph Title
@@ -73,6 +89,10 @@ def scrape_url(url: str, max_length: int = 3000) -> dict:
         if og_title:
             result["og_title"] = og_title.get("content")
         
+        # Fallback to standard title
+        if not result["og_title"] and soup.title:
+            result["og_title"] = soup.title.string
+
         # 2. Extract OpenGraph Description
         og_desc = (soup.find("meta", property="og:description") or 
                   soup.find("meta", attrs={"name": "description"}) or
@@ -107,15 +127,17 @@ def scrape_url(url: str, max_length: int = 3000) -> dict:
                     result["favicon_url"] = icon_url
                     break
 
-        # 5. Clean and extract content
-        _remove_unwanted_elements(soup)
-        main_content = _find_main_content(soup)
-        text = _extract_text(main_content)
-        
-        if len(text) > max_length:
-            text = text[:max_length] + "..."
-        
-        result["content"] = text.strip() if text.strip() else None
+        # 5. Clean and extract content (only if trafilatura didn't work)
+        if not result["content"]:
+            _remove_unwanted_elements(soup)
+            main_content = _find_main_content(soup)
+            text = _extract_text(main_content)
+            
+            if len(text) > max_length:
+                text = text[:max_length] + "..."
+            
+            result["content"] = text.strip() if text.strip() else None
+            
         return result
         
     except Exception as e:

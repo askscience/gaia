@@ -250,6 +250,21 @@ class ChatPage(Gtk.Box):
         if metadata:
             msg['metadata'] = metadata
         self.history.append(msg)
+        
+        # Auto-update title if it's the first user message
+        if role == "user":
+            current_title = self.chat_data.get('title', 'New Chat')
+            if current_title in ["New Chat", "New chat", None]:
+                new_title = text[:30] + "..." if len(text) > 30 else text
+                self.chat_data['title'] = new_title
+                
+                # Update UI Tab
+                root = self.get_native()
+                if hasattr(root, 'tab_view'):
+                    page = root.tab_view.get_page(self)
+                    if page:
+                        page.set_title(new_title)
+        
         self._schedule_save()
         self._add_message_ui(role, text, metadata=metadata, save=False, parsed_text=parsed_text)
     

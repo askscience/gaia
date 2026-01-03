@@ -4,10 +4,9 @@ Async tools for web search and scraping, wrapping existing logic.
 
 import asyncio
 import aiohttp
-from bs4 import BeautifulSoup
-import trafilatura
 from typing import List, Dict, Optional
 from src.tools.web_search.search import search
+from src.tools.web_search.scraper import scrape_url
 from src.tools.deep_research.config import SEARCH_TIMEOUT, SCRAPE_TIMEOUT, MAX_SCRAPE_LENGTH
 
 async def async_search(query: str, max_results: int = 3) -> List[Dict[str, str]]:
@@ -21,42 +20,29 @@ async def async_search(query: str, max_results: int = 3) -> List[Dict[str, str]]
 
 async def async_scrape(url: str) -> Dict[str, Optional[str]]:
     """
-    Async scraping using aiohttp and trafilatura.
+    Async scraping using the centralized web_search scraper.
     """
-    result = {"content": None, "title": None, "url": url}
+    loop = asyncio.get_event_loop()
+    
+    # Run sync scraper in executor
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, timeout=SCRAPE_TIMEOUT) as response:
-                if response.status == 200:
-                    # Always read as bytes and decode with 'replace' for maximum robustness
-                    content_bytes = await response.read()
-                    html = content_bytes.decode(errors='replace')
-                    
-                    # Use trafilatura for high-quality markdown extraction
-                    content = trafilatura.extract(html)
-                    
-                    if not content:
-                        # Fallback to simple BeautifulSoup extraction
-                        soup = BeautifulSoup(html, "lxml")
-                        # Basic cleanup
-                        for tag in ["script", "style", "nav", "footer", "header"]:
-                            for el in soup.find_all(tag):
-                                el.decompose()
-                        content = soup.get_text(separator="\n", strip=True)
-                    
-                    if content and len(content) > MAX_SCRAPE_LENGTH():
-                        content = content[:MAX_SCRAPE_LENGTH()] + "..."
-                        
-                    result["content"] = content
-                    
-                    # Extract title
-                    soup = BeautifulSoup(html, "lxml")
-                    result["title"] = soup.title.string if soup.title else "Untitled"
-                    
-        return result
+        scraped_data = await loop.run_in_executor(
+            None, 
+            scrape_url, 
+            url, 
+            MAX_SCRAPE_LENGTH(), 
+            SCRAPE_TIMEOUT
+        )
+        
+        # Map to expected format
+        return {
+            "content": scraped_data.get("content"),
+            "title": scraped_data.get("og_title") or "Untitled",
+            "url": url
+        }
     except Exception as e:
         print(f"Error scraping {url}: {e}")
-        return result
+        return {"content": None, "title": None, "url": url}
 
 async def async_search_unsplash(query: str, access_key: str, max_results: int = 5) -> List[Dict[str, str]]:
     """
