@@ -15,7 +15,7 @@ modules:
     build-commands:
       - install -D gaia /app/bin/gaia
       - install -D -m 644 com.askscience.gaia.desktop /app/share/applications/com.askscience.gaia.desktop
-      - install -D -m 644 role-icon.png /app/share/icons/hicolor/256x256/apps/com.askscience.gaia.png
+      - install -D -m 644 role-icon.png /app/share/icons/hicolor/512x512/apps/com.askscience.gaia.png
     sources:
       - type: file
         path: dist/gaia

@@ -64,7 +64,6 @@ jobs:
           bundle: com.askscience.gaia.flatpak
           manifest-path: com.askscience.gaia.yml
           cache-key: flatpak-builder-${{ github.sha }}
-          install-deps: false
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -72,6 +71,5 @@ jobs:
           files: |
             dist/gaia
             *.deb
-            *.rpm
-            *.flatpak
+
           generate_release_notes: true
