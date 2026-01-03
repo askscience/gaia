@@ -45,11 +45,20 @@ jobs:
         id: get_version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
 
-      - name: Build DEB and RPM packages
+      - name: Build DEB package
         uses: burningalchemist/action-gh-nfpm@v1
         with:
           config: nfpm.yaml
-          packager: 'deb,rpm'
+          packager: deb
+        env:
+          VERSION: ${{ env.VERSION }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build RPM package
+        uses: burningalchemist/action-gh-nfpm@v1
+        with:
+          config: nfpm.yaml
+          packager: rpm
         env:
           VERSION: ${{ env.VERSION }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
