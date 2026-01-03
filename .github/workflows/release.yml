@@ -46,7 +46,7 @@ jobs:
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
 
       - name: Build DEB and RPM packages
-        uses: burningalchemist/action-gh-nfpm@v1.2
+        uses: burningalchemist/action-gh-nfpm@v1
         with:
           nfpm_config: nfpm.yaml
         env:
