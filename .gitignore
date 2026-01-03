@@ -21,7 +21,6 @@ Thumbs.db
 
 # Gaia Data
 artifacts/
-data/
 .gaia/
 
 # Build Artifacts
