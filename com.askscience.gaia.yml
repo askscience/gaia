@@ -14,7 +14,7 @@ modules:
     buildsystem: simple
     build-commands:
       - install -D gaia /app/bin/gaia
-      - install -D -m 644 role-data/com.askscience.gaia.desktop /app/share/applications/com.askscience.gaia.desktop
+      - install -D -m 644 com.askscience.gaia.desktop /app/share/applications/com.askscience.gaia.desktop
       - install -D -m 644 role-icon.png /app/share/icons/hicolor/256x256/apps/com.askscience.gaia.png
     sources:
       - type: file
@@ -22,7 +22,7 @@ modules:
         dest-filename: gaia
       - type: file
         path: data/com.askscience.gaia.desktop
-        dest-filename: role-data/com.askscience.gaia.desktop
+        dest-filename: com.askscience.gaia.desktop
       - type: file
         path: icon.png
         dest-filename: role-icon.png
