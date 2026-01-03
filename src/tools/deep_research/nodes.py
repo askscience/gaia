@@ -9,8 +9,10 @@ from src.tools.deep_research.state import AgentState, ResearchNote
 from src.tools.deep_research.tools import async_search, async_scrape, async_search_unsplash, async_search_pexels
 from src.tools.deep_research.config import MAX_LOOPS, MAX_SEARCH_RESULTS, OUTLINE_STEPS, SEARCH_BREADTH, UNSPLASH_KEY, PEXELS_KEY
 from src.core.ai_client import AIClient
+from src.core.prompt_manager import PromptManager
 
 ai_client = AIClient()
+prompt_manager = PromptManager()
 
 
 async def async_generate_response(messages):
@@ -29,11 +31,13 @@ async def global_planner(state: AgentState) -> Dict[str, Any]:
     
     print(f"--- Global Planning: {query} ---")
 
-    outline_prompt = f"""Create a detailed, comprehensive research outline for the report: "{query}".
-    The outline should contain {OUTLINE_STEPS()} logical sections.
-    Return ONLY a JSON list of strings (the section titles).
-    
-    IMPORTANT: Do NOT number the sections (e.g. no "1. Introduction", no "Step 1"). Just return the titles."""
+    print(f"--- Global Planning: {query} ---")
+
+    outline_prompt = prompt_manager.get(
+        "deep_research.outline", 
+        query=query, 
+        outline_steps=OUTLINE_STEPS()
+    )
     
     outline_resp = await async_generate_response([{"role": "user", "content": outline_prompt}])
     content = outline_resp["message"]["content"]
@@ -47,8 +51,12 @@ async def global_planner(state: AgentState) -> Dict[str, Any]:
     # Now generate sub-queries for EACH section in parallel
     section_plans = {}
     for section in outline:
-        sub_query_prompt = f"""Generate {SEARCH_BREADTH()} high-quality search queries to deeply research the section "{section}" for a report on "{query}".
-Return ONLY a JSON list of strings."""
+        sub_query_prompt = prompt_manager.get(
+            "deep_research.sub_queries",
+            search_breadth=SEARCH_BREADTH(),
+            section=section,
+            query=query
+        )
         response = await async_generate_response([{"role": "user", "content": sub_query_prompt}])
         content = response["message"]["content"]
         try:
@@ -95,9 +103,13 @@ async def section_researcher_node(query: str, section_title: str, sub_queries: L
     async def process_extraction(res):
         if not res["content"]: return None
         
-        extract_prompt = f"""Extract 3-5 key facts from the following text for the section "{section_title}" of research on "{query}".
-Source: {res['url']}
-Text: {res['content'][:3000]}"""
+        extract_prompt = prompt_manager.get(
+            "deep_research.extract",
+            section_title=section_title,
+            query=query,
+            url=res['url'],
+            content=res['content'][:3000]
+        )
         
         extract_resp = await async_generate_response([{"role": "user", "content": extract_prompt}])
         extracted_info = extract_resp["message"]["content"]
@@ -127,18 +139,10 @@ Text: {res['content'][:3000]}"""
 
     print(f"--- Subagent Writing Section: {section_title} ---")
     
-    writer_prompt = f"""Write a comprehensive, professional section titled "{section_title}" for a research report on "{query}".
-Use these notes and include inline citations using markdown links: [Source Title](url).
-Do NOT use numbered citations like [1] or [2] as these will be formatted globally later.
-Avoid introductory filler. Use markdown.
-
-CRITICAL: Do NOT include the title "{section_title}" or any #/## headers with the section name at the beginning. The title is already handled by the system. Start directly with the content.
-
-"""
+    writer_prompt = prompt_manager.get("deep_research.write_section", section_title=section_title, query=query)
+    
     if image_pool:
-        writer_prompt += "You have a pool of high-quality images available. If an image is highly relevant to a paragraph, insert it using standard markdown: ![description](url).\n"
-        writer_prompt += "Only use images from this list. Do not use more than 1-2 images per section. Place them between paragraphs where they provide visual context.\n"
-        writer_prompt += "Available Images:\n"
+        writer_prompt += prompt_manager.get("deep_research.write_section_images")
         for img in image_pool:
             writer_prompt += f"- ![{img['description']}]({img['url']})\n"
         writer_prompt += "\n"
@@ -170,9 +174,7 @@ async def image_researcher_node(state: AgentState) -> Dict[str, Any]:
         return {"images": []}
         
     # Generate image search queries
-    img_query_prompt = f"""Generate 2 distinct, high-quality search keywords for a research report on "{query}".
-Each keyword MUST BE short, between 1 and 3 words max.
-Return ONLY a JSON list of strings."""
+    img_query_prompt = prompt_manager.get("deep_research.image_query", query=query)
     
     response = await async_generate_response([{"role": "user", "content": img_query_prompt}])
     content = response["message"]["content"]

@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.1.9] - 2026-01-03
+
+### Added
+- **Calendar Integration**:
+    - **New Calendar Tool**: Integrated a full GDBus-based calendar toolset, allowing the AI to add, remove, and list events directly from the GNOME Calendar.
+    - **Smart Event Listing**: The AI can now query events by date ranges and natural language descriptions.
+    - **Time Awareness**: The AI is now explicitly aware of the current system time to ensure accurate event scheduling.
+
+### Changed
+- **Refactoring**:
+    - **Chat Logic**: Massive refactor of `src/ui/chat/page.py` to externalize all hardcoded prompts into a centralized JSON file.
+    - **Prompt Manager**: Introduced `src/core/prompt_manager.py` to handle dynamic prompt injection and tool-specific guidelines.
+    - **Deep Research**: Externalized Deep Research prompts to `src/core/prompts/en.json`, unifying the prompt management system.
+
+
 ## [0.1.8] - 2026-01-03
 
 ### Changed
@@ -10,8 +25,6 @@ All notable changes to this project will be documented in this file.
     - **Refactored Scraping**: Unified Deep Research and Web Search tools to use a shared, high-quality scraping module based on `trafilatura` (with `BeautifulSoup` fallback).
     - **Clean Data Pipeline**: Deep Research now consumes raw scraped data directly, ensuring it receives clean text without the chat-formatted `[SOURCES]` tags.
     - **Async Writing**: Parallelized the AI writing phase of Deep Research. Subagents now extract facts and draft sections concurrently, significantly speeding up report generation.
-
-
 
 
 ## [0.1.7] - 2026-01-03

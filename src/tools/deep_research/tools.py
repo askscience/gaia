@@ -61,7 +61,7 @@ async def async_search_unsplash(query: str, access_key: str, max_results: int = 
 
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.get(url, params=params, timeout=10) as response:
+            async with session.get(url, params=params, timeout=SEARCH_TIMEOUT) as response:
                 if response.status == 200:
                     data = await response.json()
                     for item in data.get("results", []):
@@ -96,7 +96,7 @@ async def async_search_pexels(query: str, api_key: str, max_results: int = 5) ->
 
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.get(url, headers=headers, params=params, timeout=10) as response:
+            async with session.get(url, headers=headers, params=params, timeout=SEARCH_TIMEOUT) as response:
                 if response.status == 200:
                     data = await response.json()
                     for item in data.get("photos", []):

@@ -94,6 +94,10 @@ class SettingsWindow(Adw.PreferencesWindow):
         sorted_tool_names = sorted(self.tool_manager.tools.keys())
         
         for tool_name in sorted_tool_names:
+            # Skip individual calendar tools
+            if tool_name in ['calendar_add_event', 'calendar_remove_event', 'calendar_create', 'calendar_list_events', 'calendar_list_sources']:
+                continue
+
             tool = self.tool_manager.tools[tool_name]
             row = Adw.SwitchRow()
             # Format tool name: "file_editor" -> "File Editor"
@@ -111,6 +115,25 @@ class SettingsWindow(Adw.PreferencesWindow):
             # Use a lambda that captures the current tool_name
             row.connect("notify::active", lambda r, p, name=tool_name: self.on_tool_toggled(r, p, name))
             tools_group.add(row)
+
+        # Add Calendar Tools Master Toggle
+        cal_tools = ['calendar_add_event', 'calendar_remove_event', 'calendar_create', 'calendar_list_events', 'calendar_list_sources']
+        cal_row = Adw.SwitchRow()
+        cal_row.set_title("Calendar Integration")
+        cal_row.set_subtitle("Enable GNOME Calendar management tools")
+        
+        # Check if all are enabled (default True)
+        is_cal_active = all(enabled_tools.get(t, True) for t in cal_tools)
+        cal_row.set_active(is_cal_active)
+        cal_row.connect("notify::active", lambda r, p: self.on_calendar_group_toggled(r, cal_tools))
+        
+        # Insert at the top of tools group (or append, but top is nice)
+        # To insert at top we need to use insert_child_at_index or just add it first?
+        # AdwPreferencesGroup doesn't easily support index insert for rows? 
+        # Actually it does, but 'add' appends. Let's just append it.
+        # Wait, we filtered them out, so we need to add this row. 
+        # Let's add it at the start of the loop? No, just add it here.
+        tools_group.add(cal_row)
         
         # Shortcuts Group
         shortcut_group = Adw.PreferencesGroup()
@@ -333,3 +356,11 @@ class SettingsWindow(Adw.PreferencesWindow):
 
     def on_pexels_key_changed(self, entry):
         self.config.set("pexels_api_key", entry.get_text())
+
+    def on_calendar_group_toggled(self, row, tools_list):
+        """Handle toggle for the calendar tool group."""
+        enabled_map = self.config.get("enabled_tools", {}).copy()
+        is_active = row.get_active()
+        for t in tools_list:
+            enabled_map[t] = is_active
+        self.config.set("enabled_tools", enabled_map)

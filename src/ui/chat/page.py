@@ -15,6 +15,7 @@ from src.ui.components import SourceCard, ArtifactCard, ResearchCard
 from src.core.ai_client import AIClient
 from src.tools.manager import ToolManager
 from src.core.tool_call_parser import ToolCallParser
+from src.core.prompt_manager import PromptManager
 
 class ChatPage(Gtk.Box):
     """A single chat page containing the chat UI."""
@@ -26,6 +27,7 @@ class ChatPage(Gtk.Box):
         self.storage = storage
         self.history = chat_data.get('history', [])
         self.lazy_loading = lazy_loading
+        self.prompt_manager = PromptManager()
         
         self.loaded_messages = 0
         self.max_visible_messages = 100
@@ -496,60 +498,8 @@ class ChatPage(Gtk.Box):
         
         # Dynamically build system prompt based on enabled tools
         enabled_map = tm.config.get("enabled_tools", {})
-        def is_tool_enabled(name):
-            return enabled_map.get(name, True)
-
-        guidelines = []
         
-        # 1. WEB PROJECTS (web_builder)
-        if is_tool_enabled("web_builder"):
-            guidelines.append(
-                "- WEB PROJECTS: When creating a website, ALWAYS create or update the HTML, CSS, and JS files together in a SINGLE turn using the `web_builder` tool. Use the `files` array parameter to provide all necessary files."
-            )
-        else:
-            guidelines.append(
-                "- WEB PROJECTS: The `web_builder` tool is DISABLED. You cannot create or modify web projects. If the user asks, explain that this feature is disabled in settings."
-            )
-
-        # 2. TARGETED EDITS (file_editor / file_list / file_reader)
-        if is_tool_enabled("file_editor"):
-            guidelines.append(
-                "- TARGETED EDITS: For existing projects, prefer `file_editor` for specific changes. If unsure about the current files or their content, use `file_list` and `file_reader` first."
-            )
-            guidelines.append(
-                "- PROJECT STATE: Use `file_list` to see which files are currently in the project. Never assume a file exists if you haven't recently listed or read it."
-            )
-        else:
-             guidelines.append(
-                "- TARGETED EDITS: The `file_editor` tool is DISABLED. You cannot edit files. If asked, explain that this feature is disabled in settings."
-            )
-
-        # 3. Conciseness (Always enabled)
-        guidelines.append(
-            "- CONCISE SUMMARY: After you finish implementing changes or edits, provide a very concise summary (1-2 sentences) of what you did. This summary will be shown to the user."
-        )
-
-        # 4. WEB SEARCH (web_search)
-        if is_tool_enabled("web_search"):
-            guidelines.append(
-                "- WEB SEARCH: If you need information from the web, use the `web_search` tool exactly ONCE per request with `max_results=3`. "
-                "Call the tool IMMEDIATELY. Do NOT provide any conversational text (like 'Searching...') before calling the tool. "
-                "After the search completes, you MUST provide a detailed, discursive answer based on the results. Do NOT just list sources or say you found them."
-            )
-        else:
-            guidelines.append(
-                "- WEB SEARCH: The `web_search` tool is DISABLED. You cannot search the web. If the user asks for external information, apologize and explain that web search is disabled in settings."
-            )
-
-        system_prompt = (
-            "You are a professional web developer. "
-            "CRITICAL: When the user asks to build or modify something, you MUST first provide a detailed implementation plan wrapped in [PLAN] and [/PLAN] tags. "
-            "The plan should list the files you will create or modify and the technologies you will use. "
-            "DO NOT call any functional tools in the same turn you propose a plan. "
-            "Wait for the user to approve the plan before implementing it.\n\n"
-            "EDITING AND BUILDING GUIDELINES:\n" + 
-            "\n".join(guidelines)
-        )
+        system_prompt = self.prompt_manager.get_system_prompt(enabled_map)
 
         messages = [{
             'role': 'system', 
