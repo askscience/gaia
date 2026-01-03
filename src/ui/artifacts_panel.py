@@ -258,7 +258,7 @@ class ArtifactsPanel(Gtk.Box):
             content = f"(Unable to read file: {e})"
             
         buffer = self.code_view.get_buffer()
-        buffer.set_text(content)
+        buffer.set_text(content, -1)
         
         if GtkSource:
             lang_manager = GtkSource.LanguageManager.get_default()
@@ -313,7 +313,7 @@ class ArtifactsPanel(Gtk.Box):
             self.web_view.load_uri("about:blank")
             
         # Clear Code View
-        self.code_view.get_buffer().set_text("")
+        self.code_view.get_buffer().set_text("", -1)
         
         # Show Placeholder
         self.stack.set_visible_child_name("placeholder")

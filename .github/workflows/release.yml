@@ -81,5 +81,7 @@ jobs:
           files: |
             dist/gaia
             *.deb
+            *.rpm
+            *.flatpak
 
           generate_release_notes: true

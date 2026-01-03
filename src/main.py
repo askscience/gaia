@@ -34,7 +34,16 @@ class GaiaApplication(Adw.Application):
         icon_theme.add_search_path(project_root)
 
         css_provider = Gtk.CssProvider()
-        css_path = os.path.join(current_dir, "ui", "css", "style.css")
+        
+        if getattr(sys, 'frozen', False):
+            # PyInstaller one-file bundle
+            base_path = sys._MEIPASS
+            # We bundled 'src' folder to 'src'
+            css_path = os.path.join(base_path, "src", "ui", "css", "style.css")
+        else:
+            # Development mode
+            css_path = os.path.join(current_dir, "ui", "css", "style.css")
+            
         try:
             css_provider.load_from_path(css_path)
             Gtk.StyleContext.add_provider_for_display(
