@@ -74,7 +74,7 @@ class MainWindow(Adw.ApplicationWindow):
         
         # Artifacts Toggle (right side)
         self.artifacts_button = Gtk.ToggleButton()
-        self.artifacts_button.set_icon_name("document-open-recent-symbolic")
+        self.artifacts_button.set_icon_name("sidebar-show-symbolic")
         self.artifacts_button.set_tooltip_text("Show Artifacts")
         self.artifacts_button.connect("toggled", self.on_artifacts_toggled)
         self.header_bar.pack_end(self.artifacts_button)

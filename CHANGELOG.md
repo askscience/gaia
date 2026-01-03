@@ -8,6 +8,9 @@ All notable changes to this project will be documented in this file.
 - **Stop Generation**: Users can now instantly stop the AI generation by clicking the stop button (formerly the send button).
     - The chat history silently records `[stopped by user]` so the AI is aware of the interruption in future turns without cluttering the UI.
 
+### Changed
+- **UI Polish**: Updated the Artifacts Panel toggle button icon to the standard `sidebar-show-symbolic` for better visual consistency with GNOME.
+
 
 ## [0.1.6] - 2026-01-03
 
