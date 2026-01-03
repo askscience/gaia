@@ -42,6 +42,10 @@ class ChatPage(Gtk.Box):
         self._save_pending = False
         self._save_timeout_id = None
         
+        # Generation State
+        self._is_generating = False
+        self._cancel_event = threading.Event()
+        
         # Chat Area
         self.scrolled = Gtk.ScrolledWindow()
         self.scrolled.set_vexpand(True)
@@ -193,14 +197,26 @@ class ChatPage(Gtk.Box):
         self.on_send_clicked(entry)
 
     def on_send_clicked(self, button):
+        if self._is_generating:
+            # Handle Stop
+            self._cancel_event.set()
+            self.send_button.set_sensitive(False) # Disable temporarily while stopping
+            return
+
         text = self.entry.get_text().strip()
         if not text:
             return
         
         self.entry.set_sensitive(False)
-        self.send_button.set_sensitive(False)
-        self.add_message("user", text)
         self.entry.set_text("")
+        
+        # Set Generating State
+        self._is_generating = True
+        self._cancel_event.clear()
+        self.send_button.set_icon_name("process-stop-symbolic")
+        self.send_button.set_tooltip_text("Stop Generation")
+        
+        self.add_message("user", text)
         
         def run_with_exception_handler():
             try:
@@ -214,8 +230,12 @@ class ChatPage(Gtk.Box):
         thread.start()
 
     def enable_ui(self):
+        self._is_generating = False
+        self._cancel_event.clear()
         self.entry.set_sensitive(True)
         self.send_button.set_sensitive(True)
+        self.send_button.set_icon_name("mail-send-symbolic")
+        self.send_button.set_tooltip_text("Send")
         self.entry.grab_focus()
 
     def add_message(self, role: str, text: str, metadata: dict = None, parsed_text: str = None):
@@ -535,6 +555,8 @@ class ChatPage(Gtk.Box):
         
         try:
             while turn < MAX_TURNS:
+                if self._cancel_event.is_set():
+                    break
                 turn += 1
                 if not has_shown_initial_ui:
                     GLib.idle_add(self.show_spinner)
@@ -544,8 +566,14 @@ class ChatPage(Gtk.Box):
                 last_update_time = 0
                 
                 try:
+                    # Check cancellation before stream
+                    if self._cancel_event.is_set():
+                        break
+
                     stream = client.stream_response(messages, tools=tools_def)
                     for chunk in stream:
+                        if self._cancel_event.is_set():
+                            break
                         msg_chunk = chunk.get('message', {})
                         content_chunk = msg_chunk.get('content', '')
                         if msg_chunk.get('tool_calls'):
@@ -695,6 +723,15 @@ class ChatPage(Gtk.Box):
                         current_metadata['plan'] = plan_text
                         GLib.idle_add(self.update_last_message_metadata, current_metadata)
                     GLib.idle_add(self._refresh_last_bubble_with_plan)
+
+            # Handle Cancellation / User Stop
+            if self._cancel_event.is_set():
+                print("[DEBUG] User stopped generation.")
+                # Mark history as stopped, but do NOT show in UI
+                if self.history and self.history[-1]['role'] == 'assistant':
+                    self.history[-1]['content'] += " [stopped by user]"
+                    self._schedule_save()
+                
         except Exception as e:
             GLib.idle_add(self.remove_spinner)
             GLib.idle_add(self._add_message_ui, "system", f"Error: {e}", False)

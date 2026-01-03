@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.7] - 2026-01-03
+
+### Added
+- **Stop Generation**: Users can now instantly stop the AI generation by clicking the stop button (formerly the send button).
+    - The chat history silently records `[stopped by user]` so the AI is aware of the interruption in future turns without cluttering the UI.
+
+
 ## [0.1.6] - 2026-01-03
 
 ### Fixed
