@@ -39,6 +39,10 @@ jobs:
             --add-data "src:src" \
             --add-data "data:data" \
             --hidden-import="gi" \
+            --hidden-import="duckduckgo_search" \
+            --hidden-import="ddgs" \
+            --hidden-import="trafilatura" \
+            --hidden-import="lxml" \
             src/main.py
 
       - name: Get version

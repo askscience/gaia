@@ -375,7 +375,8 @@ class ArtifactsPanel(Gtk.Box):
         dialog = Gtk.Dialog(title="Create App")
         dialog.set_transient_for(self.get_native())
         dialog.set_modal(True)
-        dialog.add_buttons("Cancel", Gtk.ResponseType.CANCEL, "Create", Gtk.ResponseType.OK)
+        dialog.add_button("Cancel", Gtk.ResponseType.CANCEL)
+        dialog.add_button("Create", Gtk.ResponseType.OK)
         
         content_area = dialog.get_content_area()
         content_area.set_spacing(12)
