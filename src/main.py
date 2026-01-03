@@ -17,7 +17,7 @@ from src.core.chat_storage import ChatStorage
 
 class GaiaApplication(Adw.Application):
     def __init__(self):
-        super().__init__(application_id='com.example.gaia',
+        super().__init__(application_id='com.askscience.gaia',
                          flags=0)
         self.storage = ChatStorage()
 
@@ -29,6 +29,10 @@ class GaiaApplication(Adw.Application):
         win.present()
 
     def load_css(self):
+        # Add project root to icon theme search path
+        icon_theme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default())
+        icon_theme.add_search_path(project_root)
+
         css_provider = Gtk.CssProvider()
         css_path = os.path.join(current_dir, "ui", "css", "style.css")
         try:

@@ -1,9 +1,0 @@
-[Desktop Entry]
-Name=Gaia
-Comment=AI Assistant for GNOME
-Exec=gaia
-Icon=com.example.gaia
-Terminal=false
-Type=Application
-Categories=Utility;GNOME;
-StartupNotify=true

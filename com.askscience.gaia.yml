@@ -1,0 +1,28 @@
+app-id: com.askscience.gaia
+runtime: org.gnome.Platform
+runtime-version: '46'
+sdk: org.gnome.Sdk
+command: gaia
+finish-args:
+  - --share=network
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --device=dri
+  - --filesystem=host
+modules:
+  - name: gaia
+    buildsystem: simple
+    build-commands:
+      - install -D gaia /app/bin/gaia
+      - install -D -m 644 role-data/com.askscience.gaia.desktop /app/share/applications/com.askscience.gaia.desktop
+      - install -D -m 644 role-icon.png /app/share/icons/hicolor/256x256/apps/com.askscience.gaia.png
+    sources:
+      - type: file
+        path: dist/gaia
+        dest-filename: gaia
+      - type: file
+        path: data/com.askscience.gaia.desktop
+        dest-filename: role-data/com.askscience.gaia.desktop
+      - type: file
+        path: icon.png
+        dest-filename: role-icon.png

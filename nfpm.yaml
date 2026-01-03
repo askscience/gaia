@@ -1,0 +1,39 @@
+name: "gaia"
+arch: "amd64"
+platform: "linux"
+version: "${VERSION}"
+release: "1"
+section: "utils"
+priority: "optional"
+maintainer: "Askscience <maintainer@example.com>"
+description: |
+  Your personal AI companion, built for GNOME.
+  Gaia is a fast, beautiful, and private AI assistant that lives on your Linux desktop.
+vendor: "Askscience"
+homepage: "https://github.com/askscience/gaia"
+license: "GPL-3.0"
+contents:
+  - src: "dist/gaia"
+    dst: "/usr/bin/gaia"
+  - src: "data/com.askscience.gaia.desktop"
+    dst: "/usr/share/applications/com.askscience.gaia.desktop"
+  - src: "icon.png"
+    dst: "/usr/share/icons/hicolor/256x256/apps/com.askscience.gaia.png"
+
+overrides:
+  deb:
+    depends:
+      - libgtk-4-1
+      - libadwaita-1-0
+      - gir1.2-gtk-4.0
+      - gir1.2-adw-1
+      - python3
+      - python3-gi
+      - python3-cairo
+  rpm:
+    depends:
+      - gtk4
+      - libadwaita
+      - python3
+      - python3-gobject
+      - python3-cairo

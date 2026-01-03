@@ -23,3 +23,9 @@ Thumbs.db
 artifacts/
 data/
 .gaia/
+
+# Build Artifacts
+build/
+dist/
+*.spec
+*.egg-info

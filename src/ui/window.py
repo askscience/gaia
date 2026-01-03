@@ -16,6 +16,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         self.set_title("Gaia")
         self.set_default_size(800, 600)
+        self.set_icon_name("icon")
         
         self.storage = storage
         self.chat_pages = {}  # chat_id -> ChatPage
@@ -199,7 +200,7 @@ class MainWindow(Adw.ApplicationWindow):
         about = Adw.AboutWindow(
             transient_for=self,
             application_name="Gaia",
-            application_icon="com.example.gaia",
+            application_icon="icon",
             developer_name="Askscience",
             version="0.1.9",
             comments="Your personal AI companion, built for GNOME. Fast, beautiful, and private AI on your desktop.",

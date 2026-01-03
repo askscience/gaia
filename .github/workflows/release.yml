@@ -1,0 +1,71 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgirepository1.0-dev libcairo2-dev libgtk-4-dev libadwaita-1-dev
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build with PyInstaller
+        run: |
+          # Create onefile executable
+          # Adjust paths for data and source if needed, simplified here based on request
+          pyinstaller --name gaia --onefile --windowed --icon=icon.png \
+            --add-data "src:src" \
+            --add-data "data:data" \
+            --hidden-import="gi" \
+            src/main.py
+
+      - name: Get version
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+
+      - name: Build DEB and RPM packages
+        uses: burningalchemist/action-gh-nfpm@v1.2
+        with:
+          nfpm_config: nfpm.yaml
+        env:
+          VERSION: ${{ env.VERSION }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Flatpak
+        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          bundle: com.askscience.gaia.flatpak
+          manifest-path: com.askscience.gaia.yml
+          cache-key: flatpak-builder-${{ github.sha }}
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/gaia
+            *.deb
+            *.rpm
+            *.flatpak
+          generate_release_notes: true
