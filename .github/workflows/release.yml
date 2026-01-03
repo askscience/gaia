@@ -48,7 +48,7 @@ jobs:
       - name: Build DEB and RPM packages
         uses: burningalchemist/action-gh-nfpm@v1
         with:
-          nfpm_config: nfpm.yaml
+          config: nfpm.yaml
         env:
           VERSION: ${{ env.VERSION }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
