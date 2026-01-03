@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.6] - 2026-01-03
+
+### Fixed
+- **Settings UI**: Improved "Tools" section with nicely formatted names (e.g., "File Editor" instead of `file_editor`) and full, untruncated descriptions.
+- **Deep Research Citations**: Resolved an issue where redundant citation numbers (e.g., `[1] [2]...`) appeared before the references section.
+- **Deep Research Logging**: Fixed a double-print issue in the Global Planning debug output.
+- **AI File Discoverability**:
+    - Updated `file_list` tool to search recursively, allowing the AI to see artifacts in subfolders.
+    - Improved Deep Research notifications to provide relative file paths, enabling the AI to correct edit reports.
+
 ## [0.1.5] - 2026-01-02
 
 ### Fixed

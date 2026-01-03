@@ -96,13 +96,13 @@ class SettingsWindow(Adw.PreferencesWindow):
         for tool_name in sorted_tool_names:
             tool = self.tool_manager.tools[tool_name]
             row = Adw.SwitchRow()
-            row.set_title(tool.name)
+            # Format tool name: "file_editor" -> "File Editor"
+            display_name = tool.name.replace("_", " ").title()
+            row.set_title(display_name)
+            
             if hasattr(tool, 'description'):
-                # Truncate description if too long
-                desc = tool.description
-                if len(desc) > 80:
-                    desc = desc[:77] + "..."
-                row.set_subtitle(desc)
+                # show full description
+                row.set_subtitle(tool.description)
             
             # Default to True (Active) if not in config
             is_active = enabled_tools.get(tool_name, True)

@@ -32,15 +32,20 @@ class FileListTool(BaseTool):
         
         try:
             files = []
-            for item in os.listdir(artifacts_dir):
-                item_path = os.path.join(artifacts_dir, item)
-                if os.path.isfile(item_path):
-                    size = os.path.getsize(item_path)
-                    files.append(f"  - {item} ({size} bytes)")
+            for root, dirs, filenames in os.walk(artifacts_dir):
+                for filename in filenames:
+                    # Calculate relative path from artifacts_dir
+                    full_path = os.path.join(root, filename)
+                    rel_path = os.path.relpath(full_path, artifacts_dir)
+                    
+                    size = os.path.getsize(full_path)
+                    files.append(f"  - {rel_path} ({size} bytes)")
             
             if not files:
                 return "No files in project directory."
             
+            # Sort for consistent output
+            files.sort()
             return f"Files in project:\n" + "\n".join(files)
             
         except Exception as e:

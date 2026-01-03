@@ -161,10 +161,21 @@ class BackgroundResearchManager:
     def _trigger_ui_open(self, artifact_data, query, chat_id):
         """Find the main window and tell it to show the artifact."""
         try:
+            # Calculate relative path for the AI (make it easier to file_editor)
+            # path is: ~/.gaia/artifacts/{project_id}/...
+            # We want relative to artifact root for that project
+            import os
+            from src.core.config import get_artifacts_dir
+            project_artifacts = os.path.join(get_artifacts_dir(), chat_id)
+            try:
+                rel_path = os.path.relpath(artifact_data['path'], project_artifacts)
+            except:
+                 rel_path = artifact_data['filename'] # Fallback
+            
             # 1. Notify user of completion exactly when we open the artifact
             success_notification = Notify.Notification.new(
                 "Deep Research Complete!",
-                f"Report on '{query}' is ready in the Artifact Panel.",
+                f"Report on '{query}' is ready in the Artifact Panel.\nPath: {rel_path}",
                 "emblem-documents-symbolic" # Documentation icon
             )
             success_notification.set_hint("desktop-entry", GLib.Variant.new_string("com.example.gaia"))

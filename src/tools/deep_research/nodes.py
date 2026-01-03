@@ -20,7 +20,7 @@ async def global_planner(state: AgentState) -> Dict[str, Any]:
     if state["graph"].cancelled: return {}
     
     print(f"--- Global Planning: {query} ---")
-    print(f"--- Global Planning: {query} ---")
+
     outline_prompt = f"""Create a detailed, comprehensive research outline for the report: "{query}".
     The outline should contain {OUTLINE_STEPS()} logical sections.
     Return ONLY a JSON list of strings (the section titles).
@@ -215,13 +215,13 @@ async def synthesizer_node(state: AgentState) -> Dict[str, Any]:
     
     # Append sources at the end
     # Note: Header "Sources" is added by the HTML template
-    final_report += "\n\n"
-    seen_urls = set()
-    source_count = 1
-    for note in notes:
-        if note.url not in seen_urls:
-            final_report += f"[{source_count}] [{note.title}]({note.url})\n"
-            seen_urls.add(note.url)
-            source_count += 1
+    # final_report += "\n\n"
+    # seen_urls = set()
+    # source_count = 1
+    # for note in notes:
+    #     if note.url not in seen_urls:
+    #         final_report += f"[{source_count}] [{note.title}]({note.url})\n"
+    #         seen_urls.add(note.url)
+    #         source_count += 1
         
     return {"report": final_report, "final_images": images}
