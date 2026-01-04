@@ -19,6 +19,12 @@ class ConfigManager:
         "dr_outline_steps": 5,
         "dr_search_breadth": 3,
         "dr_max_scrape_length": 5000,
+        "scrape_settings": {
+            "min_extracted_size": 250,
+            "min_output_size": 1,
+            "min_extracted_comm_size": 1,
+            "extraction_timeout": 0
+        },
         "enabled_tools": {}  # Tool name -> boolean. Missing means enabled.
     }
 
