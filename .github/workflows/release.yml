@@ -40,7 +40,6 @@ jobs:
             --add-data "data:data" \
             --hidden-import="gi" \
             --hidden-import="ddgs" \
-
             --hidden-import="trafilatura" \
             --hidden-import="lxml" \
             --hidden-import="certifi" \
