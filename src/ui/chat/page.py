@@ -643,7 +643,7 @@ class ChatPage(Gtk.Box):
                                         GLib.idle_add(root.show_artifacts)
                             except: pass
                         messages.append({'role': 'tool', 'tool_call_id': tool_call.get('id', f"call_{fname}_{id(tool_call)}"), 'content': str(result)})
-                        print(f"[DEBUG] Tool {fname} returned: {str(result)[:100]}...")
+                        print(f"[DEBUG] Tool {fname} returned: {str(result)}")
                     except Exception as te:
                         error_msg = f"Error executing tool {tool_call.get('function', {}).get('name', 'unknown')}: {str(te)}"
                         print(f"[DEBUG] {error_msg}")
