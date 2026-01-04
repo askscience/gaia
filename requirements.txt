@@ -11,4 +11,6 @@ google-genai
 aiohttp
 trafilatura
 markdown
+PySocks
+httpx-socks
 

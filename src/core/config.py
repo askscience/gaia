@@ -25,7 +25,9 @@ class ConfigManager:
             "min_extracted_comm_size": 1,
             "extraction_timeout": 0
         },
-        "enabled_tools": {}  # Tool name -> boolean. Missing means enabled.
+        "enabled_tools": {},  # Tool name -> boolean. Missing means enabled.
+        "proxy_enabled": False,
+        "proxy_url": ""
     }
 
     def __new__(cls):

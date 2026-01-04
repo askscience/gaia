@@ -9,10 +9,14 @@ from gi.repository import Gtk, Adw, Gio, GLib, Gdk
 from src.core.chat_storage import ChatStorage
 from src.ui.artifacts_panel import ArtifactsPanel
 from src.ui.chat.page import ChatPage
+from src.core.network.proxy import apply_proxy_settings # Proxy support
 
 class MainWindow(Adw.ApplicationWindow):
     def __init__(self, storage: ChatStorage, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        
+        # Apply global network settings on startup
+        apply_proxy_settings()
 
         self.set_title("Gaia")
         self.set_default_size(800, 600)
@@ -202,7 +206,7 @@ class MainWindow(Adw.ApplicationWindow):
             application_name="Gaia",
             application_icon="com.askscience.gaia",
             developer_name="Askscience",
-            version="0.1.9",
+            version="0.2.0",
             comments="Your personal AI companion, built for GNOME. Fast, beautiful, and private AI on your desktop.",
             copyright="© 2025 Askscience",
             website="https://github.com/askscience/gaia",

@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.2.0] - 2026-01-04
+
+### Added
+- **Global Proxy Support**:
+    - Users can now configure a system-wide proxy via the Settings panel.
+    - Improved support for SOCKS5 proxies, ensuring robust connections for advanced network configurations.
+    - Added auto-correction logic to handle common proxy URL formatting issues transparently.
+- **Centralized Status Manager**:
+    - Introduced a unified `StatusManager` to broadcast real-time tool execution status to the UI.
+    - Improved developer experience with automatic status callback injection via `ToolManager`.
+
+### Fixed
+- **Connection Reliability**: Resolved connection errors by ensuring all dependencies for SOCKS proxies (PySocks, httpx-socks) are properly handled.
+
 ## [0.1.9] - 2026-01-03
 
 ### Added

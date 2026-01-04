@@ -5,6 +5,7 @@ from gi.repository import Gtk, Adw
 from src.core.config import ConfigManager
 from src.core.ai_client import AIClient
 from src.tools.manager import ToolManager
+from src.core.network.proxy import apply_proxy_settings
 
 class SettingsWindow(Adw.PreferencesWindow):
     def __init__(self, parent=None):
@@ -18,6 +19,39 @@ class SettingsWindow(Adw.PreferencesWindow):
         page.set_title("General")
         page.set_icon_name("preferences-system-symbolic")
         self.add(page)
+
+        # Network Group
+        net_group = Adw.PreferencesGroup()
+        net_group.set_title("Network")
+        net_group.set_description("Configure global network settings.")
+        page.add(net_group)
+
+        # Proxy Toggle
+        self.proxy_row = Adw.SwitchRow()
+        self.proxy_row.set_title("Enable Proxy")
+        self.proxy_row.set_subtitle("Route traffic through a custom proxy")
+        self.proxy_row.set_active(self.config.get("proxy_enabled", False))
+        self.proxy_row.connect("notify::active", self.on_proxy_toggled)
+        net_group.add(self.proxy_row)
+
+        # Proxy URL
+        self.proxy_url_row = Adw.EntryRow()
+        self.proxy_url_row.set_title("Proxy URL")
+        self.proxy_url_row.set_text(self.config.get("proxy_url", ""))
+        self.proxy_url_row.connect("apply", self.on_proxy_url_changed) # Apply on Enter
+        self.proxy_url_row.connect("entry-activated", self.on_proxy_url_changed)
+        
+        # Debounce/Save on focus out could be better, but 'changed' is too aggressive for applying network settings 
+        # that might break connections immediately. Let's use 'changed' but just save config, apply happens there?
+        # Actually for EntryRow 'changed' is fine if we just update config. 
+        # Only apply when toggled or maybe explicitly?
+        # Let's use 'changed' to save config, and apply on every change? might be spammy.
+        # Ideally apply only when valid. For now, let's use 'changed' to save.
+        self.proxy_url_row.connect("changed", self.on_proxy_url_changed)
+        
+        net_group.add(self.proxy_url_row)
+        
+        self._update_proxy_visibility()
 
         # AI Group
         ai_group = Adw.PreferencesGroup()
@@ -401,3 +435,17 @@ class SettingsWindow(Adw.PreferencesWindow):
         for t in tools_list:
             enabled_map[t] = is_active
         self.config.set("enabled_tools", enabled_map)
+
+    def on_proxy_toggled(self, row, pspec):
+        self.config.set("proxy_enabled", row.get_active())
+        apply_proxy_settings()
+        self._update_proxy_visibility()
+
+    def on_proxy_url_changed(self, entry):
+        self.config.set("proxy_url", entry.get_text())
+        if self.proxy_row.get_active():
+            apply_proxy_settings()
+
+    def _update_proxy_visibility(self):
+        self.proxy_url_row.set_sensitive(self.proxy_row.get_active())
+
