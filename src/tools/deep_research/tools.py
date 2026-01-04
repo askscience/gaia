@@ -9,14 +9,27 @@ from src.tools.web_search.search import search
 from src.tools.web_search.scraper import scrape_url
 from src.tools.deep_research.config import SEARCH_TIMEOUT, SCRAPE_TIMEOUT, MAX_SCRAPE_LENGTH
 
-async def async_search(query: str, max_results: int = 3) -> List[Dict[str, str]]:
     """
     Async wrapper for the DuckDuckGo search.
     Since ddgs is synchronous, we run it in a thread pool.
+    We use a semaphore to limit concurrency and avoid 429 errors.
     """
-    loop = asyncio.get_event_loop()
-    # Using run_in_executor to avoid blocking the event loop
-    return await loop.run_in_executor(None, search, query, max_results)
+    from src.tools.deep_research.config import MAX_CONCURRENT_SEARCHES
+    
+    # Static semaphore to reuse across calls
+    if not hasattr(async_search, "_semaphore"):
+        async_search._semaphore = asyncio.Semaphore(MAX_CONCURRENT_SEARCHES)
+
+    async with async_search._semaphore:
+        loop = asyncio.get_event_loop()
+        try:
+            # Add a small random delay to further spread out requests
+            import random
+            await asyncio.sleep(random.uniform(0.5, 1.5))
+            return await loop.run_in_executor(None, search, query, max_results)
+        except Exception as e:
+            print(f"Search error (likely rate limit): {e}")
+            return []
 
 async def async_scrape(url: str) -> Dict[str, Optional[str]]:
     """

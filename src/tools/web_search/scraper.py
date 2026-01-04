@@ -69,36 +69,37 @@ def scrape_url(url: str, max_length: int = 3000, timeout: int = 10) -> dict:
         
         # Try trafilatura first for high-quality extraction
         try:
-            import trafilatura
-            from trafilatura.settings import use_config
-            from src.core.config import ConfigManager
-            
-            # Load settings from app config (JSON-based)
-            app_config = ConfigManager()
-            scrape_settings = app_config.get("scrape_settings", {})
-            
-            # Create Trafilatura config programmatically
-            traf_config = use_config()
-            # Set defaults or user-provided values
-            traf_config.set("DEFAULT", "min_extracted_size", str(scrape_settings.get("min_extracted_size", 250)))
-            traf_config.set("DEFAULT", "min_output_size", str(scrape_settings.get("min_output_size", 1)))
-            traf_config.set("DEFAULT", "min_extracted_comm_size", str(scrape_settings.get("min_extracted_comm_size", 1)))
-            traf_config.set("DEFAULT", "extraction_timeout", str(scrape_settings.get("extraction_timeout", 0)))
+            try:
+                import trafilatura
+                import configparser
+                from src.core.config import ConfigManager
+                
+                # Load settings from app config (JSON-based)
+                app_config = ConfigManager()
+                scrape_settings = app_config.get("scrape_settings", {})
+                
+                # Create Trafilatura config MANUALLY to avoid reading missing default files
+                traf_config = configparser.ConfigParser()
+                traf_config.add_section("DEFAULT")
+                
+                # Set defaults or user-provided values
+                traf_config.set("DEFAULT", "min_extracted_size", str(scrape_settings.get("min_extracted_size", 250)))
+                traf_config.set("DEFAULT", "min_output_size", str(scrape_settings.get("min_output_size", 1)))
+                traf_config.set("DEFAULT", "min_extracted_comm_size", str(scrape_settings.get("min_extracted_comm_size", 1)))
+                traf_config.set("DEFAULT", "extraction_timeout", str(scrape_settings.get("extraction_timeout", 0)))
 
-            # valid_result=True ensures we don't get empty strings if uncertain
-            trafilatura_content = trafilatura.extract(
-                response.content, 
-                include_comments=False,
-                config=traf_config
-            )
-            if trafilatura_content:
-                if len(trafilatura_content) > max_length:
-                    trafilatura_content = trafilatura_content[:max_length] + "..."
-                result["content"] = trafilatura_content
-        except ImportError:
-            pass
-        except Exception as e:
-            print(f"Trafilatura extraction failed: {e}")
+                # valid_result=True ensures we don't get empty strings if uncertain
+                trafilatura_content = trafilatura.extract(
+                    response.content, 
+                    include_comments=False,
+                    config=traf_config
+                )
+                if trafilatura_content:
+                    if len(trafilatura_content) > max_length:
+                        trafilatura_content = trafilatura_content[:max_length] + "..."
+                    result["content"] = trafilatura_content
+            except Exception as e:
+                print(f"Trafilatura extraction failed: {e}")
 
         soup = BeautifulSoup(response.content, "lxml")
         

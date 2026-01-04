@@ -218,6 +218,37 @@ class SettingsWindow(Adw.PreferencesWindow):
         self.search_breadth_row.add_suffix(self.breadth_spin)
         dr_group.add(self.search_breadth_row)
 
+        # Scrape Settings Group
+        scrape_group = Adw.PreferencesGroup()
+        scrape_group.set_title("Scraping Configuration")
+        scrape_group.set_description("Advanced settings for content extraction (Trafilatura).")
+        dr_page.add(scrape_group)
+
+        # Min Extracted Size
+        self.min_size_row = Adw.ActionRow()
+        self.min_size_row.set_title("Min Extracted Size")
+        self.min_size_row.set_subtitle("Minimum size of extracted text blocks")
+        
+        current_scrape = self.config.get("scrape_settings", {})
+        min_size_adj = Gtk.Adjustment.new(current_scrape.get("min_extracted_size", 250), 0, 1000, 10, 50, 0)
+        self.min_size_spin = Gtk.SpinButton.new(min_size_adj, 1, 0)
+        self.min_size_spin.set_valign(Gtk.Align.CENTER)
+        self.min_size_spin.connect("value-changed", self.on_scrape_setting_changed, "min_extracted_size")
+        self.min_size_row.add_suffix(self.min_size_spin)
+        scrape_group.add(self.min_size_row)
+
+        # Min Output Size
+        self.min_out_row = Adw.ActionRow()
+        self.min_out_row.set_title("Min Output Size")
+        self.min_out_row.set_subtitle("Minimum total size of extracted content")
+        
+        min_out_adj = Gtk.Adjustment.new(current_scrape.get("min_output_size", 1), 0, 1000, 10, 50, 0)
+        self.min_out_spin = Gtk.SpinButton.new(min_out_adj, 1, 0)
+        self.min_out_spin.set_valign(Gtk.Align.CENTER)
+        self.min_out_spin.connect("value-changed", self.on_scrape_setting_changed, "min_output_size")
+        self.min_out_row.add_suffix(self.min_out_spin)
+        scrape_group.add(self.min_out_row)
+
         # Image Search APIs Group
         img_group = Adw.PreferencesGroup()
         img_group.set_title("Image Search APIs")
@@ -350,6 +381,12 @@ class SettingsWindow(Adw.PreferencesWindow):
 
     def on_search_breadth_changed(self, spin):
         self.config.set("dr_search_breadth", int(spin.get_value()))
+
+    def on_scrape_setting_changed(self, spin, key):
+        """Update a specific key in the scrape_settings dictionary."""
+        current_settings = self.config.get("scrape_settings", {}).copy()
+        current_settings[key] = int(spin.get_value())
+        self.config.set("scrape_settings", current_settings)
 
     def on_unsplash_key_changed(self, entry):
         self.config.set("unsplash_access_key", entry.get_text())

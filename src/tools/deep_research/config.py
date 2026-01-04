@@ -28,5 +28,7 @@ def PEXELS_KEY():
 TEMPERATURE = 0.2
 
 # API Timeouts
+# API Timeouts
 SEARCH_TIMEOUT = 10
 SCRAPE_TIMEOUT = 15
+MAX_CONCURRENT_SEARCHES = 2  # Conservative limit to avoid DDGS 429 errors
