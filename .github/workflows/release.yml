@@ -43,6 +43,7 @@ jobs:
             --hidden-import="ddgs" \
             --hidden-import="trafilatura" \
             --hidden-import="lxml" \
+            --hidden-import="certifi" \
             src/main.py
 
       - name: Get version

@@ -40,8 +40,10 @@ class WebSearchTool(BaseTool):
         try:
             # 1. Search
             results = search(query, max_results=max_results)
-            if not results or results[0].get("title") == "Error":
-                return "No search results found or error occurred."
+            if not results:
+                return "No search results found."
+            if results[0].get("title") == "Error":
+                return f"Search Error: {results[0].get('snippet')}"
 
             # 2. Scrape & Build context
             sources = []
