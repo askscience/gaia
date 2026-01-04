@@ -81,11 +81,17 @@ class SettingsWindow(Adw.PreferencesWindow):
         self._update_visibility()
         self._refresh_models()
         
+        # Tools Page
+        tools_page = Adw.PreferencesPage()
+        tools_page.set_title("Tools")
+        tools_page.set_icon_name("applications-utilities-symbolic")
+        self.add(tools_page)
+        
         # Tools Group
         tools_group = Adw.PreferencesGroup()
-        tools_group.set_title("Tools")
+        tools_group.set_title("Enabled Tools")
         tools_group.set_description("Enable or disable specific AI tools.")
-        page.add(tools_group)
+        tools_page.add(tools_group)
 
         # Dynamically load tools and add toggles
         self.tool_manager = ToolManager()

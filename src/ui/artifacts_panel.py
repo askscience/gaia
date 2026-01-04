@@ -120,7 +120,13 @@ class ArtifactsPanel(Gtk.Box):
             self.web_view.set_vexpand(True)
             self.web_view.set_hexpand(True)
             self.preview_box.append(self.web_view)
-            print("[DEBUG ArtifactsPanel] WebView created and added to preview_box")
+            
+            # Setup Bridge
+            from src.ui.preview.manager import PreviewManager
+            self.preview_manager = PreviewManager()
+            self.preview_manager.setup_bridge(self.web_view)
+            
+            print("[DEBUG ArtifactsPanel] WebView created and Bridge successfully hooked.")
         else:
             label = Gtk.Label(label="WebKit (Web Preview) not available")
             label.add_css_class("dim-label")
@@ -136,11 +142,15 @@ class ArtifactsPanel(Gtk.Box):
         self.stack.add_named(self.placeholder, "placeholder")
         
         self.stack.set_visible_child_name("placeholder")
-        
+
     def load_project(self, folder_path: str, is_research: bool = False):
         """Load a web project from a folder path."""
         if not os.path.exists(folder_path):
             return
+
+        # Start logging for this project
+        if hasattr(self, 'preview_manager'):
+            self.preview_manager.start_logging(folder_path)
 
         # Auto-detect research mode from path if not explicitly set
         if not is_research and "deepresearch" in folder_path:

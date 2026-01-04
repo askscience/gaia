@@ -3,7 +3,7 @@ import os
 import httpx
 from src.core.config import ConfigManager
 
-def get_httpx_client(timeout=60.0):
+def get_httpx_client(timeout=300.0):
     """
     Creates an httpx.Client configured with the global proxy settings.
     Handles SOCKS proxies via httpx_socks if needed.
@@ -41,7 +41,7 @@ def get_httpx_client(timeout=60.0):
         # Standard HTTP/HTTPS proxy
         return httpx.Client(proxy=proxy_url, timeout=timeout)
 
-def get_async_httpx_client(timeout=60.0):
+def get_async_httpx_client(timeout=300.0):
     """
     Creates an httpx.AsyncClient with proxy support.
     """

@@ -17,6 +17,8 @@ contents:
     dst: "/usr/bin/gaia"
   - src: "data/com.askscience.gaia.desktop"
     dst: "/usr/share/applications/com.askscience.gaia.desktop"
+  - src: "data/com.askscience.gaia.metainfo.xml"
+    dst: "/usr/share/metainfo/com.askscience.gaia.metainfo.xml"
   - src: "icon.png"
     dst: "/usr/share/icons/hicolor/512x512/apps/com.askscience.gaia.png"
 

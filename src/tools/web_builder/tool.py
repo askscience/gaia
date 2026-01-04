@@ -10,7 +10,7 @@ class WebBuilderTool(BaseTool):
 
     @property
     def description(self) -> str:
-        return "MANDATORY: Use this tool to create ANY file (HTML, CSS, JS). Do NOT print code in chat, always save it using this tool."
+        return "MANDATORY: Use this tool to create ANY file (HTML, CSS, JS). Do NOT print code in chat. After building, use the 'web_console' tool to debug runtime errors."
 
     @property
     def parameters(self) -> dict:

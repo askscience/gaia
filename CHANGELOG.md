@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.2.2] - 2026-01-04
+
+### Added
+- **Self-Healing Web Preview**:
+    - **Web Console Tool**: New AI tool (`web_console`) allows Gaia to read browser logs and fix runtime errors in generated web applications.
+    - **Silent Logging**: The Artifacts Panel now silently captures `window.onerror` and `console.error` events to a `console.json` file, enabling "agentic" debugging without cluttering the UI.
+    - **Opaque Error Handling**: Improved handling of generic "Script error." messages caused by local file security policies.
+
 ## [0.2.1] - 2026-01-04
 
 ### Added
