@@ -3,11 +3,16 @@ DuckDuckGo search module.
 Handles web search queries and returns structured results.
 """
 
-try:
-    from ddgs import DDGS
-except ImportError:
-    from duckduckgo_search import DDGS
+import os
+import sys
+import certifi
+from ddgs import DDGS
 from typing import List, Dict, Optional
+import traceback
+
+# Force SSL cert file for frozen apps (curl_cffi/requests needs this)
+os.environ["SSL_CERT_FILE"] = certifi.where()
+os.environ["REQUESTS_CA_BUNDLE"] = certifi.where()
 
 
 def search(query: str, max_results: int = 3) -> List[Dict[str, str]]:
@@ -38,7 +43,9 @@ def search(query: str, max_results: int = 3) -> List[Dict[str, str]]:
         return results
         
     except Exception as e:
-        return [{"title": "Error", "url": "", "snippet": f"Search failed: {str(e)}"}]
+        # Capture full traceback for debugging frozen app
+        tb = traceback.format_exc()
+        return [{"title": "Error", "url": "", "snippet": f"Search failed: {str(e)} | Type: {type(e).__name__} | Traceback: {tb}"}]
 
 
 def search_news(query: str, max_results: int = 3) -> List[Dict[str, str]]:

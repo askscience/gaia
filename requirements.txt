@@ -1,7 +1,7 @@
 PyGObject==3.48.2
 ollama
-duckduckgo-search
 ddgs
+
 beautifulsoup4
 requests
 lxml
