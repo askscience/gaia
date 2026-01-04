@@ -40,6 +40,9 @@ jobs:
             --add-data "data:data" \
             --hidden-import="gi" \
             --hidden-import="ddgs" \
+            --collect-all="ddgs" \
+            --collect-all="primp" \
+            --collect-all="fake_useragent" \
             --hidden-import="trafilatura" \
             --hidden-import="lxml" \
             --hidden-import="certifi" \
