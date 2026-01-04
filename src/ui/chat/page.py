@@ -37,6 +37,11 @@ class ChatPage(Gtk.Box):
         self._markdown_cache_order = []
         self._deferred_sources_artifacts = []  # Store sources/artifacts to add later
         
+        # Subscribe to centralized status updates
+        from src.core.status.manager import StatusManager, TOOL_STATUS_UPDATE
+        self.status_manager = StatusManager()
+        self.status_handler_id = self.status_manager.connect(TOOL_STATUS_UPDATE, self._on_tool_status_update)
+
         # Watch for tab changes to clean up resources
         self.connect("unmap", self._on_unmap)
         
@@ -162,7 +167,17 @@ class ChatPage(Gtk.Box):
         self._deferred_sources_artifacts.clear()
         return False
     
+    def _on_tool_status_update(self, manager, project_id, message):
+        """Handle centralized status updates."""
+        # Only update if this page corresponds to the project_id
+        if project_id == self.chat_data.get("id"):
+            GLib.idle_add(self.show_spinner, message)
+
     def _on_unmap(self, widget):
+        if self.status_handler_id:
+            self.status_manager.disconnect(self.status_handler_id)
+            self.status_handler_id = None
+            
         if self._save_timeout_id:
             GLib.source_remove(self._save_timeout_id)
             self._save_timeout_id = None
@@ -595,34 +610,29 @@ class ChatPage(Gtk.Box):
                         fname = tool_call['function']['name']
                         args = tool_call['function']['arguments']
                         
-                        # Dynamic Status Update
-                        status_text = "Thinking..."
-                        if fname == "web_search":
-                            status_text = f"Surfing web: {args.get('query', '...')[:30]}..."
-                        elif fname == "file_reader":
-                            status_text = f"Reading {args.get('filename', 'file')}..."
-                        elif fname == "file_editor":
-                            status_text = f"Editing {args.get('filename', 'file')}..."
-                        elif fname == "web_builder":
-                            files = args.get('files', [])
-                            fnames = [f.get('filename') for f in files if f.get('filename')]
-                            if fnames:
-                                status_text = f"Creating {', '.join(fnames[:2])}{'...' if len(fnames) > 2 else ''}"
-                            else:
-                                status_text = "Creating files..."
-                        elif fname == "file_list":
-                            status_text = "Listing project files..."
-                        
-                        GLib.idle_add(self.show_spinner, status_text)
-
-                        if fname in ["web_builder", "file_reader", "file_editor", "file_list", "deep_research"]:
-                            args["project_id"] = self.chat_data["id"]
-                        
-                        def update_status(text):
-                            GLib.idle_add(self.show_spinner, text)
+                        # Dynamic Status Update via StatusManager
+                        # The tool execution wrapper in ToolManager now handles calling StatusManager
+                        # We just need to make sure we are listening to signals.
+                        # (Note: Listener is set up in __init__ now)
                         
                         print(f"[DEBUG] Executing tool {fname} with args: {args}")
-                        result = tm.execute_tool(fname, status_callback=update_status, **args)
+                        # We don't need to pass a local lambda anymore if ToolManager handles it,
+                        # BUT ToolManager passes a wrapper that calls StatusManager.
+                        # So we can pass None or just let it do its thing.
+                        # Actually, ToolManager expects us to NOT pass it unless we want extra local handling.
+                        # We'll rely on the signal.
+                        
+                        # We'll rely on the signal.
+                        
+                        # Fix for "multiple values for keyword argument 'project_id'"
+                        # We force the project_id from the chat_data to be the authority
+                        project_id = self.chat_data["id"]
+                        
+                        # Remove project_id from args if it exists to avoid double passing
+                        if "project_id" in args:
+                            del args["project_id"]
+                        
+                        result = tm.execute_tool(fname, project_id=project_id, **args)
                         
                         sources_matches = re.finditer(r'\[SOURCES\](.*?)\[/SOURCES\]', str(result), re.DOTALL)
                         for match in sources_matches:

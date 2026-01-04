@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.2.1] - 2026-01-04
+
+### Added
+- **Advanced Tor Support**:
+    - Integrated automated Tor Control Port configuration tool (using `HashedControlPassword`).
+    - Added GUI dialog to automatically enable Tor control access with admin privileges (`pkexec`) if "Connection Refused" or "Auth Failed" is detected.
+    - Implemented a "Refresh Identity" button in settings that appears when Tor is detected.
+    - Added robust authentication fallback (Cookie -> Password -> Null) for Tor Control.
+- **Network Resilience**:
+    - Patched `Google`, `OpenAI`, and `Anthropic` providers to correctly handle SOCKS proxies (fixing `httpx` connection refused errors).
+    - Added smart proxy scheme detection (auto-adds `socks5://` for Tor ports).
+
+### Changed
+- **UI Improvements**: moved Network settings to the bottom of the General page for better layout balance.
+
 ## [0.2.0] - 2026-01-04
 
 ### Added

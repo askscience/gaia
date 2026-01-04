@@ -54,9 +54,21 @@ class ToolManager:
             tool = self.tools[tool_name]
             sig = inspect.signature(tool.execute)
             
-            # Only pass status_callback if the tool's execute method handles it
-            if status_callback and "status_callback" in sig.parameters:
-                kwargs["status_callback"] = status_callback
+            # Prepare status callback wrapper
+            from src.core.status.manager import StatusManager
+            
+            project_id = kwargs.get("project_id", "unknown")
+            
+            def report_status(message):
+                # 1. Emit via centralized manager
+                StatusManager().emit_status(project_id, message)
+                # 2. Call legacy callback if provided
+                if status_callback:
+                    status_callback(message)
+
+            # Pass our wrapper if the tool accepts 'status_callback'
+            if "status_callback" in sig.parameters:
+                kwargs["status_callback"] = report_status
                 
             return tool.execute(**kwargs)
         return f"Tool {tool_name} not found."

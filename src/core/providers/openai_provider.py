@@ -13,7 +13,11 @@ class OpenAIProvider(BaseProvider):
         if not self._client:
             if not self.api_key:
                 raise ValueError(f"API key for {self.base_url or 'OpenAI'} is missing.")
-            self._client = OpenAI(api_key=self.api_key, base_url=self.base_url)
+            
+            from src.core.network.http_client import get_httpx_client
+            client = get_httpx_client()
+            
+            self._client = OpenAI(api_key=self.api_key, base_url=self.base_url, http_client=client)
         return self._client
     
     def _sanitize_messages(self, messages):

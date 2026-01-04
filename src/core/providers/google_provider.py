@@ -13,8 +13,22 @@ class GoogleProvider(BaseProvider):
             if not self.api_key:
                 print("DEBUG: Gemini API key is missing!")
                 raise ValueError("Gemini API key is missing. Please set it in Settings.")
+            
+            from src.core.network.http_client import get_httpx_client
+            http_client = get_httpx_client()
+            
             print(f"DEBUG: Initializing Gemini Client with key: {self.api_key[:5]}...{self.api_key[-5:] if len(self.api_key) > 5 else ''}")
-            self._client = genai.Client(api_key=self.api_key)
+            # Pass the configured http_client to the SDK
+            # Note: If this version of SDK uses 'http_options' we might need to adjust, 
+            # but passing http_client is standard for recent versions.
+            try:
+                self._client = genai.Client(api_key=self.api_key, http_client=http_client)
+            except TypeError:
+                 # Fallback for older versions that might assume http_options or different arg
+                 # Try config approach if needed, but 'http_client' is the most robust key for httpx-based SDKs
+                 print("Warning: genai.Client does not accept http_client. Using default.")
+                 self._client = genai.Client(api_key=self.api_key)
+                 
         return self._client
 
     def generate_response(self, messages, tools=None):

@@ -36,8 +36,11 @@ class WebSearchTool(BaseTool):
             "required": ["query"]
         }
 
-    def execute(self, query: str, max_results: int = 3, **kwargs):
+    def execute(self, query: str, max_results: int = 3, status_callback=None, **kwargs):
         try:
+            if status_callback:
+                status_callback(f"Surfing web: {query}...")
+
             # 1. Search
             results = search(query, max_results=max_results)
             if not results:

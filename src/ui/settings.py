@@ -20,38 +20,7 @@ class SettingsWindow(Adw.PreferencesWindow):
         page.set_icon_name("preferences-system-symbolic")
         self.add(page)
 
-        # Network Group
-        net_group = Adw.PreferencesGroup()
-        net_group.set_title("Network")
-        net_group.set_description("Configure global network settings.")
-        page.add(net_group)
 
-        # Proxy Toggle
-        self.proxy_row = Adw.SwitchRow()
-        self.proxy_row.set_title("Enable Proxy")
-        self.proxy_row.set_subtitle("Route traffic through a custom proxy")
-        self.proxy_row.set_active(self.config.get("proxy_enabled", False))
-        self.proxy_row.connect("notify::active", self.on_proxy_toggled)
-        net_group.add(self.proxy_row)
-
-        # Proxy URL
-        self.proxy_url_row = Adw.EntryRow()
-        self.proxy_url_row.set_title("Proxy URL")
-        self.proxy_url_row.set_text(self.config.get("proxy_url", ""))
-        self.proxy_url_row.connect("apply", self.on_proxy_url_changed) # Apply on Enter
-        self.proxy_url_row.connect("entry-activated", self.on_proxy_url_changed)
-        
-        # Debounce/Save on focus out could be better, but 'changed' is too aggressive for applying network settings 
-        # that might break connections immediately. Let's use 'changed' but just save config, apply happens there?
-        # Actually for EntryRow 'changed' is fine if we just update config. 
-        # Only apply when toggled or maybe explicitly?
-        # Let's use 'changed' to save config, and apply on every change? might be spammy.
-        # Ideally apply only when valid. For now, let's use 'changed' to save.
-        self.proxy_url_row.connect("changed", self.on_proxy_url_changed)
-        
-        net_group.add(self.proxy_url_row)
-        
-        self._update_proxy_visibility()
 
         # AI Group
         ai_group = Adw.PreferencesGroup()
@@ -179,6 +148,39 @@ class SettingsWindow(Adw.PreferencesWindow):
         shortcut_info.set_title("Toggle Assistant")
         shortcut_info.set_subtitle("Default: Super+Space (Needs manual setup)")
         shortcut_group.add(shortcut_info)
+
+        # Network Group
+        net_group = Adw.PreferencesGroup()
+        net_group.set_title("Network")
+        net_group.set_description("Configure global network settings.")
+        page.add(net_group)
+
+        # Proxy Toggle
+        self.proxy_row = Adw.SwitchRow()
+        self.proxy_row.set_title("Enable Proxy")
+        self.proxy_row.set_subtitle("Route traffic through a custom proxy")
+        self.proxy_row.set_active(self.config.get("proxy_enabled", False))
+        self.proxy_row.connect("notify::active", self.on_proxy_toggled)
+        net_group.add(self.proxy_row)
+
+        # Proxy URL
+        self.proxy_url_row = Adw.EntryRow()
+        self.proxy_url_row.set_title("Proxy URL")
+        self.proxy_url_row.set_text(self.config.get("proxy_url", ""))
+        self.proxy_url_row.connect("apply", self.on_proxy_url_changed)
+        self.proxy_url_row.connect("entry-activated", self.on_proxy_url_changed)
+        self.proxy_url_row.connect("changed", self.on_proxy_url_changed)
+        
+        # Tor Refresh Button
+        self.tor_refresh_btn = Gtk.Button.new_from_icon_name("view-refresh-symbolic")
+        self.tor_refresh_btn.set_valign(Gtk.Align.CENTER)
+        self.tor_refresh_btn.set_tooltip_text("Refresh Tor Identity")
+        self.tor_refresh_btn.connect("clicked", self.on_refresh_tor_clicked)
+        self.proxy_url_row.add_suffix(self.tor_refresh_btn)
+        
+        net_group.add(self.proxy_url_row)
+        
+        self._update_proxy_visibility()
 
         # Deep Research Page
         dr_page = Adw.PreferencesPage()
@@ -447,5 +449,143 @@ class SettingsWindow(Adw.PreferencesWindow):
             apply_proxy_settings()
 
     def _update_proxy_visibility(self):
-        self.proxy_url_row.set_sensitive(self.proxy_row.get_active())
+        is_enabled = self.proxy_row.get_active()
+        self.proxy_url_row.set_sensitive(is_enabled)
+        
+        # Check for Tor
+        url = self.proxy_url_row.get_text()
+        is_tor = "9050" in url # Simple check for default Tor port
+        self.tor_refresh_btn.set_visible(is_enabled and is_tor)
+
+    def on_refresh_tor_clicked(self, btn):
+        from src.core.network.tor import renew_tor_identity
+        
+        def run_renew():
+            # Disable button and show spinner state if possible (icon change)
+            from gi.repository import GLib
+            GLib.idle_add(btn.set_sensitive, False)
+            
+            success, reason = renew_tor_identity()
+            
+            def handle_result():
+                btn.set_sensitive(True)
+                if success:
+                    print("Tor Identity Renewed")
+                    # Visual feedback: Flash checkmark? 
+                    # For now, just logging is fine, maybe temporary tooltip change
+                    btn.set_icon_name("object-select-symbolic")
+                    GLib.timeout_add(2000, lambda: btn.set_icon_name("view-refresh-symbolic"))
+                else:
+                    print(f"Tor Renew Failed: {reason}")
+                    btn.set_icon_name("dialog-error-symbolic")
+                    GLib.timeout_add(2000, lambda: btn.set_icon_name("view-refresh-symbolic"))
+                    
+                    if "ConnectionRefused" in reason or "PermissionDenied" in reason or "AuthFailed" in reason:
+                        self._prompt_enable_control_port()
+            
+            GLib.idle_add(handle_result)
+            
+        import threading
+        threading.Thread(target=run_renew, daemon=True).start()
+
+    def _prompt_enable_control_port(self):
+        """Ask user to enable Tor Control Port."""
+        dialog = Adw.MessageDialog(
+             transient_for=self,
+             heading="Tor Control Port Unavailable",
+             body="Gaia cannot talk to Tor to refresh your identity. This usually means the Control Port (9051) is disabled.\n\nDo you want Gaia to try enabling it for you? (Requires Administrator Password)",
+        )
+        dialog.add_response("cancel", "Cancel")
+        dialog.add_response("enable", "Enable")
+        dialog.set_response_appearance("enable", Adw.ResponseAppearance.SUGGESTED)
+        dialog.connect("response", self._on_enable_tor_response)
+        dialog.present()
+
+    def _on_enable_tor_response(self, dialog, response):
+        if response == "enable":
+            self._run_pkexec_tor_config()
+            
+    def _run_pkexec_tor_config(self):
+        import subprocess
+        import secrets
+        
+        # Generate random password
+        pwd = secrets.token_hex(16)
+        
+        # Hash it
+        try:
+            res = subprocess.run(["tor", "--hash-password", pwd], capture_output=True, text=True)
+            hashed_pwd = res.stdout.strip()
+            if not hashed_pwd:
+                 raise Exception("Could not hash password")
+        except Exception as e:
+             from gi.repository import GLib
+             GLib.idle_add(self._on_tor_config_complete, 1, f"Hashing failed: {e}")
+             return
+
+        # Save to config immediately
+        self.config.set("tor_control_password", pwd)
+
+        # Script to replace/add HashedControlPassword
+        # We start fresh or replace existing ControlPort/Auth lines to avoid conflicts
+        script = f"""
+        # Backup
+        cp /etc/tor/torrc /etc/tor/torrc.bak.gaia
+        
+        # Remove old Gaia configs or conflicting auth
+        sed -i '/ControlPort 9051/d' /etc/tor/torrc
+        sed -i '/CookieAuthentication/d' /etc/tor/torrc
+        sed -i '/HashedControlPassword/d' /etc/tor/torrc
+        
+        # Add new config
+        echo "ControlPort 9051" >> /etc/tor/torrc
+        echo "HashedControlPassword {hashed_pwd}" >> /etc/tor/torrc
+        
+        systemctl restart tor
+        """
+        
+        def run_config():
+            try:
+                print(f"[Tor Config] Running pkexec script...")
+                cmd = ["pkexec", "bash", "-c", script]
+                process = subprocess.run(cmd, capture_output=True, text=True)
+                
+                print(f"[Tor Config] Return code: {process.returncode}")
+                # print(f"[Tor Config] Stdout: {process.stdout}") # May contain sensitively info? No, just echo.
+                print(f"[Tor Config] Stderr: {process.stderr}")
+
+                from gi.repository import GLib
+                GLib.idle_add(self._on_tor_config_complete, process.returncode, process.stderr)
+            except Exception as e:
+                print(f"[Tor Config] Exception: {e}")
+                from gi.repository import GLib
+                GLib.idle_add(self._on_tor_config_complete, 1, str(e))
+
+        import threading
+        threading.Thread(target=run_config, daemon=True).start()
+
+    def _on_tor_config_complete(self, returncode, stderr):
+        if returncode == 0:
+            dialog = Adw.MessageDialog(
+                 transient_for=self,
+                 heading="Success",
+                 body="Tor Control Port has been enabled. You can now refresh your identity.",
+            )
+            dialog.add_response("ok", "OK")
+            dialog.present()
+        else:
+            msg = "The operation failed."
+            if "not authorized" in str(stderr).lower():
+                msg = "Permission denied."
+            elif stderr:
+                msg = f"Error: {stderr}"
+                
+            dialog = Adw.MessageDialog(
+                 transient_for=self,
+                 heading="Configuration Failed",
+                 body=msg,
+            )
+            dialog.add_response("close", "Close")
+            dialog.present()
+
 

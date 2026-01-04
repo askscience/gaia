@@ -9,6 +9,7 @@ from src.tools.web_search.search import search
 from src.tools.web_search.scraper import scrape_url
 from src.tools.deep_research.config import SEARCH_TIMEOUT, SCRAPE_TIMEOUT, MAX_SCRAPE_LENGTH
 
+async def async_search(query: str, max_results: int = 3) -> List[Dict[str, str]]:
     """
     Async wrapper for the DuckDuckGo search.
     Since ddgs is synchronous, we run it in a thread pool.

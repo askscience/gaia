@@ -24,7 +24,10 @@ class FileListTool(BaseTool):
             "required": ["project_id"]
         }
 
-    def execute(self, project_id: str):
+    def execute(self, project_id: str, status_callback=None, **kwargs):
+        if status_callback:
+            status_callback("Listing project files...")
+
         artifacts_dir = os.path.join(get_artifacts_dir(), project_id)
         
         if not os.path.exists(artifacts_dir):

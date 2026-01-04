@@ -37,7 +37,10 @@ class FileEditorTool(BaseTool):
             "required": ["filename", "project_id", "search", "replace"]
         }
 
-    def execute(self, filename: str, project_id: str, search: str, replace: str):
+    def execute(self, filename: str, project_id: str, search: str, replace: str, status_callback=None, **kwargs):
+        if status_callback:
+            status_callback(f"Editing {os.path.basename(filename)}...")
+
         artifacts_dir = os.path.join(get_artifacts_dir(), project_id)
         file_path = os.path.join(artifacts_dir, filename)
         

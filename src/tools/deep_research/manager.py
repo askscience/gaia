@@ -116,6 +116,11 @@ class BackgroundResearchManager:
                 notification.show()
                 task["last_show_time"] = now
             except: pass
+            
+        # Emit centralized status update
+        from src.core.status.manager import StatusManager
+        StatusManager().emit_status(task["project_id"], f"Deep Research: {message}")
+        
         return False
 
     def _on_stop_clicked(self, notification, action_name, chat_id):

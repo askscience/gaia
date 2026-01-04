@@ -152,7 +152,16 @@ async def section_researcher_node(query: str, section_title: str, sub_queries: L
         writer_prompt += f"* {note.title}: {note.content}\n  URL: {note.url}\n"
         
     writer_resp = await async_generate_response([{"role": "user", "content": writer_prompt}])
-    section_content = f"\n## {section_title}\n\n" + writer_resp["message"]["content"]
+    content = writer_resp["message"]["content"]
+    
+    # Strip potential title if AI included it despite instructions
+    if content.strip().startswith(f"# {section_title}"):
+        content = content.replace(f"# {section_title}", "", 1).strip()
+    elif content.strip().startswith(f"## {section_title}"):
+        content = content.replace(f"## {section_title}", "", 1).strip()
+        
+    # Ensure it starts with the section title as H2
+    section_content = f"\n## {section_title}\n\n" + content
     
     return {
         "notes": section_notes,

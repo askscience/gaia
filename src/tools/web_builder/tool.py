@@ -47,7 +47,17 @@ class WebBuilderTool(BaseTool):
             "required": ["files", "project_id"]
         }
 
-    def execute(self, files: list, project_id: str):
+    def execute(self, files: list, project_id: str, status_callback=None, **kwargs):
+        # Log to status
+        if status_callback:
+            names = [f.get('filename') for f in files if isinstance(f, dict) and f.get('filename')]
+            if names:
+                desc = ", ".join(names[:2])
+                if len(names) > 2: desc += "..."
+                status_callback(f"Building {desc}...")
+            else:
+                status_callback("Building web project...")
+
         # Defensive check: if files is a string (due to parsing issues), try to load it as JSON
         if isinstance(files, str):
             try:

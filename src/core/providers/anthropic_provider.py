@@ -11,7 +11,11 @@ class AnthropicProvider(BaseProvider):
         if not self._client:
             if not self.api_key:
                 raise ValueError("Anthropic API key is missing.")
-            self._client = Anthropic(api_key=self.api_key)
+            
+            from src.core.network.http_client import get_httpx_client
+            client = get_httpx_client()
+            
+            self._client = Anthropic(api_key=self.api_key, http_client=client)
         return self._client
 
     def generate_response(self, messages, tools=None):
