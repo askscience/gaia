@@ -45,5 +45,4 @@ class FileReaderTool(BaseTool):
                 content = f.read()
             return prompt_manager.get("file_reader.content_format", filename=filename, content=content)
         except Exception as e:
-        except Exception as e:
             return prompt_manager.get("file_reader.error_generic", filename=filename, error=str(e))

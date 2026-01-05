@@ -70,7 +70,6 @@ def scrape_url(url: str, max_length: int = 3000, timeout: int = 10) -> dict:
         # Try trafilatura first for high-quality extraction
         try:
             try:
-            try:
                 import trafilatura
                 from trafilatura.settings import use_config
                 from src.core.config import ConfigManager

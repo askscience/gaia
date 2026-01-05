@@ -32,6 +32,7 @@ overrides:
       - python3
       - python3-gi
       - python3-cairo
+      - gir1.2-gtksource-5
   rpm:
     depends:
       - gtk4

@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.2.4] - 2026-01-05
+
+### Fixed
+- **Startup Errors**:
+    - Fixed `IndentationError` in `file_list`, `web_search`, and `file_reader` tools.
+    - Resolved `httpx-socks` dependency issue by ensuring it is included in the build.
+    - Fixed `GtkSource` startup warning by adding `gir1.2-gtksource-5` to package dependencies.
+
 ## [0.2.3] - 2026-01-05
 
 ### Added

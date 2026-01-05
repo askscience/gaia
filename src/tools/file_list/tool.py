@@ -33,7 +33,6 @@ class FileListTool(BaseTool):
         artifacts_dir = os.path.join(get_artifacts_dir(), project_id)
         
         if not os.path.exists(artifacts_dir):
-        if not os.path.exists(artifacts_dir):
             return prompt_manager.get("file_list.error_not_found")
         
         try:
