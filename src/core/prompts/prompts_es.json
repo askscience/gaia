@@ -1,0 +1,135 @@
+{
+    "system_prompt_intro": "Eres un desarrollador web profesional.",
+    "critical_instruction": "CRÍTICO: Cuando el usuario pida crear o modificar CÓDIGO o PROYECTOS WEB, DEBES proporcionar primero un plan de implementación detallado encerrado en etiquetas [PLAN] y [/PLAN]. El plan debe listar los archivos que crearás o modificarás y las tecnologías que usarás. NO llames a ninguna herramienta funcional en el mismo turno en el que propones un plan. Espera a que el usuario apruebe el plan antes de implementarlo.",
+    "exception_instruction": "EXCEPCIÓN: NO necesitas un plan para tareas simples de calendario o búsquedas web.",
+    "guidelines_header": "PAUTAS PARA CAMBIOS Y CREACIÓN:",
+    "guidelines": {
+        "web_builder_enabled": "- PROYECTOS WEB: Cuando crees un sitio web, SIEMPRE crea o actualiza los archivos HTML, CSS y JS juntos en un ÚNICO turno usando la herramienta `web_builder`. Usa el parámetro `files` para proporcionar todos los archivos necesarios.",
+        "web_builder_disabled": "- PROYECTOS WEB: La herramienta `web_builder` está DESACTIVADA. No puedes crear ni modificar proyectos web. Si el usuario pregunta, explica que esta función está desactivada en la configuración.",
+        "file_editor_enabled": [
+            "- CAMBIOS DIRIGIDOS: Para proyectos existentes, prefiere `file_editor` para ediciones específicas. Si no estás seguro de los archivos actuales o su contenido, usa primero `file_list` y `file_reader`.",
+            "- ESTADO DEL PROYECTO: Usa `file_list` para ver qué archivos están actualmente en el proyecto. Nunca asumas que un archivo existe si no lo has listado o leído recientemente."
+        ],
+        "file_editor_disabled": "- CAMBIOS DIRIGIDOS: La herramienta `file_editor` está DESACTIVADA. No puedes editar archivos. Si se te pide, explica que esta función está desactivada en la configuración.",
+        "conciseness": "- CONCISIÓN: Después de completar ediciones o actualizaciones, proporciona un resumen muy conciso (1-2 oraciones) de lo que hiciste. Este resumen se mostrará al usuario.",
+        "web_search_enabled": "- BÚSQUEDA WEB: Si necesitas información de la web, usa la herramienta `web_search` exactamente UNA VEZ por solicitud con `max_results=3`. Llama a la herramienta INMEDIATAMENTE. NO proporciones ningún texto discursivo (como 'Buscando...') antes de llamar a la herramienta. Después de completar la búsqueda, DEBES proporcionar una respuesta detallada y discursiva basada en los resultados. NO te limites a listar fuentes o decir que las encontraste.",
+        "web_search_disabled": "- BÚSQUEDA WEB: La herramienta `web_search` está DESACTIVADA. No puedes buscar en la web. Si el usuario pide información externa, discúlpate y explica que la búsqueda web está desactivada en la configuración.",
+        "calendar_enabled": "- CALENDARIO: La hora actual del sistema es {current_time}. No necesitas crear un plan de implementación para operaciones de calendario. Debes ejecutar las herramientas de calendario (añadir, eliminar, listar) directa e inmediatamente usando esta hora como referencia."
+    },
+    "deep_research": {
+        "outline": "Crea un esquema de investigación detallado y completo para el informe: \"{query}\".\n    El esquema debe contener {outline_steps} secciones lógicas.\n    Devuelve SOLO una lista JSON de cadenas (los títulos de las secciones).\n    \n    IMPORTANTE: NO numeres las secciones (ej. no \"1. Introducción\", no \"Paso 1\"). Devuelve solo los títulos.",
+        "sub_queries": "Genera {search_breadth} consultas de búsqueda de alta calidad para profundizar en la sección \"{section}\" para un informe sobre \"{query}\".\nDevuelve SOLO una lista JSON de cadenas.",
+        "extract": "Extrae 3-5 hechos clave del siguiente texto para la sección \"{section_title}\" de la investigación sobre \"{query}\".\nFuente: {url}\nTexto: {content}",
+        "write_section": "Escribe una sección completa y profesional titulada \"{section_title}\" para un informe de investigación sobre \"{query}\".\nUsa estas notas e incluye citas en línea usando enlaces markdown: [Título Fuente](url).\nNO uses citas numeradas como [1] o [2] ya que se formatearán globalmente más tarde.\nEvita rellenos introductorios. Usa markdown.\n\nCRÍTICO: NO incluyas el título \"{section_title}\" o encabezados #/## con el nombre de la sección al principio. El título ya es gestionado por el sistema. Empieza directamente con el contenido.\n\n",
+        "write_section_images": "Tienes acceso a un grupo de imágenes de alta calidad. Si una imagen es muy relevante para un párrafo, insértala usando markdown estándar: ![descripción](url).\nUsa solo imágenes de esta lista. No uses más de 1-2 imágenes por sección. Insértalas entre párrafos donde proporcionen contexto visual.\nImágenes Disponibles:\n",
+        "image_query": "Genera 2 términos de búsqueda distintos y de alta calidad para un informe de investigación sobre \"{query}\".\nCada palabra clave DEBE SER corta, máximo 1 a 3 palabras.\nDevuelve SOLO una lista JSON de cadenas.",
+        "writer_notes_header": "Notas:\n",
+        "writer_note_format": "* {title}: {content}\n  URL: {url}\n",
+        "writer_image_format": "- ![{description}]({url})\n",
+        "fallbacks": {
+            "outline": [
+                "Introducción a {query}",
+                "Conceptos Clave",
+                "Análisis Técnico Detallado",
+                "Desafíos y Oportunidades",
+                "Perspectivas Futuras",
+                "Conclusión"
+            ],
+            "sub_queries": [
+                "{section} {query}",
+                "{section} detalles"
+            ],
+            "image_queries": [
+                "contexto profesional"
+            ]
+        },
+        "errors": {
+            "no_notes": "\n## {section_title}\n\n*No se encontraron datos de investigación específicos para esta sección.*",
+            "cancelled": "Investigación cancelada por el usuario.",
+            "empty_report": "## Error\nNo se generó contenido para este informe. Verifica tu conectividad o intenta un tema diferente."
+        }
+    },
+    "file_editor": {
+        "status_editing": "Editando {filename}...",
+        "error_not_found": "Error: Archivo '{filename}' no encontrado en el proyecto '{project_id}'.",
+        "success_flexible": "Editado exitosamente '{filename}' usando coincidencia flexible. {count} ocurrencia(s) reemplazada(s).\n\nBuscar: {search_preview}...\nReemplazar: {replace_preview}...",
+        "error_search_not_found": "Error: Texto de búsqueda no encontrado en '{filename}'. DEBES usar primero la herramienta 'file_reader' para leer el archivo y copiar el texto EXACTO en el parámetro 'search'.",
+        "success": "Editado exitosamente '{filename}'. {count} ocurrencia(s) reemplazada(s). [ARTIFACT]{artifact_json}[/ARTIFACT]",
+        "error_generic": "Error al editar el archivo {filename}: {error}"
+    },
+    "web_builder": {
+        "status_single": "Creando {names}...",
+        "status_multiple": "Creando {names}...",
+        "status_generic": "Creando proyecto web...",
+        "error_parse_files": "Error: el parámetro 'files' debe ser una lista, pero se recibió una cadena que no pudo analizarse como JSON: {snippet}...",
+        "error_invalid_type": "Error: el parámetro 'files' debe ser una lista, pero se recibió {type}.",
+        "success_file": "Creado exitosamente {filename}",
+        "error_file": "Error al crear el archivo {filename}: {error}"
+    },
+    "web_search": {
+        "status_searching": "Buscando en la web: {query}...",
+        "error_no_results": "No se encontraron resultados de búsqueda.",
+        "error_search": "Error de búsqueda: {error}",
+        "context_header": "Resultados de búsqueda para: {query}\n\n",
+        "context_source": "FUENTE: {title}\n",
+        "context_content": "CONTENIDO: {content}\n",
+        "context_content_partial": "CONTENIDO: (No se pudo extraer todo el contenido) {snippet}\n",
+        "context_separator": "---\n",
+        "response_format": "[AI_CONTEXT]\n{context}[/AI_CONTEXT]\n\n[SOURCES]\n{sources_json}\n[/SOURCES]",
+        "error_generic": "Error: {error}"
+    },
+    "web_console": {
+        "status_reading": "Leyendo registros de la consola...",
+        "error_no_logs": "No se encontraron registros de consola. ¿Se ha ejecutado la vista previa?",
+        "error_read": "Error al leer los registros: {error}",
+        "status_empty": "La consola está vacía (sin errores ni registros).",
+        "log_format": "[{type}]{line_info} {msg}",
+        "stack_format": "  Pila: {stack}"
+    },
+    "file_list": {
+        "status_listing": "Listando archivos del proyecto...",
+        "error_not_found": "No se encontraron archivos. El directorio del proyecto aún no existe.",
+        "item_format": "  - {rel_path} ({size} bytes)",
+        "empty_directory": "No hay archivos en el directorio del proyecto.",
+        "success_header": "Archivos en el proyecto:\n",
+        "error_generic": "Error al listar archivos: {error}"
+    },
+    "file_reader": {
+        "status_reading": "Leyendo {filename}...",
+        "error_not_found": "Error: Archivo '{filename}' no encontrado en el proyecto '{project_id}'.",
+        "content_format": "--- CONTENIDO DE {filename} ---\n{content}\n--- FIN DE {filename} ---",
+        "error_generic": "Error al leer el archivo {filename}: {error}"
+    },
+    "calendar": {
+        "error_date_format": "Error: Formato de fecha inválido. Usa ISO 8601 (ej. 2023-10-27T10:00:00)",
+        "success_add": "Evento añadido exitosamente. UUID: {uuid}",
+        "error_add": "No se pudo añadir el evento.",
+        "success_remove": "Evento {uuid} eliminado exitosamente.",
+        "error_remove": "No se pudo eliminar el evento {uuid}.",
+        "success_create": "Calendario '{name}' creado exitosamente con UID {uid}.",
+        "error_create": "No se pudo crear el calendario '{name}'.",
+        "error_list_date": "Error: Formato de fecha inválido. Usa ISO 8601.",
+        "error_no_events": "No se encontraron eventos.",
+        "events_header": "Se encontraron {count} eventos:",
+        "event_format_uid": "- UID: {uid}",
+        "event_format_summary": "  Resumen: {summary}",
+        "event_format_start": "  Inicio: {start}",
+        "event_format_end": "  Fin: {end}",
+        "error_no_calendars": "No se encontraron calendarios.",
+        "calendars_header": "Calendarios Disponibles:",
+        "calendar_format_name": "- Nombre: {name}",
+        "calendar_format_uid": "  UID: {uid}",
+        "calendar_format_color": "  Color: {color}"
+    },
+    "current_time": {
+        "format": "%d-%m-%Y %H:%M:%S"
+    },
+    "ui": {
+        "plan_approval_message": "Apruebo tu plan. Procede con la implementación usando las herramientas disponibles ahora. NO repitas el plan, simplemente ejecútalo.",
+        "spinner": {
+            "thinking": "Pensando...",
+            "generating": "Ejecutando herramientas...",
+            "completed": "✓ Tarea completada"
+        }
+    }
+}

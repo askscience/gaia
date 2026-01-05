@@ -6,17 +6,19 @@ from src.core.config import ConfigManager
 from src.core.ai_client import AIClient
 from src.tools.manager import ToolManager
 from src.core.network.proxy import apply_proxy_settings
+from src.core.language_manager import LanguageManager
 
 class SettingsWindow(Adw.PreferencesWindow):
     def __init__(self, parent=None):
         super().__init__(modal=True, transient_for=parent)
-        self.set_title("Settings")
+        self.lang_manager = LanguageManager()
+        self.set_title(self.lang_manager.get("settings.title"))
         self.config = ConfigManager()
         self.ai_client = AIClient()
 
         # General Page
         page = Adw.PreferencesPage()
-        page.set_title("General")
+        page.set_title(self.lang_manager.get("settings.general.title"))
         page.set_icon_name("preferences-system-symbolic")
         self.add(page)
 
@@ -24,14 +26,40 @@ class SettingsWindow(Adw.PreferencesWindow):
 
         # AI Group
         ai_group = Adw.PreferencesGroup()
-        ai_group.set_title("AI Configuration")
-        ai_group.set_description("Configure the AI provider and model.")
+        ai_group.set_title(self.lang_manager.get("settings.general.ai_config_title"))
+        ai_group.set_description(self.lang_manager.get("settings.general.ai_config_desc"))
         page.add(ai_group)
+
+        # General Group (Language)
+        gen_group = Adw.PreferencesGroup()
+        gen_group.set_title(self.lang_manager.get("settings.general.title"))
+        # Insert before AI group
+        page.remove(ai_group)
+        page.add(gen_group)
+        page.add(ai_group)
+
+        # Language Selection
+        self.lang_row = Adw.ComboRow()
+        self.lang_row.set_title(self.lang_manager.get("settings.general.language_title", default="Language"))
+        self.lang_row.set_subtitle(self.lang_manager.get("settings.general.language_subtitle", default="Requires restart"))
+        
+        # Map: Display Name -> Code
+        self.lang_map = ["auto", "en", "it", "de", "es", "fr"]
+        display_names = ["System Default (Auto)", "English", "Italiano", "Deutsch", "Español", "Français"]
+        self.lang_row.set_model(Gtk.StringList.new(display_names))
+        
+        # Set current selection
+        current_lang = self.config.get("app_language", "auto")
+        if current_lang in self.lang_map:
+            self.lang_row.set_selected(self.lang_map.index(current_lang))
+        
+        self.lang_row.connect("notify::selected-item", self.on_language_changed)
+        gen_group.add(self.lang_row)
 
         # Provider Selection
         self.provider_row = Adw.ComboRow()
-        self.provider_row.set_title("Provider")
-        self.provider_row.set_subtitle("Select the AI service provider")
+        self.provider_row.set_title(self.lang_manager.get("settings.general.provider_title"))
+        self.provider_row.set_subtitle(self.lang_manager.get("settings.general.provider_subtitle"))
         providers = ["Ollama", "OpenAI", "Google Gemini", "Anthropic Claude", "Mistral", "Z.ai"]
         self.provider_row.set_model(Gtk.StringList.new(providers))
         ai_group.add(self.provider_row)
@@ -49,7 +77,7 @@ class SettingsWindow(Adw.PreferencesWindow):
 
         # API Key Entry
         self.api_key_row = Adw.PasswordEntryRow()
-        self.api_key_row.set_title("API Key")
+        self.api_key_row.set_title(self.lang_manager.get("settings.general.api_key_title"))
         key_name = f"{current_provider}_api_key"
         self.api_key_row.set_text(self.config.get(key_name, self.config.get("api_key", "")))
         self.api_key_handler_id = self.api_key_row.connect("changed", self.on_api_key_changed)
@@ -57,22 +85,22 @@ class SettingsWindow(Adw.PreferencesWindow):
 
         # Z.ai Coding Plan Toggle (only visible for Z.ai)
         self.zai_coding_row = Adw.SwitchRow()
-        self.zai_coding_row.set_title("Use Coding Plan API")
-        self.zai_coding_row.set_subtitle("Enable for GLM Coding Plan (requires coding subscription)")
+        self.zai_coding_row.set_title(self.lang_manager.get("settings.general.zai_coding_title"))
+        self.zai_coding_row.set_subtitle(self.lang_manager.get("settings.general.zai_coding_subtitle"))
         self.zai_coding_row.set_active(self.config.get("zai_coding_plan", False))
         self.zai_coding_row.connect("notify::active", self.on_zai_coding_changed)
         ai_group.add(self.zai_coding_row)
 
         # Model Selection (ComboRow)
         self.model_row = Adw.ComboRow()
-        self.model_row.set_title("Model")
-        self.model_row.set_subtitle("Select the specific model to use")
+        self.model_row.set_title(self.lang_manager.get("settings.general.model_title"))
+        self.model_row.set_subtitle(self.lang_manager.get("settings.general.model_subtitle"))
         ai_group.add(self.model_row)
 
         # Add refresh button to the model row
         refresh_btn = Gtk.Button.new_from_icon_name("view-refresh-symbolic")
         refresh_btn.set_valign(Gtk.Align.CENTER)
-        refresh_btn.set_tooltip_text("Refresh Model List")
+        refresh_btn.set_tooltip_text(self.lang_manager.get("settings.general.refresh_model_tooltip"))
         refresh_btn.connect("clicked", lambda b: self._refresh_models())
         self.model_row.add_suffix(refresh_btn)
         
@@ -81,16 +109,17 @@ class SettingsWindow(Adw.PreferencesWindow):
         self._update_visibility()
         self._refresh_models()
         
+        
         # Tools Page
         tools_page = Adw.PreferencesPage()
-        tools_page.set_title("Tools")
+        tools_page.set_title(self.lang_manager.get("settings.tools.title"))
         tools_page.set_icon_name("applications-utilities-symbolic")
         self.add(tools_page)
         
         # Tools Group
         tools_group = Adw.PreferencesGroup()
-        tools_group.set_title("Enabled Tools")
-        tools_group.set_description("Enable or disable specific AI tools.")
+        tools_group.set_title(self.lang_manager.get("settings.tools.enabled_tools_title"))
+        tools_group.set_description(self.lang_manager.get("settings.tools.enabled_tools_desc"))
         tools_page.add(tools_group)
 
         # Dynamically load tools and add toggles
@@ -114,8 +143,20 @@ class SettingsWindow(Adw.PreferencesWindow):
             row.set_title(display_name)
             
             if hasattr(tool, 'description'):
-                # show full description
-                row.set_subtitle(tool.description)
+                # show full description from LanguageManager
+                desc_key = f"settings.tools.descriptions.{tool_name}"
+                desc = self.lang_manager.get(desc_key)
+                # Fallback to tool.description if missing (or maybe just show missing string?)
+                # lang_manager.get returns formatted string or [Missing...], but if it's missing let's see.
+                # Actually lang_manager.get returns "[Missing string...]" if not found.
+                # If the key is missing in generic languages, we might want to fallback to English? 
+                # But LanguageManager handles fallback.
+                
+                # Check if it returned a missing string indicator
+                if "[Missing" in desc:
+                    desc = tool.description
+                    
+                row.set_subtitle(desc)
             
             # Default to True (Active) if not in config
             is_active = enabled_tools.get(tool_name, True)
@@ -128,8 +169,8 @@ class SettingsWindow(Adw.PreferencesWindow):
         # Add Calendar Tools Master Toggle
         cal_tools = ['calendar_add_event', 'calendar_remove_event', 'calendar_create', 'calendar_list_events', 'calendar_list_sources']
         cal_row = Adw.SwitchRow()
-        cal_row.set_title("Calendar Integration")
-        cal_row.set_subtitle("Enable GNOME Calendar management tools")
+        cal_row.set_title(self.lang_manager.get("settings.tools.calendar_integration_title"))
+        cal_row.set_subtitle(self.lang_manager.get("settings.tools.calendar_integration_subtitle"))
         
         # Check if all are enabled (default True)
         is_cal_active = all(enabled_tools.get(t, True) for t in cal_tools)
@@ -146,32 +187,32 @@ class SettingsWindow(Adw.PreferencesWindow):
         
         # Shortcuts Group
         shortcut_group = Adw.PreferencesGroup()
-        shortcut_group.set_title("Shortcuts")
-        shortcut_group.set_description("Global shortcuts must be configured in GNOME Settings.")
+        shortcut_group.set_title(self.lang_manager.get("settings.shortcuts.title"))
+        shortcut_group.set_description(self.lang_manager.get("settings.shortcuts.desc"))
         page.add(shortcut_group)
         
         shortcut_info = Adw.ActionRow()
-        shortcut_info.set_title("Toggle Assistant")
-        shortcut_info.set_subtitle("Default: Super+Space (Needs manual setup)")
+        shortcut_info.set_title(self.lang_manager.get("settings.shortcuts.toggle_assistant"))
+        shortcut_info.set_subtitle(self.lang_manager.get("settings.shortcuts.toggle_assistant_subtitle"))
         shortcut_group.add(shortcut_info)
 
         # Network Group
         net_group = Adw.PreferencesGroup()
-        net_group.set_title("Network")
-        net_group.set_description("Configure global network settings.")
+        net_group.set_title(self.lang_manager.get("settings.network.title"))
+        net_group.set_description(self.lang_manager.get("settings.network.desc"))
         page.add(net_group)
 
         # Proxy Toggle
         self.proxy_row = Adw.SwitchRow()
-        self.proxy_row.set_title("Enable Proxy")
-        self.proxy_row.set_subtitle("Route traffic through a custom proxy")
+        self.proxy_row.set_title(self.lang_manager.get("settings.network.enable_proxy"))
+        self.proxy_row.set_subtitle(self.lang_manager.get("settings.network.enable_proxy_subtitle"))
         self.proxy_row.set_active(self.config.get("proxy_enabled", False))
         self.proxy_row.connect("notify::active", self.on_proxy_toggled)
         net_group.add(self.proxy_row)
 
         # Proxy URL
         self.proxy_url_row = Adw.EntryRow()
-        self.proxy_url_row.set_title("Proxy URL")
+        self.proxy_url_row.set_title(self.lang_manager.get("settings.network.proxy_url"))
         self.proxy_url_row.set_text(self.config.get("proxy_url", ""))
         self.proxy_url_row.connect("apply", self.on_proxy_url_changed)
         self.proxy_url_row.connect("entry-activated", self.on_proxy_url_changed)
@@ -180,7 +221,7 @@ class SettingsWindow(Adw.PreferencesWindow):
         # Tor Refresh Button
         self.tor_refresh_btn = Gtk.Button.new_from_icon_name("view-refresh-symbolic")
         self.tor_refresh_btn.set_valign(Gtk.Align.CENTER)
-        self.tor_refresh_btn.set_tooltip_text("Refresh Tor Identity")
+        self.tor_refresh_btn.set_tooltip_text(self.lang_manager.get("settings.network.refresh_tor_tooltip"))
         self.tor_refresh_btn.connect("clicked", self.on_refresh_tor_clicked)
         self.proxy_url_row.add_suffix(self.tor_refresh_btn)
         
@@ -190,20 +231,20 @@ class SettingsWindow(Adw.PreferencesWindow):
 
         # Deep Research Page
         dr_page = Adw.PreferencesPage()
-        dr_page.set_title("Deep Research")
+        dr_page.set_title(self.lang_manager.get("settings.deep_research.title"))
         dr_page.set_icon_name("system-search-symbolic")
         self.add(dr_page)
 
         # Research Group
         dr_group = Adw.PreferencesGroup()
-        dr_group.set_title("Research Parameters")
-        dr_group.set_description("Configure the behavior of the Deep Research Agent.")
+        dr_group.set_title(self.lang_manager.get("settings.deep_research.research_params_title"))
+        dr_group.set_description(self.lang_manager.get("settings.deep_research.research_params_desc"))
         dr_page.add(dr_group)
 
         # Max Loops
         self.max_loops_row = Adw.ActionRow()
-        self.max_loops_row.set_title("Max Research Loops")
-        self.max_loops_row.set_subtitle("Maximum number of iterations for refining results")
+        self.max_loops_row.set_title(self.lang_manager.get("settings.deep_research.max_loops"))
+        self.max_loops_row.set_subtitle(self.lang_manager.get("settings.deep_research.max_loops_subtitle"))
         
         loops_adj = Gtk.Adjustment.new(self.config.get("dr_max_loops", 3), 1, 10, 1, 1, 0)
         self.loops_spin = Gtk.SpinButton.new(loops_adj, 1, 0)
@@ -214,8 +255,8 @@ class SettingsWindow(Adw.PreferencesWindow):
 
         # Max Results
         self.max_results_row = Adw.ActionRow()
-        self.max_results_row.set_title("Max Search Results")
-        self.max_results_row.set_subtitle("Results per sub-query")
+        self.max_results_row.set_title(self.lang_manager.get("settings.deep_research.max_results"))
+        self.max_results_row.set_subtitle(self.lang_manager.get("settings.deep_research.max_results_subtitle"))
         
         results_adj = Gtk.Adjustment.new(self.config.get("dr_max_results", 3), 1, 10, 1, 1, 0)
         self.results_spin = Gtk.SpinButton.new(results_adj, 1, 0)
@@ -226,8 +267,8 @@ class SettingsWindow(Adw.PreferencesWindow):
 
         # Max Scrape Length
         self.scrape_len_row = Adw.ActionRow()
-        self.scrape_len_row.set_title("Max Scrape Length")
-        self.scrape_len_row.set_subtitle("Maximum characters to extract per page")
+        self.scrape_len_row.set_title(self.lang_manager.get("settings.deep_research.max_scrape_length"))
+        self.scrape_len_row.set_subtitle(self.lang_manager.get("settings.deep_research.max_scrape_length_subtitle"))
         
         scrape_adj = Gtk.Adjustment.new(self.config.get("dr_max_scrape_length", 5000), 1000, 20000, 500, 1000, 0)
         self.scrape_spin = Gtk.SpinButton.new(scrape_adj, 1, 0)
@@ -238,8 +279,8 @@ class SettingsWindow(Adw.PreferencesWindow):
 
         # Output Depth (Outline Steps)
         self.outline_steps_row = Adw.ActionRow()
-        self.outline_steps_row.set_title("Outline Depth")
-        self.outline_steps_row.set_subtitle("Number of sections in the generated report")
+        self.outline_steps_row.set_title(self.lang_manager.get("settings.deep_research.outline_depth"))
+        self.outline_steps_row.set_subtitle(self.lang_manager.get("settings.deep_research.outline_depth_subtitle"))
         
         outline_adj = Gtk.Adjustment.new(self.config.get("dr_outline_steps", 5), 3, 15, 1, 1, 0)
         self.outline_spin = Gtk.SpinButton.new(outline_adj, 1, 0)
@@ -250,8 +291,8 @@ class SettingsWindow(Adw.PreferencesWindow):
 
         # Search Breadth (Queries per Section)
         self.search_breadth_row = Adw.ActionRow()
-        self.search_breadth_row.set_title("Search Breadth")
-        self.search_breadth_row.set_subtitle("Number of search queries per section")
+        self.search_breadth_row.set_title(self.lang_manager.get("settings.deep_research.search_breadth"))
+        self.search_breadth_row.set_subtitle(self.lang_manager.get("settings.deep_research.search_breadth_subtitle"))
         
         breadth_adj = Gtk.Adjustment.new(self.config.get("dr_search_breadth", 3), 1, 10, 1, 1, 0)
         self.breadth_spin = Gtk.SpinButton.new(breadth_adj, 1, 0)
@@ -262,14 +303,14 @@ class SettingsWindow(Adw.PreferencesWindow):
 
         # Scrape Settings Group
         scrape_group = Adw.PreferencesGroup()
-        scrape_group.set_title("Scraping Configuration")
-        scrape_group.set_description("Advanced settings for content extraction (Trafilatura).")
+        scrape_group.set_title(self.lang_manager.get("settings.deep_research.scraping_config_title"))
+        scrape_group.set_description(self.lang_manager.get("settings.deep_research.scraping_config_desc"))
         dr_page.add(scrape_group)
 
         # Min Extracted Size
         self.min_size_row = Adw.ActionRow()
-        self.min_size_row.set_title("Min Extracted Size")
-        self.min_size_row.set_subtitle("Minimum size of extracted text blocks")
+        self.min_size_row.set_title(self.lang_manager.get("settings.deep_research.min_extracted_size"))
+        self.min_size_row.set_subtitle(self.lang_manager.get("settings.deep_research.min_extracted_size_subtitle"))
         
         current_scrape = self.config.get("scrape_settings", {})
         min_size_adj = Gtk.Adjustment.new(current_scrape.get("min_extracted_size", 250), 0, 1000, 10, 50, 0)
@@ -281,8 +322,8 @@ class SettingsWindow(Adw.PreferencesWindow):
 
         # Min Output Size
         self.min_out_row = Adw.ActionRow()
-        self.min_out_row.set_title("Min Output Size")
-        self.min_out_row.set_subtitle("Minimum total size of extracted content")
+        self.min_out_row.set_title(self.lang_manager.get("settings.deep_research.min_output_size"))
+        self.min_out_row.set_subtitle(self.lang_manager.get("settings.deep_research.min_output_size_subtitle"))
         
         min_out_adj = Gtk.Adjustment.new(current_scrape.get("min_output_size", 1), 0, 1000, 10, 50, 0)
         self.min_out_spin = Gtk.SpinButton.new(min_out_adj, 1, 0)
@@ -293,20 +334,20 @@ class SettingsWindow(Adw.PreferencesWindow):
 
         # Image Search APIs Group
         img_group = Adw.PreferencesGroup()
-        img_group.set_title("Image Search APIs")
-        img_group.set_description("Provide API keys to include high-quality images with attribution in your reports.")
+        img_group.set_title(self.lang_manager.get("settings.deep_research.image_search_title"))
+        img_group.set_description(self.lang_manager.get("settings.deep_research.image_search_desc"))
         dr_page.add(img_group)
 
         # Unsplash Key
         self.unsplash_key_row = Adw.PasswordEntryRow()
-        self.unsplash_key_row.set_title("Unsplash Access Key")
+        self.unsplash_key_row.set_title(self.lang_manager.get("settings.deep_research.unsplash_key"))
         self.unsplash_key_row.set_text(self.config.get("unsplash_access_key", ""))
         self.unsplash_key_row.connect("changed", self.on_unsplash_key_changed)
         img_group.add(self.unsplash_key_row)
 
         # Pexels Key
         self.pexels_key_row = Adw.PasswordEntryRow()
-        self.pexels_key_row.set_title("Pexels API Key")
+        self.pexels_key_row.set_title(self.lang_manager.get("settings.deep_research.pexels_key"))
         self.pexels_key_row.set_text(self.config.get("pexels_api_key", ""))
         self.pexels_key_row.connect("changed", self.on_pexels_key_changed)
         img_group.add(self.pexels_key_row)
@@ -359,6 +400,29 @@ class SettingsWindow(Adw.PreferencesWindow):
 
         import threading
         threading.Thread(target=do_refresh, daemon=True).start()
+
+    def on_language_changed(self, row, param):
+        """Handle language change."""
+        idx = row.get_selected()
+        if idx < 0 or idx >= len(self.lang_map): return
+        
+        new_lang = self.lang_map[idx]
+        old_lang = self.config.get("app_language", "auto")
+        
+        if new_lang != old_lang:
+            self.config.set("app_language", new_lang)
+            # Show restart warning
+            self._show_restart_dialog()
+
+    def _show_restart_dialog(self):
+        """Warn user that restart is needed."""
+        dialog = Adw.MessageDialog(
+             transient_for=self,
+             heading=self.lang_manager.get("settings.dialogs.restart_required_title", default="Restart Required"),
+             body=self.lang_manager.get("settings.dialogs.restart_required_body", default="Please restart Gaia to apply language changes."),
+        )
+        dialog.add_response("ok", self.lang_manager.get("settings.dialogs.ok"))
+        dialog.present()
 
     def on_provider_changed(self, row, pspec):
         provider_map = {
@@ -498,11 +562,11 @@ class SettingsWindow(Adw.PreferencesWindow):
         """Ask user to enable Tor Control Port."""
         dialog = Adw.MessageDialog(
              transient_for=self,
-             heading="Tor Control Port Unavailable",
-             body="Gaia cannot talk to Tor to refresh your identity. This usually means the Control Port (9051) is disabled.\n\nDo you want Gaia to try enabling it for you? (Requires Administrator Password)",
+             heading=self.lang_manager.get("settings.dialogs.tor_unavailable_title"),
+             body=self.lang_manager.get("settings.dialogs.tor_unavailable_body"),
         )
-        dialog.add_response("cancel", "Cancel")
-        dialog.add_response("enable", "Enable")
+        dialog.add_response("cancel", self.lang_manager.get("settings.dialogs.cancel"))
+        dialog.add_response("enable", self.lang_manager.get("settings.dialogs.enable"))
         dialog.set_response_appearance("enable", Adw.ResponseAppearance.SUGGESTED)
         dialog.connect("response", self._on_enable_tor_response)
         dialog.present()
@@ -574,10 +638,10 @@ class SettingsWindow(Adw.PreferencesWindow):
         if returncode == 0:
             dialog = Adw.MessageDialog(
                  transient_for=self,
-                 heading="Success",
-                 body="Tor Control Port has been enabled. You can now refresh your identity.",
+                 heading=self.lang_manager.get("settings.dialogs.success"),
+                 body=self.lang_manager.get("settings.dialogs.tor_enabled_body"),
             )
-            dialog.add_response("ok", "OK")
+            dialog.add_response("ok", self.lang_manager.get("settings.dialogs.ok"))
             dialog.present()
         else:
             msg = "The operation failed."
@@ -588,10 +652,10 @@ class SettingsWindow(Adw.PreferencesWindow):
                 
             dialog = Adw.MessageDialog(
                  transient_for=self,
-                 heading="Configuration Failed",
+                 heading=self.lang_manager.get("settings.dialogs.config_failed"),
                  body=msg,
             )
-            dialog.add_response("close", "Close")
+            dialog.add_response("close", self.lang_manager.get("settings.dialogs.close"))
             dialog.present()
 
 

@@ -46,7 +46,8 @@ async def global_planner(state: AgentState) -> Dict[str, Any]:
             content = content.split("```json")[1].split("```")[0]
         outline = json.loads(content)
     except:
-        outline = [f"Introduction to {query}", "Key Concepts", "Detailed Technical Analysis", "Challenges and Opportunities", "Future Outlook", "Conclusion"]
+        outline = prompt_manager.get("deep_research.fallbacks.outline", query=query)
+        if isinstance(outline, str): outline = [outline] # Safety check
 
     # Now generate sub-queries for EACH section in parallel
     section_plans = {}
@@ -64,7 +65,8 @@ async def global_planner(state: AgentState) -> Dict[str, Any]:
                 content = content.split("```json")[1].split("```")[0]
             sub_queries = json.loads(content)
         except:
-            sub_queries = [f"{section} {query}", f"{section} details"]
+            sub_queries = prompt_manager.get("deep_research.fallbacks.sub_queries", section=section, query=query)
+            if isinstance(sub_queries, str): sub_queries = [sub_queries]
         section_plans[section] = sub_queries
 
     return {
@@ -135,7 +137,7 @@ async def section_researcher_node(query: str, section_title: str, sub_queries: L
     
     if not section_notes:
         print(f"--- Warning: No notes found for section {section_title} ---")
-        return {"notes": [], "content": f"\n## {section_title}\n\n*No specific research data was found for this section.*", "section": section_title}
+        return {"notes": [], "content": prompt_manager.get("deep_research.errors.no_notes", section_title=section_title), "section": section_title}
 
     print(f"--- Subagent Writing Section: {section_title} ---")
     
@@ -143,13 +145,15 @@ async def section_researcher_node(query: str, section_title: str, sub_queries: L
     
     if image_pool:
         writer_prompt += prompt_manager.get("deep_research.write_section_images")
+        image_format = prompt_manager.get("deep_research.writer_image_format", description="{description}", url="{url}")
         for img in image_pool:
-            writer_prompt += f"- ![{img['description']}]({img['url']})\n"
+            writer_prompt += image_format.format(description=img['description'], url=img['url'])
         writer_prompt += "\n"
 
-    writer_prompt += "Notes:\n"
+    writer_prompt += prompt_manager.get("deep_research.writer_notes_header")
+    note_format = prompt_manager.get("deep_research.writer_note_format", title="{title}", content="{content}", url="{url}")
     for i, note in enumerate(section_notes, 1):
-        writer_prompt += f"* {note.title}: {note.content}\n  URL: {note.url}\n"
+        writer_prompt += note_format.format(title=note.title, content=note.content, url=note.url)
         
     writer_resp = await async_generate_response([{"role": "user", "content": writer_prompt}])
     content = writer_resp["message"]["content"]
@@ -193,7 +197,8 @@ async def image_researcher_node(state: AgentState) -> Dict[str, Any]:
         img_queries = json.loads(content)
     except:
         # Fallback to simple keywords
-        img_queries = [query.split()[:2], "professional context"]
+        img_queries = prompt_manager.get("deep_research.fallbacks.image_queries")
+        img_queries = [query.split()[:2]] + img_queries
         img_queries = [" ".join(q) if isinstance(q, list) else q for q in img_queries]
 
     all_images = []
@@ -231,14 +236,14 @@ async def synthesizer_node(state: AgentState) -> Dict[str, Any]:
     """
     print("--- Synthesizing Report ---")
     if state.get("graph") and state["graph"].cancelled: 
-        return {"report": "Research cancelled by user."}
+        return {"report": prompt_manager.get("deep_research.errors.cancelled")}
         
     sections = state.get("report_sections", [])
     notes = state.get("notes", [])
     images = state.get("images", [])
     
     if not sections:
-        return {"report": "## Error\nNo content was generated for this report. Please check your connectivity or try a different topic."}
+        return {"report": prompt_manager.get("deep_research.errors.empty_report")}
         
     final_report = "\n\n".join(sections)
     

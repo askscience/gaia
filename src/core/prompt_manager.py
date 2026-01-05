@@ -1,26 +1,60 @@
 import json
 import os
+import locale
 from datetime import datetime
+from src.core.config import ConfigManager
 
 class PromptManager:
     _instance = None
 
-    def __new__(cls, prompts_path=None):
+    def __new__(cls, language=None, prompts_path=None):
         if cls._instance is None:
             cls._instance = super(PromptManager, cls).__new__(cls)
             cls._instance._initialized = False
         return cls._instance
 
-    def __init__(self, prompts_path=None):
+    def __init__(self, language=None, prompts_path=None):
         if self._initialized: return
         
+        # 1. Platform/Arg override (if passed explicitly)
+        if language is None:
+            # 2. Check Config
+            config = ConfigManager()
+            cfg_lang = config.get("app_language", "auto")
+            
+            if cfg_lang and cfg_lang != "auto":
+                language = cfg_lang
+            else:
+                # 3. System Detection (Duplicate logic or import LanguageManager? 
+                # Better to keep it self-contained or depend on LanguageManager. 
+                # Let's replicate simple detection to avoid circular deps if LanguageManager uses PromptManager)
+                language = self._detect_system_language()
+        
+        self.language = language or "en"
+        
         if prompts_path is None:
-            # Default to src/core/prompts/en.json relative to this file
+            # Default to src/core/prompts/prompts_{lang}.json
             base_dir = os.path.dirname(os.path.abspath(__file__))
-            prompts_path = os.path.join(base_dir, "prompts", "en.json")
+            prompts_path = os.path.join(base_dir, "prompts", f"prompts_{self.language}.json")
+            
+            # Fallback to en if specific language file doesn't exist
+            if not os.path.exists(prompts_path) and self.language != "en":
+                 print(f"Prompts for language '{self.language}' not found, falling back to 'en'")
+                 prompts_path = os.path.join(base_dir, "prompts", "prompts_en.json")
         
         self.prompts = self._load_prompts(prompts_path)
         self._initialized = True
+
+    def _detect_system_language(self):
+        """Detect the system language code (e.g. 'en', 'es', 'fr')."""
+        try:
+            # Get default locale like 'en_US.UTF-8'
+            loc = locale.getdefaultlocale()[0]
+            if loc:
+                return loc.split('_')[0]
+        except Exception as e:
+            print(f"Error detecting locale: {e}")
+        return "en"
 
     def _load_prompts(self, path):
         try:

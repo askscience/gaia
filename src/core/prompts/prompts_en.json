@@ -1,0 +1,135 @@
+{
+    "system_prompt_intro": "You are a professional web developer.",
+    "critical_instruction": "CRITICAL: When the user asks to build or modify CODE or WEB PROJECTS, you MUST first provide a detailed implementation plan wrapped in [PLAN] and [/PLAN] tags. The plan should list the files you will create or modify and the technologies you will use. DO NOT call any functional tools in the same turn you propose a plan. Wait for the user to approve the plan before implementing it.",
+    "exception_instruction": "EXCEPTION: You do NOT need a plan for simple calendar management tasks or web searches.",
+    "guidelines_header": "EDITING AND BUILDING GUIDELINES:",
+    "guidelines": {
+        "web_builder_enabled": "- WEB PROJECTS: When creating a website, ALWAYS create or update the HTML, CSS, and JS files together in a SINGLE turn using the `web_builder` tool. Use the `files` array parameter to provide all necessary files.",
+        "web_builder_disabled": "- WEB PROJECTS: The `web_builder` tool is DISABLED. You cannot create or modify web projects. If the user asks, explain that this feature is disabled in settings.",
+        "file_editor_enabled": [
+            "- TARGETED EDITS: For existing projects, prefer `file_editor` for specific changes. If unsure about the current files or their content, use `file_list` and `file_reader` first.",
+            "- PROJECT STATE: Use `file_list` to see which files are currently in the project. Never assume a file exists if you haven't recently listed or read it."
+        ],
+        "file_editor_disabled": "- TARGETED EDITS: The `file_editor` tool is DISABLED. You cannot edit files. If asked, explain that this feature is disabled in settings.",
+        "conciseness": "- CONCISE SUMMARY: After you finish implementing changes or edits, provide a very concise summary (1-2 sentences) of what you did. This summary will be shown to the user.",
+        "web_search_enabled": "- WEB SEARCH: If you need information from the web, use the `web_search` tool exactly ONCE per request with `max_results=3`. Call the tool IMMEDIATELY. Do NOT provide any conversational text (like 'Searching...') before calling the tool. After the search completes, you MUST provide a detailed, discursive answer based on the results. Do NOT just list sources or say you found them.",
+        "web_search_disabled": "- WEB SEARCH: The `web_search` tool is DISABLED. You cannot search the web. If the user asks for external information, apologize and explain that web search is disabled in settings.",
+        "calendar_enabled": "- CALENDAR: Current System Time is {current_time}. You do NOT need to create an implementation plan for calendar operations. You should execute calendar tools (add, remove, list) directly and immediately using this current time as reference."
+    },
+    "deep_research": {
+        "outline": "Create a detailed, comprehensive research outline for the report: \"{query}\".\n    The outline should contain {outline_steps} logical sections.\n    Return ONLY a JSON list of strings (the section titles).\n    \n    IMPORTANT: Do NOT number the sections (e.g. no \"1. Introduction\", no \"Step 1\"). Just return the titles.",
+        "sub_queries": "Generate {search_breadth} high-quality search queries to deeply research the section \"{section}\" for a report on \"{query}\".\nReturn ONLY a JSON list of strings.",
+        "extract": "Extract 3-5 key facts from the following text for the section \"{section_title}\" of research on \"{query}\".\nSource: {url}\nText: {content}",
+        "write_section": "Write a comprehensive, professional section titled \"{section_title}\" for a research report on \"{query}\".\nUse these notes and include inline citations using markdown links: [Source Title](url).\nDo NOT use numbered citations like [1] or [2] as these will be formatted globally later.\nAvoid introductory filler. Use markdown.\n\nCRITICAL: Do NOT include the title \"{section_title}\" or any #/## headers with the section name at the beginning. The title is already handled by the system. Start directly with the content.\n\n",
+        "write_section_images": "You have a pool of high-quality images available. If an image is highly relevant to a paragraph, insert it using standard markdown: ![description](url).\nOnly use images from this list. Do not use more than 1-2 images per section. Place them between paragraphs where they provide visual context.\nAvailable Images:\n",
+        "image_query": "Generate 2 distinct, high-quality search keywords for a research report on \"{query}\".\nEach keyword MUST BE short, between 1 and 3 words max.\nReturn ONLY a JSON list of strings.",
+        "writer_notes_header": "Notes:\n",
+        "writer_note_format": "* {title}: {content}\n  URL: {url}\n",
+        "writer_image_format": "- ![{description}]({url})\n",
+        "fallbacks": {
+            "outline": [
+                "Introduction to {query}",
+                "Key Concepts",
+                "Detailed Technical Analysis",
+                "Challenges and Opportunities",
+                "Future Outlook",
+                "Conclusion"
+            ],
+            "sub_queries": [
+                "{section} {query}",
+                "{section} details"
+            ],
+            "image_queries": [
+                "professional context"
+            ]
+        },
+        "errors": {
+            "no_notes": "\n## {section_title}\n\n*No specific research data was found for this section.*",
+            "cancelled": "Research cancelled by user.",
+            "empty_report": "## Error\nNo content was generated for this report. Please check your connectivity or try a different topic."
+        }
+    },
+    "file_editor": {
+        "status_editing": "Editing {filename}...",
+        "error_not_found": "Error: File '{filename}' not found in project '{project_id}'.",
+        "success_flexible": "Successfully edited '{filename}' using flexible matching. Replaced {count} occurrence(s).\n\nSearch: {search_preview}...\nReplace: {replace_preview}...",
+        "error_search_not_found": "Error: Search text not found in '{filename}'. You MUST use the 'file_reader' tool to read the file first and copy the EXACT text into the 'search' parameter.",
+        "success": "Successfully edited '{filename}'. Replaced {count} occurrence(s). [ARTIFACT]{artifact_json}[/ARTIFACT]",
+        "error_generic": "Error editing file {filename}: {error}"
+    },
+    "web_builder": {
+        "status_single": "Building {names}...",
+        "status_multiple": "Building {names}...",
+        "status_generic": "Building web project...",
+        "error_parse_files": "Error: 'files' parameter must be a list, but received a string that could not be parsed as JSON: {snippet}...",
+        "error_invalid_type": "Error: 'files' parameter must be a list, but received {type}.",
+        "success_file": "Successfully created {filename}",
+        "error_file": "Error creating file {filename}: {error}"
+    },
+    "web_search": {
+        "status_searching": "Surfing web: {query}...",
+        "error_no_results": "No search results found.",
+        "error_search": "Search Error: {error}",
+        "context_header": "Search results for: {query}\n\n",
+        "context_source": "SOURCE: {title}\n",
+        "context_content": "CONTENT: {content}\n",
+        "context_content_partial": "CONTENT: (Could not scrape full content) {snippet}\n",
+        "context_separator": "---\n",
+        "response_format": "[AI_CONTEXT]\n{context}[/AI_CONTEXT]\n\n[SOURCES]\n{sources_json}\n[/SOURCES]",
+        "error_generic": "Error: {error}"
+    },
+    "web_console": {
+        "status_reading": "Reading console logs...",
+        "error_no_logs": "No console logs found. Has the preview been run?",
+        "error_read": "Error reading logs: {error}",
+        "status_empty": "Console is empty (no errors or logs).",
+        "log_format": "[{type}]{line_info} {msg}",
+        "stack_format": "  Stack: {stack}"
+    },
+    "file_list": {
+        "status_listing": "Listing project files...",
+        "error_not_found": "No files found. Project directory does not exist yet.",
+        "item_format": "  - {rel_path} ({size} bytes)",
+        "empty_directory": "No files in project directory.",
+        "success_header": "Files in project:\n",
+        "error_generic": "Error listing files: {error}"
+    },
+    "file_reader": {
+        "status_reading": "Reading {filename}...",
+        "error_not_found": "Error: File '{filename}' not found in project '{project_id}'.",
+        "content_format": "--- CONTENT OF {filename} ---\n{content}\n--- END OF {filename} ---",
+        "error_generic": "Error reading file {filename}: {error}"
+    },
+    "calendar": {
+        "error_date_format": "Error: Invalid date format. Please use ISO 8601 (e.g. 2023-10-27T10:00:00)",
+        "success_add": "Event added successfully. UUID: {uuid}",
+        "error_add": "Failed to add event.",
+        "success_remove": "Event {uuid} removed successfully.",
+        "error_remove": "Failed to remove event {uuid}.",
+        "success_create": "Calendar '{name}' created successfully with UID {uid}.",
+        "error_create": "Failed to create calendar '{name}'.",
+        "error_list_date": "Error: Invalid date format. Please use ISO 8601.",
+        "error_no_events": "No events found.",
+        "events_header": "Found {count} events:",
+        "event_format_uid": "- UID: {uid}",
+        "event_format_summary": "  Summary: {summary}",
+        "event_format_start": "  Start: {start}",
+        "event_format_end": "  End: {end}",
+        "error_no_calendars": "No calendars found.",
+        "calendars_header": "Available Calendars:",
+        "calendar_format_name": "- Name: {name}",
+        "calendar_format_uid": "  UID: {uid}",
+        "calendar_format_color": "  Color: {color}"
+    },
+    "current_time": {
+        "format": "%Y-%m-%d %H:%M:%S"
+    },
+    "ui": {
+        "plan_approval_message": "I approve your plan. Please proceed with the implementation using the available tools now. Do NOT repeat the plan, just execute it.",
+        "spinner": {
+            "thinking": "Thinking...",
+            "generating": "Executing tools...",
+            "completed": "✓ Task completed"
+        }
+    }
+}

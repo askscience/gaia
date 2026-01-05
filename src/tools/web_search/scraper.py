@@ -70,19 +70,20 @@ def scrape_url(url: str, max_length: int = 3000, timeout: int = 10) -> dict:
         # Try trafilatura first for high-quality extraction
         try:
             try:
+            try:
                 import trafilatura
-                import configparser
+                from trafilatura.settings import use_config
                 from src.core.config import ConfigManager
                 
                 # Load settings from app config (JSON-based)
                 app_config = ConfigManager()
                 scrape_settings = app_config.get("scrape_settings", {})
                 
-                # Create Trafilatura config MANUALLY to avoid reading missing default files
-                traf_config = configparser.ConfigParser()
-                traf_config.add_section("DEFAULT")
+                # Use default Trafilatura config as base to ensure all required keys exist
+                traf_config = use_config()
                 
                 # Set defaults or user-provided values
+                # Note: ConfigParser keys are case-insensitive
                 traf_config.set("DEFAULT", "min_extracted_size", str(scrape_settings.get("min_extracted_size", 250)))
                 traf_config.set("DEFAULT", "min_output_size", str(scrape_settings.get("min_output_size", 1)))
                 traf_config.set("DEFAULT", "min_extracted_comm_size", str(scrape_settings.get("min_extracted_comm_size", 1)))

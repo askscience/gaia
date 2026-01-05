@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.2.3] - 2026-01-05
+
+### Added
+- **Internationalization (i18n)**:
+    - Added full support for multiple languages: Italian (it), German (de), Spanish (es), and French (fr).
+    - New `LanguageManager` and `prompts_*.json` system allows for translated GUI strings and AI prompts.
+    - Updated `SettingsWindow` with a language selector (requires restart).
+- **Tool Localization**:
+    - AI tool descriptions in the Settings panel are now fully localized.
+
+### Fixed
+- **Web Scraping**: Fixed a configuration error in `trafilatura` extraction that prevented options like `min_duplcheck_size` from being applied correctly.
+- **Language Detection**: Fixed `PromptManager` not respecting the user-selected language configuration on startup.
+
 ## [0.2.2] - 2026-01-04
 
 ### Added

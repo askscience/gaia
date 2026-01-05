@@ -5,6 +5,7 @@ from src.tools.calendar.create_calendar import create_calendar
 from src.tools.calendar.list_events import list_events
 from src.tools.calendar.list_calendars import list_calendars
 import datetime
+from src.core.prompt_manager import PromptManager
 
 class AddEventTool(BaseTool):
     @property
@@ -44,6 +45,7 @@ class AddEventTool(BaseTool):
         }
 
     def execute(self, summary, start_time, end_time, calendar_name=None, description="", **kwargs):
+        prompt_manager = PromptManager()
         # Parse times. The AI usually sends ISO strings.
         try:
             # Flexible parsing (handling potential Z or T)
@@ -51,13 +53,13 @@ class AddEventTool(BaseTool):
             dt_start = datetime.datetime.fromisoformat(start_time.replace('Z', '+00:00'))
             dt_end = datetime.datetime.fromisoformat(end_time.replace('Z', '+00:00'))
         except ValueError:
-            return "Error: Invalid date format. Please use ISO 8601 (e.g. 2023-10-27T10:00:00)"
+            return prompt_manager.get("calendar.error_date_format")
 
         result = add_event(summary, dt_start, dt_end, calendar_name=calendar_name, description=description)
         if result:
-            return f"Event added successfully. UUID: {result}"
+            return prompt_manager.get("calendar.success_add", uuid=result)
         else:
-            return "Failed to add event."
+            return prompt_manager.get("calendar.error_add")
 
 class RemoveEventTool(BaseTool):
     @property
@@ -86,11 +88,12 @@ class RemoveEventTool(BaseTool):
         }
 
     def execute(self, event_uid, calendar_name=None, **kwargs):
+        prompt_manager = PromptManager()
         success = remove_event(event_uid, calendar_name=calendar_name)
         if success:
-            return f"Event {event_uid} removed successfully."
+            return prompt_manager.get("calendar.success_remove", uuid=event_uid)
         else:
-            return f"Failed to remove event {event_uid}."
+            return prompt_manager.get("calendar.error_remove", uuid=event_uid)
 
 class CreateCalendarTool(BaseTool):
     @property
@@ -119,11 +122,12 @@ class CreateCalendarTool(BaseTool):
         }
 
     def execute(self, name, color="#2ec27e", **kwargs):
+        prompt_manager = PromptManager()
         uid = create_calendar(name, color)
         if uid:
-            return f"Calendar '{name}' created successfully with UID {uid}."
+            return prompt_manager.get("calendar.success_create", name=name, uid=uid)
         else:
-            return f"Failed to create calendar '{name}'."
+            return prompt_manager.get("calendar.error_create", name=name)
 
 class ListEventsTool(BaseTool):
     @property
@@ -155,6 +159,7 @@ class ListEventsTool(BaseTool):
         }
 
     def execute(self, start_date=None, end_date=None, calendar_name=None, **kwargs):
+        prompt_manager = PromptManager()
         dt_start = None
         dt_end = None
         
@@ -164,20 +169,20 @@ class ListEventsTool(BaseTool):
             if end_date:
                 dt_end = datetime.datetime.fromisoformat(end_date.replace('Z', '+00:00'))
         except ValueError:
-             return "Error: Invalid date format. Please use ISO 8601."
+             return prompt_manager.get("calendar.error_list_date")
              
         events = list_events(dt_start, dt_end, calendar_name=calendar_name)
         
         if not events:
-            return "No events found."
+            return prompt_manager.get("calendar.error_no_events")
             
         # Format for AI
-        result = [f"Found {len(events)} events:"]
+        result = [prompt_manager.get("calendar.events_header", count=len(events))]
         for e in events:
-            result.append(f"- UID: {e.get('uid', 'N/A')}")
-            result.append(f"  Summary: {e.get('summary', 'No Title')}")
-            result.append(f"  Start: {e.get('start', 'N/A')}")
-            result.append(f"  End: {e.get('end', 'N/A')}")
+            result.append(prompt_manager.get("calendar.event_format_uid", uid=e.get('uid', 'N/A')))
+            result.append(prompt_manager.get("calendar.event_format_summary", summary=e.get('summary', 'No Title')))
+            result.append(prompt_manager.get("calendar.event_format_start", start=e.get('start', 'N/A')))
+            result.append(prompt_manager.get("calendar.event_format_end", end=e.get('end', 'N/A')))
             result.append("")
             
         return "\n".join(result)
@@ -200,15 +205,16 @@ class ListCalendarsTool(BaseTool):
         }
 
     def execute(self, **kwargs):
+        prompt_manager = PromptManager()
         calendars = list_calendars()
         if not calendars:
-            return "No calendars found."
+            return prompt_manager.get("calendar.error_no_calendars")
             
-        result = ["Available Calendars:"]
+        result = [prompt_manager.get("calendar.calendars_header")]
         for c in calendars:
-            result.append(f"- Name: {c['name']}")
-            result.append(f"  UID: {c['uid']}")
-            result.append(f"  Color: {c['color']}")
+            result.append(prompt_manager.get("calendar.calendar_format_name", name=c['name']))
+            result.append(prompt_manager.get("calendar.calendar_format_uid", uid=c['uid']))
+            result.append(prompt_manager.get("calendar.calendar_format_color", color=c['color']))
             result.append("")
             
         return "\n".join(result)

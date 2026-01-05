@@ -10,6 +10,7 @@ from src.core.chat_storage import ChatStorage
 from src.ui.artifacts_panel import ArtifactsPanel
 from src.ui.chat.page import ChatPage
 from src.core.network.proxy import apply_proxy_settings # Proxy support
+from src.core.language_manager import LanguageManager
 
 class MainWindow(Adw.ApplicationWindow):
     def __init__(self, storage: ChatStorage, *args, **kwargs):
@@ -18,7 +19,8 @@ class MainWindow(Adw.ApplicationWindow):
         # Apply global network settings on startup
         apply_proxy_settings()
 
-        self.set_title("Gaia")
+        self.lang_manager = LanguageManager()
+        self.set_title(self.lang_manager.get("window.title"))
         self.set_default_size(800, 600)
         self.set_icon_name("icon")
         
@@ -62,7 +64,7 @@ class MainWindow(Adw.ApplicationWindow):
         # New Chat Button (left side)
         self.new_chat_button = Gtk.Button()
         self.new_chat_button.set_icon_name("tab-new-symbolic")
-        self.new_chat_button.set_tooltip_text("New Chat")
+        self.new_chat_button.set_tooltip_text(self.lang_manager.get("window.new_chat"))
         self.new_chat_button.connect("clicked", self.on_new_chat_clicked)
         self.header_bar.pack_start(self.new_chat_button)
         
@@ -80,14 +82,14 @@ class MainWindow(Adw.ApplicationWindow):
         # Artifacts Toggle (right side)
         self.artifacts_button = Gtk.ToggleButton()
         self.artifacts_button.set_icon_name("sidebar-show-symbolic")
-        self.artifacts_button.set_tooltip_text("Show Artifacts")
+        self.artifacts_button.set_tooltip_text(self.lang_manager.get("window.show_artifacts"))
         self.artifacts_button.connect("toggled", self.on_artifacts_toggled)
         self.header_bar.pack_end(self.artifacts_button)
 
         # Tab Overview Button (4-squares icon, to the left of menu)
         self.tab_overview_button = Gtk.Button()
         self.tab_overview_button.set_icon_name("view-grid-symbolic")
-        self.tab_overview_button.set_tooltip_text("View All Chats")
+        self.tab_overview_button.set_tooltip_text(self.lang_manager.get("window.view_all_chats"))
         self.tab_overview_button.set_action_name("overview.open")
         self.header_bar.pack_end(self.tab_overview_button)
         
@@ -100,8 +102,8 @@ class MainWindow(Adw.ApplicationWindow):
         action_about.connect("activate", self.on_about_action)
         self.add_action(action_about)
         
-        menu.append("Settings", "win.preferences")
-        menu.append("About", "win.about")
+        menu.append(self.lang_manager.get("window.menu.settings"), "win.preferences")
+        menu.append(self.lang_manager.get("window.menu.about"), "win.about")
         
         # Tab View goes after header
         self.main_box.append(self.tab_view)
@@ -174,7 +176,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.chat_pages[chat['id']] = page
         
         tab_page = self.tab_view.append(page)
-        tab_page.set_title(chat.get('title', 'New Chat'))
+        tab_page.set_title(chat.get('title', self.lang_manager.get("window.new_chat")))
         tab_page.set_icon(Gio.ThemedIcon.new("user-available-symbolic"))
         
         return tab_page
@@ -201,18 +203,16 @@ class MainWindow(Adw.ApplicationWindow):
 
     def on_about_action(self, action, param):
         """Show the About dialog."""
-        about = Adw.AboutWindow(
-            transient_for=self,
-            application_name="Gaia",
-            application_icon="com.askscience.gaia",
-            developer_name="Askscience",
-            version="0.2.2",
-            comments="Your personal AI companion, built for GNOME. Fast, beautiful, and private AI on your desktop.",
-            copyright="© 2025 Askscience",
-            website="https://github.com/askscience/gaia",
-            issue_url="https://github.com/askscience/gaia/issues",
-            license_type=Gtk.License.GPL_3_0
-        )
+        about = Adw.AboutWindow(transient_for=self)
+        about.set_application_name(self.lang_manager.get("window.about.name"))
+        about.set_application_icon("com.askscience.gaia")
+        about.set_developer_name(self.lang_manager.get("window.about.developer"))
+        about.set_version("0.2.3")
+        about.set_comments(self.lang_manager.get("window.about.comments"))
+        about.set_copyright(self.lang_manager.get("window.about.copyright"))
+        about.set_website("https://github.com/askscience/gaia")
+        about.set_issue_url("https://github.com/askscience/gaia/issues")
+        about.set_license_type(Gtk.License.GPL_3_0)
         about.present()
     
     def on_new_chat_clicked(self, button):

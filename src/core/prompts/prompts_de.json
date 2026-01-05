@@ -1,0 +1,135 @@
+{
+    "system_prompt_intro": "Du bist ein professioneller Webentwickler.",
+    "critical_instruction": "KRITISCH: Wenn der Benutzer darum bittet, CODE oder WEB-PROJEKTE zu erstellen oder zu ändern, MUSST du zuerst einen detaillierten Implementierungsplan in [PLAN] und [/PLAN] Tags bereitstellen. Der Plan muss die Dateien auflisten, die du erstellen oder ändern wirst, und die Technologien, die du verwenden wirst. Rufe im selben Zug, in dem du einen Plan vorschlägst, KEINE funktionalen Tools auf. Warte auf die Genehmigung des Benutzers, bevor du mit der Implementierung beginnst.",
+    "exception_instruction": "AUSNAHME: Du benötigst KEINEN Plan für einfache Kalenderaufgaben oder Websuchen.",
+    "guidelines_header": "RICHTLINIEN FÜR ÄNDERUNGEN UND ERSTELLUNG:",
+    "guidelines": {
+        "web_builder_enabled": "- WEB-PROJEKTE: Wenn du eine Website erstellst, erstelle oder aktualisiere IMMER HTML-, CSS- und JS-Dateien zusammen in einem EINZIGEN Zug mit dem `web_builder`-Tool. Verwende den Parameter `files`, um alle notwendigen Dateien bereitzustellen.",
+        "web_builder_disabled": "- WEB-PROJEKTE: Das `web_builder`-Tool ist DEAKTIVIERT. Du kannst keine Webprojekte erstellen oder ändern. Wenn der Benutzer fragt, erkläre, dass diese Funktion in den Einstellungen deaktiviert ist.",
+        "file_editor_enabled": [
+            "- GEZIELTE ÄNDERUNGEN: Für bestehende Projekte bevorzuge `file_editor` für spezifische Änderungen. Wenn du dir über die aktuellen Dateien oder deren Inhalt unsicher bist, verwende zuerst `file_list` und `file_reader`.",
+            "- PROJEKTSTATUS: Verwende `file_list`, um zu sehen, welche Dateien sich derzeit im Projekt befinden. Gehe niemals davon aus, dass eine Datei existiert, wenn du sie nicht kürzlich aufgelistet oder gelesen hast."
+        ],
+        "file_editor_disabled": "- GEZIELTE ÄNDERUNGEN: Das `file_editor`-Tool ist DEAKTIVIERT. Du kannst keine Dateien bearbeiten. Wenn gefragt, erkläre, dass diese Funktion in den Einstellungen deaktiviert ist.",
+        "conciseness": "- PRÄGNANZ: Nachdem du Änderungen oder Aktualisierungen abgeschlossen hast, gib eine sehr knappe Zusammenfassung (1-2 Sätze) dessen an, was du getan hast. Diese Zusammenfassung wird dem Benutzer angezeigt.",
+        "web_search_enabled": "- WEB-SUCHE: Wenn du Informationen aus dem Web benötigst, verwende das `web_search`-Tool genau EINMAL pro Anfrage mit `max_results=3`. Rufe das Tool SOFORT auf. Gib KEINEN diskursiven Text (wie 'Suche...') an, bevor du das Tool aufrufst. Nach Abschluss der Suche MUSST du eine detaillierte und diskursive Antwort basierend auf den Ergebnissen geben. Liste NICHT nur Quellen auf oder sage, dass du sie gefunden hast.",
+        "web_search_disabled": "- WEB-SUCHE: Das `web_search`-Tool ist DEAKTIVIERT. Du kannst nicht im Web suchen. Wenn der Benutzer nach externen Informationen fragt, entschuldige dich und erkläre, dass die Websuche in den Einstellungen deaktiviert ist.",
+        "calendar_enabled": "- KALENDER: Die aktuelle Systemzeit ist {current_time}. Du musst keinen Implementierungsplan für Kalenderoperationen erstellen. Du solltest Kalender-Tools (hinzufügen, entfernen, auflisten) direkt und sofort unter Verwendung dieser Zeit als Referenz ausführen."
+    },
+    "deep_research": {
+        "outline": "Erstelle eine detaillierte und umfassende Forschungsgliederung für den Bericht: \"{query}\".\n    Die Gliederung muss {outline_steps} logische Abschnitte enthalten.\n    Gib NUR eine JSON-Liste von Strings zurück (die Titel der Abschnitte).\n    \n    WICHTIG: Nummeriere die Abschnitte NICHT (z.B. kein \"1. Einleitung\", kein \"Schritt 1\"). Gib nur die Titel zurück.",
+        "sub_queries": "Generiere {search_breadth} hochwertige Suchanfragen, um den Abschnitt \"{section}\" für einen Bericht über \"{query}\" zu vertiefen.\nGib NUR eine JSON-Liste von Strings zurück.",
+        "extract": "Extrahiere 3-5 Schlüsselfakten aus dem folgenden Text für den Abschnitt \"{section_title}\" der Recherche über \"{query}\".\nQuelle: {url}\nText: {content}",
+        "write_section": "Schreibe einen vollständigen und professionellen Abschnitt mit dem Titel \"{section_title}\" für einen Forschungsbericht über \"{query}\".\nVerwende diese Notizen und füge Inline-Zitate mit Markdown-Links hinzu: [Quellentitel](url).\nVerwende KEINE nummerierten Zitate wie [1] oder [2], da diese später global formatiert werden.\nVermeide einführende Füllwörter. Verwende Markdown.\n\nKRITISCH: Füge den Titel \"{section_title}\" oder #/## Überschriften mit dem Abschnittsnamen NICHT am Anfang ein. Der Titel wird bereits vom System verwaltet. Beginne direkt mit dem Inhalt.\n\n",
+        "write_section_images": "Du hast Zugriff auf einen Pool hochwertiger Bilder. Wenn ein Bild sehr relevant für einen Absatz ist, füge es mit Standard-Markdown ein: ![beschreibung](url).\nVerwende nur Bilder aus dieser Liste. Verwende nicht mehr als 1-2 Bilder pro Abschnitt. Füge sie zwischen Absätzen ein, wo sie visuellen Kontext bieten.\nVerfügbare Bilder:\n",
+        "image_query": "Generiere 2 eindeutige und hochwertige Suchbegriffe für einen Forschungsbericht über \"{query}\".\nJedes Stichwort MUSS kurz sein, maximal 1 bis 3 Wörter.\nGib NUR eine JSON-Liste von Strings zurück.",
+        "writer_notes_header": "Notizen:\n",
+        "writer_note_format": "* {title}: {content}\n  URL: {url}\n",
+        "writer_image_format": "- ![{description}]({url})\n",
+        "fallbacks": {
+            "outline": [
+                "Einführung in {query}",
+                "Schlüsselkonzepte",
+                "Detaillierte technische Analyse",
+                "Herausforderungen und Chancen",
+                "Zukunftsperspektiven",
+                "Fazit"
+            ],
+            "sub_queries": [
+                "{section} {query}",
+                "{section} Details"
+            ],
+            "image_queries": [
+                "professioneller Kontext"
+            ]
+        },
+        "errors": {
+            "no_notes": "\n## {section_title}\n\n*Keine spezifischen Forschungsdaten für diesen Abschnitt gefunden.*",
+            "cancelled": "Recherche vom Benutzer abgebrochen.",
+            "empty_report": "## Fehler\nKein Inhalt für diesen Bericht generiert. Überprüfe deine Konnektivität oder versuche ein anderes Thema."
+        }
+    },
+    "file_editor": {
+        "status_editing": "Bearbeite {filename}...",
+        "error_not_found": "Fehler: Datei '{filename}' nicht im Projekt '{project_id}' gefunden.",
+        "success_flexible": "Erfolgreich '{filename}' mit flexibler Übereinstimmung bearbeitet. {count} Vorkommen ersetzt.\n\nSuche: {search_preview}...\nErsetzen: {replace_preview}...",
+        "error_search_not_found": "Fehler: Suchtext in '{filename}' nicht gefunden. Du MUSST zuerst das Tool 'file_reader' verwenden, um die Datei zu lesen und den EXAKTEN Text in den Parameter 'search' zu kopieren.",
+        "success": "Erfolgreich '{filename}' bearbeitet. {count} Vorkommen ersetzt. [ARTIFACT]{artifact_json}[/ARTIFACT]",
+        "error_generic": "Fehler beim Bearbeiten der Datei {filename}: {error}"
+    },
+    "web_builder": {
+        "status_single": "Erstelle {names}...",
+        "status_multiple": "Erstelle {names}...",
+        "status_generic": "Erstelle Webprojekt...",
+        "error_parse_files": "Fehler: Der Parameter 'files' muss eine Liste sein, aber es wurde ein String empfangen, der nicht als JSON analysiert werden konnte: {snippet}...",
+        "error_invalid_type": "Fehler: Der Parameter 'files' muss eine Liste sein, aber es wurde {type} empfangen.",
+        "success_file": "Erfolgreich erstellt: {filename}",
+        "error_file": "Fehler beim Erstellen der Datei {filename}: {error}"
+    },
+    "web_search": {
+        "status_searching": "Durchsuche das Web: {query}...",
+        "error_no_results": "Keine Suchergebnisse gefunden.",
+        "error_search": "Suchfehler: {error}",
+        "context_header": "Suchergebnisse für: {query}\n\n",
+        "context_source": "QUELLE: {title}\n",
+        "context_content": "INHALT: {content}\n",
+        "context_content_partial": "INHALT: (Konnte nicht den gesamten Inhalt extrahieren) {snippet}\n",
+        "context_separator": "---\n",
+        "response_format": "[AI_CONTEXT]\n{context}[/AI_CONTEXT]\n\n[SOURCES]\n{sources_json}\n[/SOURCES]",
+        "error_generic": "Fehler: {error}"
+    },
+    "web_console": {
+        "status_reading": "Lese Konsolenprotokolle...",
+        "error_no_logs": "Keine Konsolenprotokolle gefunden. Wurde die Vorschau ausgeführt?",
+        "error_read": "Fehler beim Lesen der Protokolle: {error}",
+        "status_empty": "Die Konsole ist leer (keine Fehler oder Protokolle).",
+        "log_format": "[{type}]{line_info} {msg}",
+        "stack_format": "  Stack: {stack}"
+    },
+    "file_list": {
+        "status_listing": "Liste Projektdateien auf...",
+        "error_not_found": "Keine Dateien gefunden. Das Projektverzeichnis existiert noch nicht.",
+        "item_format": "  - {rel_path} ({size} Bytes)",
+        "empty_directory": "Keine Dateien im Projektverzeichnis.",
+        "success_header": "Dateien im Projekt:\n",
+        "error_generic": "Fehler beim Auflisten der Dateien: {error}"
+    },
+    "file_reader": {
+        "status_reading": "Lese {filename}...",
+        "error_not_found": "Fehler: Datei '{filename}' nicht im Projekt '{project_id}' gefunden.",
+        "content_format": "--- INHALT VON {filename} ---\n{content}\n--- ENDE VON {filename} ---",
+        "error_generic": "Fehler beim Lesen der Datei {filename}: {error}"
+    },
+    "calendar": {
+        "error_date_format": "Fehler: Ungültiges Datumsformat. Verwende ISO 8601 (z.B. 2023-10-27T10:00:00)",
+        "success_add": "Ereignis erfolgreich hinzugefügt. UUID: {uuid}",
+        "error_add": "Konnte das Ereignis nicht hinzufügen.",
+        "success_remove": "Ereignis {uuid} erfolgreich entfernt.",
+        "error_remove": "Konnte das Ereignis {uuid} nicht entfernen.",
+        "success_create": "Kalender '{name}' erfolgreich mit UID {uid} erstellt.",
+        "error_create": "Konnte den Kalender '{name}' nicht erstellen.",
+        "error_list_date": "Fehler: Ungültiges Datumsformat. Verwende ISO 8601.",
+        "error_no_events": "Keine Ereignisse gefunden.",
+        "events_header": "{count} Ereignisse gefunden:",
+        "event_format_uid": "- UID: {uid}",
+        "event_format_summary": "  Zusammenfassung: {summary}",
+        "event_format_start": "  Start: {start}",
+        "event_format_end": "  Ende: {end}",
+        "error_no_calendars": "Keine Kalender gefunden.",
+        "calendars_header": "Verfügbare Kalender:",
+        "calendar_format_name": "- Name: {name}",
+        "calendar_format_uid": "  UID: {uid}",
+        "calendar_format_color": "  Farbe: {color}"
+    },
+    "current_time": {
+        "format": "%d-%m-%Y %H:%M:%S"
+    },
+    "ui": {
+        "plan_approval_message": "Ich genehmige deinen Plan. Fahre mit der Implementierung fort und verwende die jetzt verfügbaren Tools. Wiederhole den Plan NICHT, führe ihn einfach aus.",
+        "spinner": {
+            "thinking": "Ich denke nach...",
+            "generating": "Führe Tools aus...",
+            "completed": "✓ Aufgabe abgeschlossen"
+        }
+    }
+}

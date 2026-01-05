@@ -2,6 +2,7 @@ from src.tools.base import BaseTool
 import os
 import json
 from src.core.config import get_artifacts_dir
+from src.core.prompt_manager import PromptManager
 
 class WebBuilderTool(BaseTool):
     @property
@@ -48,25 +49,27 @@ class WebBuilderTool(BaseTool):
         }
 
     def execute(self, files: list, project_id: str, status_callback=None, **kwargs):
+        prompt_manager = PromptManager()
+        
         # Log to status
         if status_callback:
             names = [f.get('filename') for f in files if isinstance(f, dict) and f.get('filename')]
             if names:
                 desc = ", ".join(names[:2])
                 if len(names) > 2: desc += "..."
-                status_callback(f"Building {desc}...")
+                status_callback(prompt_manager.get("web_builder.status_multiple", names=desc))
             else:
-                status_callback("Building web project...")
+                status_callback(prompt_manager.get("web_builder.status_generic"))
 
         # Defensive check: if files is a string (due to parsing issues), try to load it as JSON
         if isinstance(files, str):
             try:
                 files = json.loads(files)
             except:
-                return f"Error: 'files' parameter must be a list, but received a string that could not be parsed as JSON: {files[:100]}..."
+                return prompt_manager.get("web_builder.error_parse_files", snippet=files[:100])
 
         if not isinstance(files, list):
-            return f"Error: 'files' parameter must be a list, but received {type(files).__name__}."
+            return prompt_manager.get("web_builder.error_invalid_type", type=type(files).__name__)
 
         # Organize artifacts by project_id
         project_dir = os.path.join(get_artifacts_dir(), project_id)
@@ -101,9 +104,9 @@ class WebBuilderTool(BaseTool):
                     "type": "code" if language != "html" else "web"
                 }
                 
-                results.append(f"Successfully created {filename}")
+                results.append(prompt_manager.get("web_builder.success_file", filename=filename))
                 artifact_tags.append(f"[ARTIFACT]{json.dumps(artifact_data)}[/ARTIFACT]")
             except Exception as e:
-                results.append(f"Error creating file {filename}: {str(e)}")
+                results.append(prompt_manager.get("web_builder.error_file", filename=filename, error=str(e)))
         
         return "\n".join(results) + "\n" + "".join(artifact_tags)

@@ -1,0 +1,126 @@
+{
+    "window": {
+        "title": "Gaia",
+        "new_chat": "Neuer Chat",
+        "view_all_chats": "Alle Chats ansehen",
+        "show_artifacts": "Artefakte anzeigen",
+        "menu": {
+            "settings": "Einstellungen",
+            "about": "Über"
+        },
+        "about": {
+            "name": "Gaia",
+            "developer": "Askscience",
+            "comments": "Dein persönlicher KI-Begleiter, gebaut für GNOME. Schnell, schön und private KI auf deinem Desktop.",
+            "copyright": "© 2025 Askscience"
+        }
+    },
+    "settings": {
+        "title": "Einstellungen",
+        "general": {
+            "title": "Allgemein",
+            "language_title": "Sprache",
+            "language_subtitle": "Erfordert Neustart, um wirksam zu werden",
+            "ai_config_title": "KI-Konfiguration",
+            "ai_config_desc": "Konfiguriere den KI-Anbieter und das Modell.",
+            "provider_title": "Anbieter",
+            "provider_subtitle": "Wähle den KI-Dienstanbieter",
+            "api_key_title": "API-Schlüssel",
+            "zai_coding_title": "Verwende Coding-Plan API",
+            "zai_coding_subtitle": "Aktivieren für GLM Coding Plan (erfordert Coding-Abonnement)",
+            "model_title": "Modell",
+            "model_subtitle": "Wähle das spezifische Modell",
+            "refresh_model_tooltip": "Modellliste aktualisieren"
+        },
+        "tools": {
+            "title": "Werkzeuge",
+            "enabled_tools_title": "Aktivierte Werkzeuge",
+            "enabled_tools_desc": "Spezifische KI-Werkzeuge aktivieren oder deaktivieren.",
+            "calendar_integration_title": "Kalender-Integration",
+            "calendar_integration_subtitle": "GNOME Kalender-Verwaltungswerkzeuge aktivieren",
+            "descriptions": {
+                "file_editor": "Ändert Dateien durch Suchen und Ersetzen von Text.",
+                "file_reader": "Liest den Inhalt von Dateien im Projekt.",
+                "file_list": "Listet Dateien im Projektverzeichnis auf.",
+                "web_builder": "Erstellt und ändert Webprojektdateien (HTML, CSS, JS).",
+                "web_search": "Sucht im Internet nach Informationen.",
+                "web_console": "Überprüft die Browserkonsole auf Fehler in Webprojekten.",
+                "deep_research": "Führt autonome, mehrstufige Recherchen zu komplexen Themen durch.",
+                "current_time": "Greift auf die aktuelle Systemzeit zu.",
+                "calendar_add_event": "Fügt Ereignisse zum GNOME Kalender hinzu.",
+                "calendar_remove_event": "Entfernt Ereignisse aus dem GNOME Kalender.",
+                "calendar_create": "Erstellt neue lokale Kalender.",
+                "calendar_list_events": "Listet Ereignisse aus dem GNOME Kalender auf.",
+                "calendar_list_sources": "Listet verfügbare Kalender auf."
+            }
+        },
+        "shortcuts": {
+            "title": "Tastenkürzel",
+            "desc": "Globale Tastenkürzel müssen in den GNOME-Einstellungen konfiguriert werden.",
+            "toggle_assistant": "Assistent umschalten",
+            "toggle_assistant_subtitle": "Standard: Super+Leertaste (Erfordert manuelle Konfiguration)"
+        },
+        "network": {
+            "title": "Netzwerk",
+            "desc": "Globale Netzwerkeinstellungen konfigurieren.",
+            "enable_proxy": "Proxy aktivieren",
+            "enable_proxy_subtitle": "Verkehr über einen benutzerdefinierten Proxy leiten",
+            "proxy_url": "Proxy-URL",
+            "refresh_tor_tooltip": "Tor-Identität aktualisieren"
+        },
+        "deep_research": {
+            "title": "Tiefenrecherche",
+            "research_params_title": "Recherche-Parameter",
+            "research_params_desc": "Konfiguriere das Verhalten des Deep Research Agenten.",
+            "max_loops": "Max. Recherche-Schleifen",
+            "max_loops_subtitle": "Maximale Anzahl von Iterationen zur Verfeinerung der Ergebnisse",
+            "max_results": "Max. Suchergebnisse",
+            "max_results_subtitle": "Ergebnisse pro Unterabfrage",
+            "max_scrape_length": "Max. Scrape-Länge",
+            "max_scrape_length_subtitle": "Maximale Zeichen pro Seite extrahieren",
+            "outline_depth": "Gliederungstiefe",
+            "outline_depth_subtitle": "Anzahl der Abschnitte im generierten Bericht",
+            "search_breadth": "Suchbreite",
+            "search_breadth_subtitle": "Anzahl der Suchanfragen pro Abschnitt",
+            "scraping_config_title": "Scraping-Konfiguration",
+            "scraping_config_desc": "Erweiterte Einstellungen für die Inhaltsextraktion (Trafilatura).",
+            "min_extracted_size": "Min. extrahierte Größe",
+            "min_extracted_size_subtitle": "Minimale Größe der extrahierten Textblöcke",
+            "min_output_size": "Min. Ausgabegröße",
+            "min_output_size_subtitle": "Minimale Gesamtgröße des extrahierten Inhalts",
+            "image_search_title": "Bildsuche-API",
+            "image_search_desc": "Gib API-Schlüssel an, um hochwertige Bilder mit Namensnennung in deine Berichte aufzunehmen.",
+            "unsplash_key": "Unsplash Zugangsschlüssel",
+            "pexels_key": "Pexels API-Schlüssel"
+        },
+        "dialogs": {
+            "tor_unavailable_title": "Tor-Kontrollport nicht verfügbar",
+            "tor_unavailable_body": "Gaia kann nicht mit Tor kommunizieren, um deine Identität zu aktualisieren. Dies bedeutet normalerweise, dass der Kontrollport (9051) deaktiviert ist.\n\nMöchtest du, dass Gaia versucht, ihn für dich zu aktivieren? (Erfordert Administrator-Passwort)",
+            "cancel": "Abbrechen",
+            "enable": "Aktivieren",
+            "success": "Erfolg",
+            "tor_enabled_body": "Tor-Kontrollport aktiviert. Du kannst jetzt deine Identität aktualisieren.",
+            "ok": "OK",
+            "config_failed": "Konfiguration fehlgeschlagen",
+            "close": "Schließen",
+            "restart_required_title": "Neustart erforderlich",
+            "restart_required_body": "Bitte starte Gaia neu, um die Sprachänderungen anzuwenden."
+        }
+    },
+    "chat": {
+        "placeholder": "Schreibe eine Nachricht...",
+        "send_tooltip": "Senden",
+        "stop_tooltip": "Generierung stoppen",
+        "proceed_button": "Mit Plan fortfahren",
+        "executing_button": "Führe aus...",
+        "sources_header": "Quellen"
+    },
+    "components": {
+        "research_card": {
+            "type_label": "Tiefenrecherche-Bericht",
+            "view_button": "Bericht ansehen",
+            "pdf_button": "Als PDF speichern",
+            "pdf_dialog_title": "Bericht als PDF speichern"
+        }
+    }
+}

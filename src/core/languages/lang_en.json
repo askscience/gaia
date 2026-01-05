@@ -1,0 +1,126 @@
+{
+    "window": {
+        "title": "Gaia",
+        "new_chat": "New Chat",
+        "view_all_chats": "View All Chats",
+        "show_artifacts": "Show Artifacts",
+        "menu": {
+            "settings": "Settings",
+            "about": "About"
+        },
+        "about": {
+            "name": "Gaia",
+            "developer": "Askscience",
+            "comments": "Your personal AI companion, built for GNOME. Fast, beautiful, and private AI on your desktop.",
+            "copyright": "© 2025 Askscience"
+        }
+    },
+    "settings": {
+        "title": "Settings",
+        "general": {
+            "title": "General",
+            "language_title": "Language",
+            "language_subtitle": "Requires restart to take effect",
+            "ai_config_title": "AI Configuration",
+            "ai_config_desc": "Configure the AI provider and model.",
+            "provider_title": "Provider",
+            "provider_subtitle": "Select the AI service provider",
+            "api_key_title": "API Key",
+            "zai_coding_title": "Use Coding Plan API",
+            "zai_coding_subtitle": "Enable for GLM Coding Plan (requires coding subscription)",
+            "model_title": "Model",
+            "model_subtitle": "Select the specific model to use",
+            "refresh_model_tooltip": "Refresh Model List"
+        },
+        "tools": {
+            "title": "Tools",
+            "enabled_tools_title": "Enabled Tools",
+            "enabled_tools_desc": "Enable or disable specific AI tools.",
+            "calendar_integration_title": "Calendar Integration",
+            "calendar_integration_subtitle": "Enable GNOME Calendar management tools",
+            "descriptions": {
+                "file_editor": "Modifies files by finding and replacing text.",
+                "file_reader": "Reads content of files in the project.",
+                "file_list": "Lists files in the project directory.",
+                "web_builder": "Creates and modifies web project files (HTML, CSS, JS).",
+                "web_search": "Searches the web for information.",
+                "web_console": "Checks browser console for errors in web projects.",
+                "deep_research": "Performs autonomous, multi-step research on complex topics.",
+                "current_time": "Accesses current system time.",
+                "calendar_add_event": "Adds events to GNOME Calendar.",
+                "calendar_remove_event": "Removes events from GNOME Calendar.",
+                "calendar_create": "Creates new local calendars.",
+                "calendar_list_events": "Lists events from GNOME Calendar.",
+                "calendar_list_sources": "Lists available calendars."
+            }
+        },
+        "shortcuts": {
+            "title": "Shortcuts",
+            "desc": "Global shortcuts must be configured in GNOME Settings.",
+            "toggle_assistant": "Toggle Assistant",
+            "toggle_assistant_subtitle": "Default: Super+Space (Needs manual setup)"
+        },
+        "network": {
+            "title": "Network",
+            "desc": "Configure global network settings.",
+            "enable_proxy": "Enable Proxy",
+            "enable_proxy_subtitle": "Route traffic through a custom proxy",
+            "proxy_url": "Proxy URL",
+            "refresh_tor_tooltip": "Refresh Tor Identity"
+        },
+        "deep_research": {
+            "title": "Deep Research",
+            "research_params_title": "Research Parameters",
+            "research_params_desc": "Configure the behavior of the Deep Research Agent.",
+            "max_loops": "Max Research Loops",
+            "max_loops_subtitle": "Maximum number of iterations for refining results",
+            "max_results": "Max Search Results",
+            "max_results_subtitle": "Results per sub-query",
+            "max_scrape_length": "Max Scrape Length",
+            "max_scrape_length_subtitle": "Maximum characters to extract per page",
+            "outline_depth": "Outline Depth",
+            "outline_depth_subtitle": "Number of sections in the generated report",
+            "search_breadth": "Search Breadth",
+            "search_breadth_subtitle": "Number of search queries per section",
+            "scraping_config_title": "Scraping Configuration",
+            "scraping_config_desc": "Advanced settings for content extraction (Trafilatura).",
+            "min_extracted_size": "Min Extracted Size",
+            "min_extracted_size_subtitle": "Minimum size of extracted text blocks",
+            "min_output_size": "Min Output Size",
+            "min_output_size_subtitle": "Minimum total size of extracted content",
+            "image_search_title": "Image Search APIs",
+            "image_search_desc": "Provide API keys to include high-quality images with attribution in your reports.",
+            "unsplash_key": "Unsplash Access Key",
+            "pexels_key": "Pexels API Key"
+        },
+        "dialogs": {
+            "tor_unavailable_title": "Tor Control Port Unavailable",
+            "tor_unavailable_body": "Gaia cannot talk to Tor to refresh your identity. This usually means the Control Port (9051) is disabled.\n\nDo you want Gaia to try enabling it for you? (Requires Administrator Password)",
+            "cancel": "Cancel",
+            "enable": "Enable",
+            "success": "Success",
+            "tor_enabled_body": "Tor Control Port has been enabled. You can now refresh your identity.",
+            "ok": "OK",
+            "config_failed": "Configuration Failed",
+            "close": "Close",
+            "restart_required_title": "Restart Required",
+            "restart_required_body": "Please restart Gaia to apply language changes."
+        }
+    },
+    "chat": {
+        "placeholder": "Type a message...",
+        "send_tooltip": "Send",
+        "stop_tooltip": "Stop Generation",
+        "proceed_button": "Proceed with Plan",
+        "executing_button": "Executing...",
+        "sources_header": "Sources"
+    },
+    "components": {
+        "research_card": {
+            "type_label": "Deep Research Report",
+            "view_button": "View Report",
+            "pdf_button": "Save as PDF",
+            "pdf_dialog_title": "Save Report as PDF"
+        }
+    }
+}

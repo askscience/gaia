@@ -2,6 +2,7 @@ from src.tools.base import BaseTool
 import os
 import json
 from src.core.config import get_artifacts_dir
+from src.core.prompt_manager import PromptManager
 
 class WebConsoleTool(BaseTool):
     @property
@@ -26,14 +27,15 @@ class WebConsoleTool(BaseTool):
         }
 
     def execute(self, project_id: str, status_callback=None, **kwargs):
+        prompt_manager = PromptManager()
         if status_callback:
-            status_callback("Reading console logs...")
+            status_callback(prompt_manager.get("web_console.status_reading"))
 
         project_dir = os.path.join(get_artifacts_dir(), project_id)
         log_file = os.path.join(project_dir, "console.json")
         
         if not os.path.exists(log_file):
-            return "No console logs found. Has the preview been run?"
+            return prompt_manager.get("web_console.error_no_logs")
             
         logs = []
         try:
@@ -46,10 +48,10 @@ class WebConsoleTool(BaseTool):
                     except:
                         pass
         except Exception as e:
-            return f"Error reading logs: {e}"
+            return prompt_manager.get("web_console.error_read", error=str(e))
 
         if not logs:
-            return "Console is empty (no errors or logs)."
+            return prompt_manager.get("web_console.status_empty")
             
         # Format logs for AI
         output = []
@@ -61,9 +63,9 @@ class WebConsoleTool(BaseTool):
             stack = entry.get("stack", "")
             
             line_info = f" ({source}:{lineno})" if lineno else ""
-            output.append(f"[{type_}]{line_info} {msg}")
+            output.append(prompt_manager.get("web_console.log_format", type=type_, line_info=line_info, msg=msg))
             if stack:
                 # Indent stack trace
-                output.append(f"  Stack: {stack}")
+                output.append(prompt_manager.get("web_console.stack_format", stack=stack))
                 
         return "\n".join(output)

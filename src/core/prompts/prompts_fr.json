@@ -1,0 +1,135 @@
+{
+    "system_prompt_intro": "Vous êtes un développeur web professionnel.",
+    "critical_instruction": "CRITIQUE : Lorsque l'utilisateur demande de créer ou de modifier du CODE ou des PROJETS WEB, vous DEVEZ d'abord fournir un plan de mise en œuvre détaillé entre les balises [PLAN] et [/PLAN]. Le plan doit lister les fichiers que vous allez créer ou modifier et les technologies que vous utiliserez. N'appelez AUCUN outil fonctionnel dans le même tour où vous proposez un plan. Attendez que l'utilisateur approuve le plan avant de l'implémenter.",
+    "exception_instruction": "EXCEPTION : Vous n'avez PAS besoin d'un plan pour des tâches simples de calendrier ou des recherches web.",
+    "guidelines_header": "DIRECTIVES POUR LES MODIFICATIONS ET LA CRÉATION :",
+    "guidelines": {
+        "web_builder_enabled": "- PROJETS WEB : Lorsque vous créez un site web, créez ou mettez TOUJOURS à jour les fichiers HTML, CSS et JS ensemble en un SEUL tour en utilisant l'outil `web_builder`. Utilisez le paramètre `files` pour fournir tous les fichiers nécessaires.",
+        "web_builder_disabled": "- PROJETS WEB : L'outil `web_builder` est DÉSACTIVÉ. Vous ne pouvez pas créer ou modifier de projets web. Si l'utilisateur le demande, expliquez que cette fonctionnalité est désactivée dans les paramètres.",
+        "file_editor_enabled": [
+            "- MODIFICATIONS CIBLÉES : Pour les projets existants, préférez `file_editor` pour des modifications spécifiques. Si vous n'êtes pas sûr des fichiers actuels ou de leur contenu, utilisez d'abord `file_list` et `file_reader`.",
+            "- ÉTAT DU PROJET : Utilisez `file_list` pour voir quels fichiers sont actuellement dans le projet. Ne supposez jamais qu'un fichier existe si vous ne l'avez pas listé ou lu récemment."
+        ],
+        "file_editor_disabled": "- MODIFICATIONS CIBLÉES : L'outil `file_editor` est DÉSACTIVÉ. Vous ne pouvez pas modifier de fichiers. Si demandé, expliquez que cette fonctionnalité est désactivée dans les paramètres.",
+        "conciseness": "- CONCISION : Après avoir terminé les modifications ou les mises à jour, fournissez un résumé très concis (1-2 phrases) de ce que vous avez fait. Ce résumé sera affiché à l'utilisateur.",
+        "web_search_enabled": "- RECHERCHE WEB : Si vous avez besoin d'informations du web, utilisez l'outil `web_search` exactement UNE FOIS par demande avec `max_results=3`. Appelez l'outil IMMÉDIATEMENT. Ne fournissez AUCUN texte discursif (comme 'Recherche en cours...') avant d'appeler l'outil. Après avoir terminé la recherche, vous DEVEZ fournir une réponse détaillée et discursive basée sur les résultats. Ne vous contentez pas de lister des sources ou de dire que vous les avez trouvées.",
+        "web_search_disabled": "- RECHERCHE WEB : L'outil `web_search` est DÉSACTIVÉ. Vous ne pouvez pas effectuer de recherches sur le web. Si l'utilisateur demande des informations externes, excusez-vous et expliquez que la recherche web est désactivée dans les paramètres.",
+        "calendar_enabled": "- CALENDRIER : L'heure actuelle du système est {current_time}. Vous n'avez pas besoin de créer un plan de mise en œuvre pour les opérations de calendrier. Vous devez exécuter les outils de calendrier (ajouter, supprimer, lister) directement et immédiatement en utilisant cette heure comme référence."
+    },
+    "deep_research": {
+        "outline": "Créez un plan de recherche détaillé et complet pour le rapport : \"{query}\".\n    Le plan doit contenir {outline_steps} sections logiques.\n    Retournez UNIQUEMENT une liste JSON de chaînes (les titres des sections).\n    \n    IMPORTANT : Ne numérotez PAS les sections (ex. pas \"1. Introduction\", pas \"Étape 1\"). Retournez seulement les titres.",
+        "sub_queries": "Générez {search_breadth} requêtes de recherche de haute qualité pour approfondir la section \"{section}\" pour un rapport sur \"{query}\".\nRetournez UNIQUEMENT une liste JSON de chaînes.",
+        "extract": "Extrayez 3-5 faits clés du texte suivant pour la section \"{section_title}\" de la recherche sur \"{query}\".\nSource : {url}\nTexte : {content}",
+        "write_section": "Écrivez une section complète et professionnelle intitulée \"{section_title}\" pour un rapport de recherche sur \"{query}\".\nUtilisez ces notes et incluez des citations en ligne en utilisant des liens markdown : [Titre Source](url).\nN'utilisez PAS de citations numérotées comme [1] ou [2] car elles seront formatées globalement plus tard.\nÉvitez les remplissages introductifs. Utilisez le markdown.\n\nCRITIQUE : N'incluez PAS le titre \"{section_title}\" ou des en-têtes #/## avec le nom de la section au début. Le titre est déjà géré par le système. Commencez directement par le contenu.\n\n",
+        "write_section_images": "Vous avez accès à un pool d'images de haute qualité. Si une image est très pertinente pour un paragraphe, insérez-la en utilisant le markdown standard : ![description](url).\nUtilisez uniquement des images de cette liste. N'utilisez pas plus de 1-2 images par section. Insérez-les entre les paragraphes où elles fournissent un contexte visuel.\nImages Disponibles :\n",
+        "image_query": "Générez 2 termes de recherche distincts et de haute qualité pour un rapport de recherche sur \"{query}\".\nChaque mot-clé DOIT ÊTRE court, au maximum 1 à 3 mots.\nRetournez UNIQUEMENT une liste JSON de chaînes.",
+        "writer_notes_header": "Notes :\n",
+        "writer_note_format": "* {title} : {content}\n  URL : {url}\n",
+        "writer_image_format": "- ![{description}]({url})\n",
+        "fallbacks": {
+            "outline": [
+                "Introduction à {query}",
+                "Concepts Clés",
+                "Analyse Technique Détaillée",
+                "Défis et Opportunités",
+                "Perspectives Futures",
+                "Conclusion"
+            ],
+            "sub_queries": [
+                "{section} {query}",
+                "{section} détails"
+            ],
+            "image_queries": [
+                "contexte professionnel"
+            ]
+        },
+        "errors": {
+            "no_notes": "\n## {section_title}\n\n*Aucune donnée de recherche spécifique trouvée pour cette section.*",
+            "cancelled": "Recherche annulée par l'utilisateur.",
+            "empty_report": "## Erreur\nAucun contenu généré pour ce rapport. Vérifiez votre connectivité ou essayez un sujet différent."
+        }
+    },
+    "file_editor": {
+        "status_editing": "Modification de {filename} en cours...",
+        "error_not_found": "Erreur : Fichier '{filename}' non trouvé dans le projet '{project_id}'.",
+        "success_flexible": "Modification réussie de '{filename}' en utilisant la correspondance flexible. {count} occurrence(s) remplacée(s).\n\nRecherche : {search_preview}...\nRemplacement : {replace_preview}...",
+        "error_search_not_found": "Erreur : Texte de recherche non trouvé dans '{filename}'. Vous DEVEZ d'abord utiliser l'outil 'file_reader' pour lire le fichier et copier le texte EXACT dans le paramètre 'search'.",
+        "success": "Modification réussie de '{filename}'. {count} occurrence(s) remplacée(s). [ARTIFACT]{artifact_json}[/ARTIFACT]",
+        "error_generic": "Erreur lors de la modification du fichier {filename} : {error}"
+    },
+    "web_builder": {
+        "status_single": "Création de {names}...",
+        "status_multiple": "Création de {names}...",
+        "status_generic": "Création du projet web...",
+        "error_parse_files": "Erreur : le paramètre 'files' doit être une liste, mais une chaîne a été reçue qui n'a pas pu être analysée comme JSON : {snippet}...",
+        "error_invalid_type": "Erreur : le paramètre 'files' doit être une liste, mais {type} a été reçu.",
+        "success_file": "Création réussie de {filename}",
+        "error_file": "Erreur lors de la création du fichier {filename} : {error}"
+    },
+    "web_search": {
+        "status_searching": "Recherche sur le web : {query}...",
+        "error_no_results": "Aucun résultat de recherche trouvé.",
+        "error_search": "Erreur de recherche : {error}",
+        "context_header": "Résultats de recherche pour : {query}\n\n",
+        "context_source": "SOURCE : {title}\n",
+        "context_content": "CONTENU : {content}\n",
+        "context_content_partial": "CONTENU : (Impossible d'extraire tout le contenu) {snippet}\n",
+        "context_separator": "---\n",
+        "response_format": "[AI_CONTEXT]\n{context}[/AI_CONTEXT]\n\n[SOURCES]\n{sources_json}\n[/SOURCES]",
+        "error_generic": "Erreur : {error}"
+    },
+    "web_console": {
+        "status_reading": "Lecture des journaux de la console...",
+        "error_no_logs": "Aucun journal de console trouvé. L'aperçu a-t-il été exécuté ?",
+        "error_read": "Erreur lors de la lecture des journaux : {error}",
+        "status_empty": "La console est vide (aucun incident ni journal).",
+        "log_format": "[{type}]{line_info} {msg}",
+        "stack_format": "  Pile : {stack}"
+    },
+    "file_list": {
+        "status_listing": "Listage des fichiers du projet...",
+        "error_not_found": "Aucun fichier trouvé. Le répertoire du projet n'existe pas encore.",
+        "item_format": "  - {rel_path} ({size} octets)",
+        "empty_directory": "Aucun fichier dans le répertoire du projet.",
+        "success_header": "Fichiers dans le projet :\n",
+        "error_generic": "Erreur lors du listage des fichiers : {error}"
+    },
+    "file_reader": {
+        "status_reading": "Lecture de {filename}...",
+        "error_not_found": "Erreur : Fichier '{filename}' non trouvé dans le projet '{project_id}'.",
+        "content_format": "--- CONTENU DE {filename} ---\n{content}\n--- FIN DE {filename} ---",
+        "error_generic": "Erreur lors de la lecture du fichier {filename} : {error}"
+    },
+    "calendar": {
+        "error_date_format": "Erreur : Format de date invalide. Utilisez ISO 8601 (ex. 2023-10-27T10:00:00)",
+        "success_add": "Événement ajouté avec succès. UUID : {uuid}",
+        "error_add": "Impossible d'ajouter l'événement.",
+        "success_remove": "Événement {uuid} supprimé avec succès.",
+        "error_remove": "Impossible de supprimer l'événement {uuid}.",
+        "success_create": "Calendrier '{name}' créé avec succès avec l'UID {uid}.",
+        "error_create": "Impossible de créer le calendrier '{name}'.",
+        "error_list_date": "Erreur : Format de date invalide. Utilisez ISO 8601.",
+        "error_no_events": "Aucun événement trouvé.",
+        "events_header": "{count} événements trouvés :",
+        "event_format_uid": "- UID : {uid}",
+        "event_format_summary": "  Résumé : {summary}",
+        "event_format_start": "  Début : {start}",
+        "event_format_end": "  Fin : {end}",
+        "error_no_calendars": "Aucun calendrier trouvé.",
+        "calendars_header": "Calendriers Disponibles :",
+        "calendar_format_name": "- Nom : {name}",
+        "calendar_format_uid": "  UID : {uid}",
+        "calendar_format_color": "  Couleur : {color}"
+    },
+    "current_time": {
+        "format": "%d-%m-%Y %H:%M:%S"
+    },
+    "ui": {
+        "plan_approval_message": "J'approuve votre plan. Procédez à la mise en œuvre en utilisant les outils disponibles maintenant. NE répétez PAS le plan, exécutez-le simplement.",
+        "spinner": {
+            "thinking": "Je réfléchis...",
+            "generating": "Exécution des outils...",
+            "completed": "✓ Tâche terminée"
+        }
+    }
+}

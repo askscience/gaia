@@ -2,6 +2,7 @@ import os
 import json
 from src.tools.base import BaseTool
 from src.core.config import get_artifacts_dir
+from src.core.prompt_manager import PromptManager
 
 class FileEditorTool(BaseTool):
     @property
@@ -38,14 +39,16 @@ class FileEditorTool(BaseTool):
         }
 
     def execute(self, filename: str, project_id: str, search: str, replace: str, status_callback=None, **kwargs):
+        prompt_manager = PromptManager()
+        
         if status_callback:
-            status_callback(f"Editing {os.path.basename(filename)}...")
+            status_callback(prompt_manager.get("file_editor.status_editing", filename=os.path.basename(filename)))
 
         artifacts_dir = os.path.join(get_artifacts_dir(), project_id)
         file_path = os.path.join(artifacts_dir, filename)
         
         if not os.path.exists(file_path):
-            return f"Error: File '{filename}' not found in project '{project_id}'."
+            return prompt_manager.get("file_editor.error_not_found", filename=filename, project_id=project_id)
         
         try:
             with open(file_path, "r", encoding="utf-8") as f:
@@ -58,12 +61,12 @@ class FileEditorTool(BaseTool):
                 if count > 0:
                      with open(file_path, "w", encoding="utf-8") as f:
                         f.write(new_content)
-                     return f"Successfully edited '{filename}' using flexible matching. Replaced {count} occurrence(s).\n\nSearch: {search[:50]}...\nReplace: {replace[:50]}..."
+                if count > 0:
+                     with open(file_path, "w", encoding="utf-8") as f:
+                        f.write(new_content)
+                     return prompt_manager.get("file_editor.success_flexible", filename=filename, count=count, search_preview=search[:50], replace_preview=replace[:50])
                 
-                return (
-                    f"Error: Search text not found in '{filename}'. "
-                    f"You MUST use the 'file_reader' tool to read the file first and copy the EXACT text into the 'search' parameter."
-                )
+                return prompt_manager.get("file_editor.error_search_not_found", filename=filename)
             
             # Count occurrences
             count = content.count(search)
@@ -87,9 +90,16 @@ class FileEditorTool(BaseTool):
                 "type": "code" if language != "html" else "web"
             }
             
-            return f"Successfully edited '{filename}'. Replaced {count} occurrence(s). [ARTIFACT]{json.dumps(artifact_data)}[/ARTIFACT]"
+            artifact_data = {
+                "filename": filename,
+                "path": file_path,
+                "language": language,
+                "type": "code" if language != "html" else "web"
+            }
+            
+            return prompt_manager.get("file_editor.success", filename=filename, count=count, artifact_json=json.dumps(artifact_data))
         except Exception as e:
-            return f"Error editing file {filename}: {str(e)}"
+            return prompt_manager.get("file_editor.error_generic", filename=filename, error=str(e))
 
     def _flexible_replace(self, content: str, search: str, replace: str):
         """Attempt to replace text ignoring whitespace differences per line."""

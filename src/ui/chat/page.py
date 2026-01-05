@@ -15,7 +15,9 @@ from src.ui.components import SourceCard, ArtifactCard, ResearchCard
 from src.core.ai_client import AIClient
 from src.tools.manager import ToolManager
 from src.core.tool_call_parser import ToolCallParser
+from src.core.tool_call_parser import ToolCallParser
 from src.core.prompt_manager import PromptManager
+from src.core.language_manager import LanguageManager
 
 class ChatPage(Gtk.Box):
     """A single chat page containing the chat UI."""
@@ -28,6 +30,7 @@ class ChatPage(Gtk.Box):
         self.history = chat_data.get('history', [])
         self.lazy_loading = lazy_loading
         self.prompt_manager = PromptManager()
+        self.lang_manager = LanguageManager()
         
         self.loaded_messages = 0
         self.max_visible_messages = 100
@@ -77,13 +80,13 @@ class ChatPage(Gtk.Box):
         
         self.entry = Gtk.Entry()
         self.entry.set_hexpand(True)
-        self.entry.set_placeholder_text("Type a message...")
+        self.entry.set_placeholder_text(self.lang_manager.get("chat.placeholder"))
         self.entry.connect("activate", self.on_entry_activate)
         self.input_box.append(self.entry)
         
         self.send_button = Gtk.Button()
         self.send_button.set_icon_name("mail-send-symbolic")
-        self.send_button.set_tooltip_text("Send")
+        self.send_button.set_tooltip_text(self.lang_manager.get("chat.send_tooltip"))
         self.send_button.add_css_class("suggested-action")
         self.send_button.connect("clicked", self.on_send_clicked)
         self.input_box.append(self.send_button)
@@ -231,7 +234,7 @@ class ChatPage(Gtk.Box):
         self._is_generating = True
         self._cancel_event.clear()
         self.send_button.set_icon_name("process-stop-symbolic")
-        self.send_button.set_tooltip_text("Stop Generation")
+        self.send_button.set_tooltip_text(self.lang_manager.get("chat.stop_tooltip"))
         
         self.add_message("user", text)
         
@@ -252,7 +255,7 @@ class ChatPage(Gtk.Box):
         self.entry.set_sensitive(True)
         self.send_button.set_sensitive(True)
         self.send_button.set_icon_name("mail-send-symbolic")
-        self.send_button.set_tooltip_text("Send")
+        self.send_button.set_tooltip_text(self.lang_manager.get("chat.send_tooltip"))
         self.entry.grab_focus()
 
     def add_message(self, role: str, text: str, metadata: dict = None, parsed_text: str = None):
@@ -270,8 +273,8 @@ class ChatPage(Gtk.Box):
         
         # Auto-update title if it's the first user message
         if role == "user":
-            current_title = self.chat_data.get('title', 'New Chat')
-            if current_title in ["New Chat", "New chat", None]:
+            current_title = self.chat_data.get('title', self.lang_manager.get("window.new_chat"))
+            if current_title in [self.lang_manager.get("window.new_chat"), "New Chat", "New chat", None]:
                 new_title = text[:30] + "..." if len(text) > 30 else text
                 self.chat_data['title'] = new_title
                 
@@ -378,7 +381,9 @@ class ChatPage(Gtk.Box):
                 chat['history'][-1]['metadata'].update(metadata)
                 self.storage.save_chat(chat)
 
-    def show_spinner(self, text: str = "Thinking..."):
+    def show_spinner(self, text: str = None):
+        if text is None:
+            text = self.prompt_manager.get("ui.spinner.thinking")
         if hasattr(self, 'spinner_box') and self.spinner_box:
             c = self.spinner_box.get_first_child()
             while c:
@@ -423,7 +428,9 @@ class ChatPage(Gtk.Box):
         main_box.set_hexpand(True)
         main_box.add_css_class("sources-container")
         
-        header = Gtk.Label(label="Sources")
+        main_box.add_css_class("sources-container")
+        
+        header = Gtk.Label(label=self.lang_manager.get("chat.sources_header"))
         header.add_css_class("dim-label")
         header.set_halign(Gtk.Align.START)
         header.set_margin_start(4)
@@ -600,7 +607,7 @@ class ChatPage(Gtk.Box):
                     break
                 
                 if not has_shown_initial_ui:
-                    GLib.idle_add(self.show_spinner, "Executing tools...")
+                    GLib.idle_add(self.show_spinner, self.prompt_manager.get("ui.spinner.generating"))
                 
                 messages.append({'role': 'assistant', 'content': clean_content if clean_content.strip() else None, 'tool_calls': pending_tool_calls})
                 all_sources, all_artifacts = [], []
@@ -677,7 +684,7 @@ class ChatPage(Gtk.Box):
                     pass # Continue to next turn to let AI process results
 
             if not has_shown_initial_ui:
-                final_text = accumulated_ui_text.strip() or ("✓ Task completed" if turn > 1 else "")
+                final_text = accumulated_ui_text.strip() or ("" if turn <= 1 else self.prompt_manager.get("ui.spinner.completed"))
                 if final_text or current_metadata:
                     parsed_final = markdown_to_pango(final_text) if final_text else None
                     GLib.idle_add(self.replace_spinner_with_msg, "assistant", final_text, current_metadata, parsed_final)
@@ -724,17 +731,16 @@ class ChatPage(Gtk.Box):
             child = child.get_next_sibling()
             
         if not has_button:
-            btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
             btn_box.set_margin_top(8)
             btn_box.add_css_class("plan-button-box")
             
-            proceed_btn = Gtk.Button(label="Proceed with Plan")
+            proceed_btn = Gtk.Button(label=self.lang_manager.get("chat.proceed_button"))
             proceed_btn.add_css_class("suggested-action")
             proceed_btn.add_css_class("plan-proceed-button")
             
             def on_click(btn):
                 btn.set_sensitive(False)
-                btn.set_label("Executing...")
+                btn.set_label(self.lang_manager.get("chat.executing_button"))
                 self.on_plan_proceed()
             
             proceed_btn.connect("clicked", on_click)
@@ -752,7 +758,7 @@ class ChatPage(Gtk.Box):
         self.update_last_message_metadata({'plan_approved': True})
         def run_with_exception_handler():
             try:
-                self.run_ai("I approve your plan. Please proceed with the implementation using the available tools now. Do NOT repeat the plan, just execute it.")
+                self.run_ai(self.prompt_manager.get("ui.plan_approval_message"))
             except Exception as e:
                 traceback.print_exc()
                 GLib.idle_add(self.enable_ui)

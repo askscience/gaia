@@ -1,0 +1,126 @@
+{
+    "window": {
+        "title": "Gaia",
+        "new_chat": "Nuevo Chat",
+        "view_all_chats": "Ver Todos los Chats",
+        "show_artifacts": "Mostrar Artefactos",
+        "menu": {
+            "settings": "Ajustes",
+            "about": "Acerca de"
+        },
+        "about": {
+            "name": "Gaia",
+            "developer": "Askscience",
+            "comments": "Tu compañero de IA personal, construido para GNOME. Rápido, hermoso e IA privada en tu escritorio.",
+            "copyright": "© 2025 Askscience"
+        }
+    },
+    "settings": {
+        "title": "Ajustes",
+        "general": {
+            "title": "General",
+            "language_title": "Idioma",
+            "language_subtitle": "Requiere reinicio para surtir efecto",
+            "ai_config_title": "Configuración de IA",
+            "ai_config_desc": "Configura el proveedor y modelo de IA.",
+            "provider_title": "Proveedor",
+            "provider_subtitle": "Selecciona el proveedor del servicio de IA",
+            "api_key_title": "Clave API",
+            "zai_coding_title": "Usar API de Plan de Código",
+            "zai_coding_subtitle": "Habilitar para GLM Coding Plan (requiere suscripción de programación)",
+            "model_title": "Modelo",
+            "model_subtitle": "Selecciona el modelo específico a usar",
+            "refresh_model_tooltip": "Actualizar Lista de Modelos"
+        },
+        "tools": {
+            "title": "Herramientas",
+            "enabled_tools_title": "Herramientas Habilitadas",
+            "enabled_tools_desc": "Habilita o deshabilita herramientas específicas de IA.",
+            "calendar_integration_title": "Integración de Calendario",
+            "calendar_integration_subtitle": "Habilitar herramientas de gestión de Calendario GNOME",
+            "descriptions": {
+                "file_editor": "Modifica archivos buscando y reemplazando texto.",
+                "file_reader": "Lee el contenido de archivos en el proyecto.",
+                "file_list": "Lista archivos en el directorio del proyecto.",
+                "web_builder": "Crea y modifica archivos de proyectos web (HTML, CSS, JS).",
+                "web_search": "Busca información en la web.",
+                "web_console": "Verifica la consola del navegador en busca de errores en proyectos web.",
+                "deep_research": "Realiza investigaciones autónomas de varios pasos sobre temas complejos.",
+                "current_time": "Accede a la hora actual del sistema.",
+                "calendar_add_event": "Añade eventos al Calendario GNOME.",
+                "calendar_remove_event": "Elimina eventos del Calendario GNOME.",
+                "calendar_create": "Crea nuevos calendarios locales.",
+                "calendar_list_events": "Lista eventos del Calendario GNOME.",
+                "calendar_list_sources": "Lista calendarios disponibles."
+            }
+        },
+        "shortcuts": {
+            "title": "Atajos",
+            "desc": "Los atajos globales deben configurarse en la Configuración de GNOME.",
+            "toggle_assistant": "Alternar Asistente",
+            "toggle_assistant_subtitle": "Predeterminado: Super+Espacio (Requiere configuración manual)"
+        },
+        "network": {
+            "title": "Red",
+            "desc": "Configura los ajustes de red globales.",
+            "enable_proxy": "Habilitar Proxy",
+            "enable_proxy_subtitle": "Enrutar el tráfico a través de un proxy personalizado",
+            "proxy_url": "URL del Proxy",
+            "refresh_tor_tooltip": "Actualizar Identidad Tor"
+        },
+        "deep_research": {
+            "title": "Investigación Profunda",
+            "research_params_title": "Parámetros de Investigación",
+            "research_params_desc": "Configura el comportamiento del Agente de Investigación Profunda.",
+            "max_loops": "Máx. Bucles de Investigación",
+            "max_loops_subtitle": "Número máximo de iteraciones para refinar resultados",
+            "max_results": "Máx. Resultados de Búsqueda",
+            "max_results_subtitle": "Resultados por sub-consulta",
+            "max_scrape_length": "Máx. Longitud de Rastreo",
+            "max_scrape_length_subtitle": "Caracteres máximos a extraer por página",
+            "outline_depth": "Profundidad del Esquema",
+            "outline_depth_subtitle": "Número de secciones en el informe generado",
+            "search_breadth": "Amplitud de Búsqueda",
+            "search_breadth_subtitle": "Número de consultas de búsqueda por sección",
+            "scraping_config_title": "Configuración de Rastreo",
+            "scraping_config_desc": "Ajustes avanzados para extracción de contenido (Trafilatura).",
+            "min_extracted_size": "Tamaño Mín. Extraído",
+            "min_extracted_size_subtitle": "Tamaño mínimo de bloques de texto extraídos",
+            "min_output_size": "Tamaño Mín. Salida",
+            "min_output_size_subtitle": "Tamaño total mínimo del contenido extraído",
+            "image_search_title": "API de Búsqueda de Imágenes",
+            "image_search_desc": "Proporciona claves API para incluir imágenes de alta calidad con atribución en tus informes.",
+            "unsplash_key": "Clave de Acceso Unsplash",
+            "pexels_key": "Clave API Pexels"
+        },
+        "dialogs": {
+            "tor_unavailable_title": "Puerto de Control Tor No Disponible",
+            "tor_unavailable_body": "Gaia no puede comunicarse con Tor para actualizar tu identidad. Esto generalmente significa que el Puerto de Control (9051) está deshabilitado.\n\n¿Quieres que Gaia intente habilitarlo por ti? (Requiere contraseña de Administrador)",
+            "cancel": "Cancelar",
+            "enable": "Habilitar",
+            "success": "Éxito",
+            "tor_enabled_body": "Puerto de Control Tor habilitado. Ahora puedes actualizar tu identidad.",
+            "ok": "OK",
+            "config_failed": "Configuración Fallida",
+            "close": "Cerrar",
+            "restart_required_title": "Reinicio Requerido",
+            "restart_required_body": "Por favor reinicia Gaia para aplicar los cambios de idioma."
+        }
+    },
+    "chat": {
+        "placeholder": "Escribe un mensaje...",
+        "send_tooltip": "Enviar",
+        "stop_tooltip": "Detener Generación",
+        "proceed_button": "Proceder con el Plan",
+        "executing_button": "Ejecutando...",
+        "sources_header": "Fuentes"
+    },
+    "components": {
+        "research_card": {
+            "type_label": "Informe de Investigación Profunda",
+            "view_button": "Ver Informe",
+            "pdf_button": "Guardar como PDF",
+            "pdf_dialog_title": "Guardar Informe como PDF"
+        }
+    }
+}

@@ -1,5 +1,6 @@
 from datetime import datetime
 from src.tools.base import BaseTool
+from src.core.prompt_manager import PromptManager
 
 class CurrentTimeTool(BaseTool):
     @property
@@ -19,4 +20,5 @@ class CurrentTimeTool(BaseTool):
         }
 
     def execute(self, **kwargs):
-        return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        prompt_manager = PromptManager()
+        return datetime.now().strftime(prompt_manager.get("current_time.format"))

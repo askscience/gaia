@@ -1,13 +1,16 @@
 import gi
 import os
 gi.require_version('Gtk', '4.0')
+gi.require_version('Gtk', '4.0')
 from gi.repository import Gtk, Gdk, Gio
+from src.core.language_manager import LanguageManager
 
 class ResearchCard(Gtk.Frame):
     """A specialized card for Deep Research reports with PDF export."""
     def __init__(self, title: str, path: str):
         super().__init__()
         self.add_css_class("card")
+        self.lang_manager = LanguageManager()
         
         self.path = path
         self.title = title
@@ -34,7 +37,10 @@ class ResearchCard(Gtk.Frame):
         title_label.set_halign(Gtk.Align.START)
         text_vbox.append(title_label)
         
-        type_label = Gtk.Label(label="Deep Research Report")
+        title_label.set_halign(Gtk.Align.START)
+        text_vbox.append(title_label)
+        
+        type_label = Gtk.Label(label=self.lang_manager.get("components.research_card.type_label"))
         type_label.add_css_class("dim-label")
         type_label.set_halign(Gtk.Align.START)
         text_vbox.append(type_label)
@@ -47,12 +53,16 @@ class ResearchCard(Gtk.Frame):
         button_box.set_spacing(8)
         button_box.set_margin_top(8)
         
-        view_btn = Gtk.Button(label="View Report")
+        button_box.set_margin_top(8)
+        
+        view_btn = Gtk.Button(label=self.lang_manager.get("components.research_card.view_button"))
         view_btn.add_css_class("suggested-action")
         view_btn.connect("clicked", self.on_view_clicked)
         button_box.append(view_btn)
         
-        pdf_btn = Gtk.Button(label="Save as PDF")
+        button_box.append(view_btn)
+        
+        pdf_btn = Gtk.Button(label=self.lang_manager.get("components.research_card.pdf_button"))
         pdf_btn.connect("clicked", self.on_pdf_clicked)
         button_box.append(pdf_btn)
         
@@ -68,7 +78,7 @@ class ResearchCard(Gtk.Frame):
     def on_pdf_clicked(self, button):
         """Triggers the PDF export."""
         dialog = Gtk.FileDialog()
-        dialog.set_title("Save Report as PDF")
+        dialog.set_title(self.lang_manager.get("components.research_card.pdf_dialog_title"))
         dialog.set_initial_name(f"{self.title.replace(' ', '_').lower()}.pdf")
         
         def on_save_response(dialog, result):

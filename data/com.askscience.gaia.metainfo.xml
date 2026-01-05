@@ -56,6 +56,16 @@
   </content_rating>
   
   <releases>
+    <release version="0.2.3" date="2026-01-05">
+      <description>
+        <p>This release introduces multi-language support and stability fixes:</p>
+        <ul>
+           <li><strong>Internationalization:</strong> Added full support for Italian (it), German (de), Spanish (es), and French (fr).</li>
+           <li><strong>Language Selection:</strong> New settings option to switch languages dynamically.</li>
+           <li><strong>Bug Fixes:</strong> Fixed Trafilatura configuration for reliable web scraping.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.2.2" date="2026-01-04">
       <description>
         <p>Self-Healing Web Preview: New Web Console tool and silent logging for automated debugging of web projects.</p>

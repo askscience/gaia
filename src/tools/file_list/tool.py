@@ -1,6 +1,7 @@
 import os
 from src.tools.base import BaseTool
 from src.core.config import get_artifacts_dir
+from src.core.prompt_manager import PromptManager
 
 class FileListTool(BaseTool):
     @property
@@ -25,13 +26,15 @@ class FileListTool(BaseTool):
         }
 
     def execute(self, project_id: str, status_callback=None, **kwargs):
+        prompt_manager = PromptManager()
         if status_callback:
-            status_callback("Listing project files...")
+            status_callback(prompt_manager.get("file_list.status_listing"))
 
         artifacts_dir = os.path.join(get_artifacts_dir(), project_id)
         
         if not os.path.exists(artifacts_dir):
-            return f"No files found. Project directory does not exist yet."
+        if not os.path.exists(artifacts_dir):
+            return prompt_manager.get("file_list.error_not_found")
         
         try:
             files = []
@@ -42,14 +45,14 @@ class FileListTool(BaseTool):
                     rel_path = os.path.relpath(full_path, artifacts_dir)
                     
                     size = os.path.getsize(full_path)
-                    files.append(f"  - {rel_path} ({size} bytes)")
+                    files.append(prompt_manager.get("file_list.item_format", rel_path=rel_path, size=size))
             
             if not files:
-                return "No files in project directory."
+                return prompt_manager.get("file_list.empty_directory")
             
             # Sort for consistent output
             files.sort()
-            return f"Files in project:\n" + "\n".join(files)
+            return prompt_manager.get("file_list.success_header") + "\n".join(files)
             
         except Exception as e:
-            return f"Error listing files: {str(e)}"
+            return prompt_manager.get("file_list.error_generic", error=str(e))
