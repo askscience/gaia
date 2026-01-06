@@ -7,6 +7,8 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
+import shutil
+from src.core.config import get_artifacts_dir
 
 
 class ChatStorage:
@@ -61,9 +63,19 @@ class ChatStorage:
                 return chat
         return None
     
+
     def delete_chat(self, chat_id: str) -> bool:
-        """Delete a chat file."""
+        """Delete a chat file and its associated artifacts."""
         file_path = self.storage_dir / f"{chat_id}.json"
+        
+        # Remove artifacts directory if it exists
+        try:
+            artifact_dir = os.path.join(get_artifacts_dir(), chat_id)
+            if os.path.exists(artifact_dir):
+                shutil.rmtree(artifact_dir) 
+        except Exception as e:
+            print(f"[ERROR] Failed to delete artifacts for {chat_id}: {e}")
+
         if file_path.exists():
             file_path.unlink()
             return True

@@ -61,9 +61,6 @@ class FileEditorTool(BaseTool):
                 if count > 0:
                      with open(file_path, "w", encoding="utf-8") as f:
                         f.write(new_content)
-                if count > 0:
-                     with open(file_path, "w", encoding="utf-8") as f:
-                        f.write(new_content)
                      return prompt_manager.get("file_editor.success_flexible", filename=filename, count=count, search_preview=search[:50], replace_preview=replace[:50])
                 
                 return prompt_manager.get("file_editor.error_search_not_found", filename=filename)
@@ -82,13 +79,6 @@ class FileEditorTool(BaseTool):
             _, ext = os.path.splitext(filename)
             language = ext.lower().replace(".", "")
             if language == "js": language = "javascript"
-            
-            artifact_data = {
-                "filename": filename,
-                "path": file_path,
-                "language": language,
-                "type": "code" if language != "html" else "web"
-            }
             
             artifact_data = {
                 "filename": filename,

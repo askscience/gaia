@@ -48,9 +48,7 @@ class ChatPage(Gtk.Box):
         # Watch for tab changes to clean up resources
         self.connect("unmap", self._on_unmap)
         
-        # Storage save throttling for streaming
-        self._save_pending = False
-        self._save_timeout_id = None
+
         
         # Generation State
         self._is_generating = False
@@ -181,37 +179,12 @@ class ChatPage(Gtk.Box):
             self.status_manager.disconnect(self.status_handler_id)
             self.status_handler_id = None
             
-        if self._save_timeout_id:
-            GLib.source_remove(self._save_timeout_id)
-            self._save_timeout_id = None
-        if self._save_pending:
-            self._do_save()
+
         self._markdown_cache.clear()
         self._markdown_cache_order.clear()
         return False
     
-    def _schedule_save(self):
-        if not self._save_pending:
-            self._save_pending = True
-        if self._save_timeout_id:
-            GLib.source_remove(self._save_timeout_id)
-        self._save_timeout_id = GLib.timeout_add(2000, self._do_save)
-    
-    def _do_save(self):
-        if not self._save_pending:
-            return False
-        try:
-            if not self.chat_data.get('_is_persisted', True):
-                self._save_pending = False
-                self._save_timeout_id = None
-                return False
-            self.chat_data['history'] = self.history.copy()
-            self.storage.save_chat(self.chat_data)
-        except Exception as e:
-            print(f"[DEBUG] Error saving chat: {e}")
-        self._save_pending = False
-        self._save_timeout_id = None
-        return False
+
     
     def on_entry_activate(self, entry):
         self.on_send_clicked(entry)
@@ -285,7 +258,12 @@ class ChatPage(Gtk.Box):
                     if page:
                         page.set_title(new_title)
         
-        self._schedule_save()
+        try:
+            self.chat_data['history'] = self.history.copy()
+            self.storage.save_chat(self.chat_data)
+        except Exception as e:
+            print(f"[DEBUG] Error saving chat: {e}")
+            
         self._add_message_ui(role, text, metadata=metadata, save=False, parsed_text=parsed_text)
     
     def _add_message_ui(self, role: str, text: str, metadata: dict = None, save: bool = True, scroll: bool = True, parsed_text: str = None):
@@ -365,7 +343,7 @@ class ChatPage(Gtk.Box):
         
         if self.history and self.history[-1]['role'] == 'assistant':
             self.history[-1]['content'] = text
-            self._schedule_save()
+
         self._scroll_to_bottom()
 
     def update_last_message_metadata(self, metadata: dict):
@@ -567,8 +545,11 @@ class ChatPage(Gtk.Box):
                             pending_tool_calls.extend(msg_chunk['tool_calls'])
                         if content_chunk:
                             full_content += content_chunk
-                            streaming_display = re.sub(r'<tool_call>[^<]*(?:</tool_call>|$)', '', full_content, flags=re.DOTALL)
-                            streaming_display = re.sub(r'<tool_call.*$', '', streaming_display, flags=re.DOTALL) 
+                            if '<tool_call>' in full_content:
+                                streaming_display = re.sub(r'<tool_call>[^<]*(?:</tool_call>|$)', '', full_content, flags=re.DOTALL)
+                                streaming_display = re.sub(r'<tool_call.*$', '', streaming_display, flags=re.DOTALL) 
+                            else:
+                                streaming_display = full_content
                             display_text = accumulated_ui_text + streaming_display
                             
                             if not has_shown_initial_ui:
@@ -582,7 +563,7 @@ class ChatPage(Gtk.Box):
                                     last_update_time = time.time()
                             else:
                                 current_time = time.time()
-                                if current_time - last_update_time > 0.05:
+                                if current_time - last_update_time > 0.1:
                                     parsed_display = markdown_to_pango(display_text)
                                     GLib.idle_add(self.update_last_message, display_text, parsed_display)
                                     last_update_time = current_time
@@ -712,11 +693,15 @@ class ChatPage(Gtk.Box):
                 # Mark history as stopped, but do NOT show in UI
                 if self.history and self.history[-1]['role'] == 'assistant':
                     self.history[-1]['content'] += " [stopped by user]"
-                    self._schedule_save()
+                    self.chat_data['history'] = self.history.copy()
+                    self.storage.save_chat(self.chat_data)
                 
         except Exception as e:
             GLib.idle_add(self.remove_spinner)
             GLib.idle_add(self._add_message_ui, "system", f"Error: {e}", False)
+            # Ensure we save any progress
+            self.chat_data['history'] = self.history.copy()
+            self.storage.save_chat(self.chat_data)
         finally:
             GLib.idle_add(self.enable_ui)
 
@@ -731,6 +716,7 @@ class ChatPage(Gtk.Box):
             child = child.get_next_sibling()
             
         if not has_button:
+            btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
             btn_box.set_margin_top(8)
             btn_box.add_css_class("plan-button-box")
             

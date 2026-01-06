@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.2.5] - 2026-01-06
+
+### Fixed
+- **Plan Execution**: Resolved a regression where the "Proceed" button was not visible for AI plans.
+- **Chat Saving**: Implemented immediate saving for chat messages and AI responses, fixing data loss on application exit.
+- **Startup Crash**: Fixed an `IndentationError` in `chat_storage.py` that prevented the app from launching.
+
+### Changed
+- **Performance**: Optimized UI streaming to reduce lag during long AI responses (increased update interval to 100ms).
+- **Cleanup**: Deleting a chat now correctly removes its associated artifacts folder.
+
 ## [0.2.4] - 2026-01-05
 
 ### Fixed

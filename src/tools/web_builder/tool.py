@@ -50,16 +50,6 @@ class WebBuilderTool(BaseTool):
 
     def execute(self, files: list, project_id: str, status_callback=None, **kwargs):
         prompt_manager = PromptManager()
-        
-        # Log to status
-        if status_callback:
-            names = [f.get('filename') for f in files if isinstance(f, dict) and f.get('filename')]
-            if names:
-                desc = ", ".join(names[:2])
-                if len(names) > 2: desc += "..."
-                status_callback(prompt_manager.get("web_builder.status_multiple", names=desc))
-            else:
-                status_callback(prompt_manager.get("web_builder.status_generic"))
 
         # Defensive check: if files is a string (due to parsing issues), try to load it as JSON
         if isinstance(files, str):
@@ -70,6 +60,16 @@ class WebBuilderTool(BaseTool):
 
         if not isinstance(files, list):
             return prompt_manager.get("web_builder.error_invalid_type", type=type(files).__name__)
+        
+        # Log to status
+        if status_callback:
+            names = [f.get('filename') for f in files if isinstance(f, dict) and f.get('filename')]
+            if names:
+                desc = ", ".join(names[:2])
+                if len(names) > 2: desc += "..."
+                status_callback(prompt_manager.get("web_builder.status_multiple", names=desc))
+            else:
+                status_callback(prompt_manager.get("web_builder.status_generic"))
 
         # Organize artifacts by project_id
         project_dir = os.path.join(get_artifacts_dir(), project_id)
