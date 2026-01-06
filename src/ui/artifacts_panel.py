@@ -214,7 +214,15 @@ class ArtifactsPanel(Gtk.Box):
         if entry_point:
             if WebKit:
                 full_path = os.path.join(self.current_project_path, entry_point)
-                self.web_view.load_uri(f"file://{full_path}")
+                target_uri = f"file://{full_path}"
+                current_uri = self.web_view.get_uri()
+                
+                if current_uri == target_uri:
+                    # Force reload from disk if we are already correctly on this page
+                    # This fixes the issue where edited files aren't shown immediately
+                    self.web_view.reload_bypass_cache()
+                else:
+                    self.web_view.load_uri(target_uri)
             
             # Use GLib.timeout_add to guarantee this runs AFTER all signal handlers and UI updates
             def force_preview_mode():

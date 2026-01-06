@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.2.6] - 2026-01-06
+
+### Fixed
+- **Large Project Generation**: Resolved a "Read operation timed out" error by increasing HTTP client timeouts to 20 minutes, allowing the AI to generate complex web projects without interruption.
+- **Web Builder Feedback**: Fixed an issue where the "Thinking..." status persisted during file creation. The specific "Creating files..." status now correctly appears.
+
+### Changed
+- **System Prompts**: Overhauled the system prompt intro ("Operator Manual") in all supported languages (EN, IT, DE, ES, FR) to enforce modular file structures and stricter tool usage rules.
+
 ## [0.2.5] - 2026-01-06
 
 ### Fixed

@@ -56,6 +56,16 @@
   </content_rating>
   
   <releases>
+    <release version="0.2.6" date="2026-01-06">
+      <description>
+        <p>Reliability update for code generation:</p>
+        <ul>
+          <li>Fixed timeouts when generating large web projects (increased to 20m).</li>
+          <li>Restored detailed status feedback for file creation.</li>
+          <li>Enhanced system prompts for better modularity and tool usage.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.2.5" date="2026-01-06">
       <description>
         <p>Reliability and performance improvements:</p>

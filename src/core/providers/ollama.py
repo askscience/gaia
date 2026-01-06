@@ -9,14 +9,19 @@ class OllamaProvider(BaseProvider):
         kwargs = {}
         if tools:
             kwargs['tools'] = tools
-        return ollama.chat(model=self.model_name, messages=messages, **kwargs)
+        
+        client = ollama.Client(timeout=1200.0)
+        return client.chat(model=self.model_name, messages=messages, **kwargs)
 
     def stream_response(self, messages, tools=None):
         kwargs = {'stream': True}
         if tools:
             kwargs['tools'] = tools
         
-        stream = ollama.chat(model=self.model_name, messages=messages, **kwargs)
+        # Use a custom client with increased timeout to prevent "Read operation timed out"
+        # during long code generation tasks.
+        client = ollama.Client(timeout=1200.0) 
+        stream = client.chat(model=self.model_name, messages=messages, **kwargs)
         
         for chunk in stream:
             # Convert attributes to dict, handling both object and dict styles for safety

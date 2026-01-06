@@ -11,7 +11,7 @@ class WebBuilderTool(BaseTool):
 
     @property
     def description(self) -> str:
-        return "MANDATORY: Use this tool to create ANY file (HTML, CSS, JS). Do NOT print code in chat. After building, use the 'web_console' tool to debug runtime errors."
+        return "MANDATORY: Use this tool to create ANY file (HTML, CSS, JS). Supports creating folders/subdirectories (e.g. 'js/app.js'). Do NOT print code in chat. After building, use the 'web_console' tool to debug runtime errors."
 
     @property
     def parameters(self) -> dict:
@@ -26,7 +26,7 @@ class WebBuilderTool(BaseTool):
                         "properties": {
                             "filename": {
                                 "type": "string",
-                                "description": "The name of the file (e.g., 'index.html', 'style.css')."
+                                "description": "The relative path/name of the file (e.g., 'index.html', 'css/style.css')."
                             },
                             "content": {
                                 "type": "string",
@@ -48,8 +48,14 @@ class WebBuilderTool(BaseTool):
             "required": ["files", "project_id"]
         }
 
-    def execute(self, files: list, project_id: str, status_callback=None, **kwargs):
+    def execute(self, files: list = None, project_id: str = None, status_callback=None, **kwargs):
         prompt_manager = PromptManager()
+
+        if files is None:
+            return "Error: Missing required argument 'files'."
+        
+        if project_id is None:
+            return "Error: Missing required argument 'project_id'."
 
         # Defensive check: if files is a string (due to parsing issues), try to load it as JSON
         if isinstance(files, str):
@@ -92,6 +98,13 @@ class WebBuilderTool(BaseTool):
                 else: language = "text"
 
             file_path = os.path.join(project_dir, filename)
+            
+            # Ensure subdirectory exists
+            try:
+                os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            except OSError as e:
+                results.append(prompt_manager.get("web_builder.error_file", filename=filename, error=f"Failed to create directory: {e}"))
+                continue
             
             try:
                 with open(file_path, "w") as f:
