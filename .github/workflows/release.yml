@@ -82,7 +82,7 @@ jobs:
         uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:
           bundle: com.askscience.gaia.flatpak
-          manifest-path: com.askscience.gaia.yml
+          manifest-path: io.github.askscience.gaia.yml
           cache-key: flatpak-builder-${{ github.sha }}
 
       - name: Create Release
