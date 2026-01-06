@@ -71,6 +71,18 @@
   </content_rating>
   
   <releases>
+    <release version="0.2.7" date="2026-01-06">
+      <description>
+        <p>Web Builder Improvements:</p>
+        <ul>
+          <li>New Web Builder settings: configure max file count.</li>
+          <li>Native Adwaita plan approval UI.</li>
+          <li>Fixed JavaScript import paths and HTML asset linking.</li>
+          <li>Prevented AI auto-execution bug.</li>
+          <li>Reduced AI verbosity during web builds.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.2.6" date="2026-01-06">
       <description>
         <p>Reliability update for code generation:</p>

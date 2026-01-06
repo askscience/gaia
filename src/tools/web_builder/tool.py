@@ -3,6 +3,7 @@ import os
 import json
 from src.core.config import get_artifacts_dir
 from src.core.prompt_manager import PromptManager
+from src.tools.web_builder.manager import BackgroundWebBuilderManager
 
 class WebBuilderTool(BaseTool):
     @property
@@ -11,53 +12,80 @@ class WebBuilderTool(BaseTool):
 
     @property
     def description(self) -> str:
-        return "MANDATORY: Use this tool to create ANY file (HTML, CSS, JS). Supports creating folders/subdirectories (e.g. 'js/app.js'). Do NOT print code in chat. After building, use the 'web_console' tool to debug runtime errors."
+        return "MANDATORY: Use this tool to create web projects. Provide a 'description' to generate a plan. Once the user approves the plan via the UI, call with action='execute' to build."
 
     @property
     def parameters(self) -> dict:
         return {
             "type": "object",
             "properties": {
+                "action": {
+                    "type": "string",
+                    "description": "The action to perform: 'plan' (default if description provided) or 'execute' (to run a pending plan).",
+                    "enum": ["plan", "execute"]
+                },
                 "files": {
                     "type": "array",
-                    "description": "A list of files to create.",
+                    "description": "Optional: A list of files to create directly (legacy sync mode).",
                     "items": {
                         "type": "object",
                         "properties": {
-                            "filename": {
-                                "type": "string",
-                                "description": "The relative path/name of the file (e.g., 'index.html', 'css/style.css')."
-                            },
-                            "content": {
-                                "type": "string",
-                                "description": "The full content of the file."
-                            },
-                            "language": {
-                                "type": "string",
-                                "description": "Optional: The programming language (e.g., 'html', 'css', 'javascript')."
-                            }
+                            "filename": { "type": "string" },
+                            "content": { "type": "string" },
+                            "language": { "type": "string" }
                         },
                         "required": ["filename", "content"]
                     }
                 },
+                "description": {
+                    "type": "string",
+                    "description": "Optional: A high-level description of the web project to build. Generates a plan for user approval."
+                },
                 "project_id": {
                     "type": "string",
-                    "description": "The ID of the project (chat) where the files should be saved."
+                    "description": "The ID of the project (chat)."
                 }
             },
-            "required": ["files", "project_id"]
+            "required": ["project_id"]
         }
 
-    def execute(self, files: list = None, project_id: str = None, status_callback=None, **kwargs):
+    def execute(self, files: list = None, description: str = None, project_id: str = None, action: str = None, status_callback=None, **kwargs):
         prompt_manager = PromptManager()
-
-        if files is None:
-            return "Error: Missing required argument 'files'."
         
         if project_id is None:
             return "Error: Missing required argument 'project_id'."
 
-        # Defensive check: if files is a string (due to parsing issues), try to load it as JSON
+        # MODE 1: EXECUTE PENDING
+        if action == "execute":
+            manager = BackgroundWebBuilderManager()
+            return manager.execute_pending_plan(project_id)
+
+        # MODE 2: PLAN (Asynchronous Description provided)
+        if description:
+            manager = BackgroundWebBuilderManager()
+            result = manager.create_plan(description, project_id)
+            
+            if isinstance(result, dict) and "error" in result:
+                return f"Error creating plan: {result['error']}"
+                
+            # Result is a list of file plans
+            plan_artifact = {
+                "type": "implementation_plan",
+                "files": result,
+                "project_id": project_id,
+                "description": description
+            }
+            
+            count = len(result)
+            msg = prompt_manager.get("web_builder.plan_pending", count=count)
+            # FORCE STOP INSTRUCTION
+            return f"{msg}\n[ARTIFACT]{json.dumps(plan_artifact)}[/ARTIFACT]\n\nSYSTEM: The plan is now visible to the user. STOP. Do not proceed until you receive a 'Plan approved' message."
+
+        # MODE 3: LEGACY SYNC (Files provided)
+        if files is None:
+            return "Error: Must provide either 'files' or 'description' (for planning)."
+
+        # Defensive check: if files is a string
         if isinstance(files, str):
             try:
                 files = json.loads(files)

@@ -67,7 +67,7 @@ Want to launch Gaia like a pro? Add it to your app grid.
 The desktop file is already set up to work if Gaia is in your PATH, or you can copy it to your local applications folder:
 
 ```bash
-cp data/com.askscience.gaia.desktop ~/.local/share/applications/
+cp data/io.github.askscience.gaia.desktop ~/.local/share/applications/
 ```
 *Note: You may need to update the `Exec` path in the desktop file depending on where you extracted the project.*
 

@@ -184,6 +184,26 @@ class SettingsWindow(Adw.PreferencesWindow):
         # Wait, we filtered them out, so we need to add this row. 
         # Let's add it at the start of the loop? No, just add it here.
         tools_group.add(cal_row)
+
+        # Web Builder Configuration
+        wb_group = Adw.PreferencesGroup()
+        wb_group.set_title("Web Builder")
+        wb_group.set_description("Configure automated web project generation.")
+        tools_page.add(wb_group)
+
+        # Max Files
+        wb_max_files_row = Adw.ActionRow()
+        wb_max_files_row.set_title("Maximum File Count")
+        wb_max_files_row.set_subtitle("Limit the number of files generated to prevent rate limits.")
+        
+        # Default 5, Range 1-20
+        wb_files_adj = Gtk.Adjustment.new(self.config.get("web_builder_max_files", 5), 1, 20, 1, 1, 0)
+        self.wb_files_spin = Gtk.SpinButton.new(wb_files_adj, 1, 0)
+        self.wb_files_spin.set_valign(Gtk.Align.CENTER)
+        self.wb_files_spin.connect("value-changed", self.on_wb_max_files_changed)
+        wb_max_files_row.add_suffix(self.wb_files_spin)
+        wb_group.add(wb_max_files_row)
+
         
         # Shortcuts Group
         shortcut_group = Adw.PreferencesGroup()
@@ -659,3 +679,5 @@ class SettingsWindow(Adw.PreferencesWindow):
             dialog.present()
 
 
+    def on_wb_max_files_changed(self, spin):
+        self.config.set("web_builder_max_files", int(spin.get_value()))

@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.2.7] - 2026-01-06
+
+### Added
+- **Web Builder Settings**: New "Web Builder" configuration group in Settings > Tools.
+    - **Max Files**: Configure the maximum number of files the AI can generate (Default: 5).
+- **Native Plan Approval UI**: Web build plans are now displayed using native Adwaita widgets (`AdwPreferencesGroup`, `AdwActionRow`) for a polished, system-consistent look.
+
+### Fixed
+- **JavaScript Imports**: Fixed incorrect import paths in JS modules (e.g., `./js/utils.js` is now correctly `./utils.js` when inside the `js/` folder).
+- **HTML Asset Linking**: `index.html` is now generated LAST, after all CSS/JS assets are confirmed, ensuring all `<link>` and `<script>` tags are complete and accurate.
+- **Auto-Execution Bug**: Prevented the AI from automatically executing plans; it now reliably waits for user approval via the UI "Proceed" button.
+
+### Changed
+- **Concise AI Responses**: Significantly reduced AI verbosity during web builds. The AI now outputs a brief confirmation and calls the tool immediately.
+- **Strict Import Rules**: Updated subagent prompts to enforce correct relative paths and provide the full project structure to each file writer.
+
 ## [0.2.6] - 2026-01-06
 
 ### Fixed

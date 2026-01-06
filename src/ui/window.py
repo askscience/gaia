@@ -205,9 +205,9 @@ class MainWindow(Adw.ApplicationWindow):
         """Show the About dialog."""
         about = Adw.AboutWindow(transient_for=self)
         about.set_application_name(self.lang_manager.get("window.about.name"))
-        about.set_application_icon("com.askscience.gaia")
+        about.set_application_icon("io.github.askscience.gaia")
         about.set_developer_name(self.lang_manager.get("window.about.developer"))
-        about.set_version("0.2.6")
+        about.set_version("0.2.7")
         about.set_comments(self.lang_manager.get("window.about.comments"))
         about.set_copyright(self.lang_manager.get("window.about.copyright"))
         about.set_website("https://github.com/askscience/gaia")

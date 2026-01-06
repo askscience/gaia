@@ -17,7 +17,7 @@ from src.core.chat_storage import ChatStorage
 
 class GaiaApplication(Adw.Application):
     def __init__(self):
-        super().__init__(application_id='com.askscience.gaia',
+        super().__init__(application_id='io.github.askscience.gaia',
                          flags=0)
         self.storage = ChatStorage()
 

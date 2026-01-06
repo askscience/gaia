@@ -15,7 +15,7 @@ class BackgroundResearchManager:
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(BackgroundResearchManager, cls).__new__(cls)
-            Notify.init("com.askscience.gaia")
+            Notify.init("io.github.askscience.gaia")
             cls._instance.active_tasks = {} # chat_id -> {graph, notification, query}
         return cls._instance
 
@@ -30,7 +30,7 @@ class BackgroundResearchManager:
             f"Topic: {query}",
             "system-search-symbolic" 
         )
-        notification.set_hint("desktop-entry", GLib.Variant.new_string("com.askscience.gaia"))
+        notification.set_hint("desktop-entry", GLib.Variant.new_string("io.github.askscience.gaia"))
         notification.set_urgency(Notify.Urgency.NORMAL)
         
         # Add Stop action
@@ -183,7 +183,7 @@ class BackgroundResearchManager:
                 f"Report on '{query}' is ready in the Artifact Panel.\nPath: {rel_path}",
                 "emblem-documents-symbolic" # Documentation icon
             )
-            success_notification.set_hint("desktop-entry", GLib.Variant.new_string("com.askscience.gaia"))
+            success_notification.set_hint("desktop-entry", GLib.Variant.new_string("io.github.askscience.gaia"))
             success_notification.show()
 
             # 2. Open the artifact in the UI

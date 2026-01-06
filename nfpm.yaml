@@ -15,12 +15,12 @@ license: "GPL-3.0"
 contents:
   - src: "dist/gaia"
     dst: "/usr/bin/gaia"
-  - src: "data/com.askscience.gaia.desktop"
-    dst: "/usr/share/applications/com.askscience.gaia.desktop"
-  - src: "data/com.askscience.gaia.metainfo.xml"
-    dst: "/usr/share/metainfo/com.askscience.gaia.metainfo.xml"
+  - src: "data/io.github.askscience.gaia.desktop"
+    dst: "/usr/share/applications/io.github.askscience.gaia.desktop"
+  - src: "data/io.github.askscience.gaia.metainfo.xml"
+    dst: "/usr/share/metainfo/io.github.askscience.gaia.metainfo.xml"
   - src: "icon.png"
-    dst: "/usr/share/icons/hicolor/512x512/apps/com.askscience.gaia.png"
+    dst: "/usr/share/icons/hicolor/512x512/apps/io.github.askscience.gaia.png"
 
 overrides:
   deb:

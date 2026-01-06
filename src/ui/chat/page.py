@@ -11,7 +11,7 @@ from gi.repository import Gtk, GLib, Gio, Gdk
 
 from src.core.chat_storage import ChatStorage
 from src.ui.utils import markdown_to_pango
-from src.ui.components import SourceCard, ArtifactCard, ResearchCard
+from src.ui.components import SourceCard, ArtifactCard, ResearchCard, PlanConfirmationCard
 from src.core.ai_client import AIClient
 from src.tools.manager import ToolManager
 from src.core.tool_call_parser import ToolCallParser
@@ -440,6 +440,39 @@ class ChatPage(Gtk.Box):
         self._scroll_to_bottom()
 
     def add_artifacts_to_ui(self, artifacts: list):
+        # Handle Plan Artifacts
+        plan_artifact = next((a for a in artifacts if a.get('type') == 'implementation_plan'), None)
+        
+        if plan_artifact:
+            def on_proceed():
+                # Trigger resumption
+                text = "Plan approved. Proceed with the build."
+                self.add_message("user", text)
+                
+                def run_thread():
+                    try:
+                        self.run_ai(text)
+                    except Exception as e:
+                        print(f"Error resuming: {e}")
+                        GLib.idle_add(self.enable_ui)
+                        
+                thread = threading.Thread(target=run_thread, daemon=True)
+                thread.start()
+
+            card = PlanConfirmationCard(plan_artifact, on_proceed)
+            
+            msg_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+            msg_row.set_halign(Gtk.Align.START)
+            msg_row.set_margin_start(40)
+            msg_row.set_margin_top(16)
+            msg_row.append(card)
+            self.chat_box.append(msg_row)
+            self._scroll_to_bottom()
+            
+            # Remove plan from artifacts list to continue processing others
+            artifacts = [a for a in artifacts if a.get('type') != 'implementation_plan']
+            if not artifacts: return
+
         artifacts_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         artifacts_box.set_spacing(6)
         artifacts_box.set_margin_top(12)
