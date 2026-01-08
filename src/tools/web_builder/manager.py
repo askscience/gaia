@@ -164,17 +164,27 @@ class BackgroundWebBuilderManager:
             if notification: notification.close()
             return
 
-        # Success
+        # Check for partial failures
         artifacts = final_state.get("artifacts", [])
-        count = len(artifacts)
+        files_plan = final_state.get("files_plan", [])
         
-        success_notification = Notify.Notification.new(
-            "Web Build Complete!",
-            f"Created {count} files for project.",
-            "emblem-documents-symbolic"
-        )
-        success_notification.set_hint("desktop-entry", GLib.Variant.new_string("io.github.askscience.gaia"))
-        success_notification.show()
+        success_count = len(artifacts)
+        total_count = len(files_plan)
+        
+        if success_count < total_count and total_count > 0:
+            # Partial Failure
+            title = "Web Build Finished with Errors"
+            summary = f"Created {success_count}/{total_count} files. Some files failed."
+            icon = "dialog-warning-symbolic" 
+        else:
+            # Full Success
+            title = "Web Build Complete!"
+            summary = f"Created {success_count} files for project."
+            icon = "emblem-documents-symbolic"
+        
+        final_notification = Notify.Notification.new(title, summary, icon)
+        final_notification.set_hint("desktop-entry", GLib.Variant.new_string("io.github.askscience.gaia"))
+        final_notification.show()
         
         if notification: notification.close()
         

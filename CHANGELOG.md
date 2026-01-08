@@ -3,7 +3,15 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.3.0] - 2026-01-08
 
+### Fixed
+- **Web Builder Reliability**:
+    - **Partial Failure Reporting**: The Web Builder now correctly reports "Finished with Errors" if some files failed to generate, instead of falsely claiming success.
+    - **Blank Page in Packaged App**: Fixed a critical issue where the Web Preview displayed a blank page in Flatpak/Debian installs by properly disabling the WebKitGTK sandbox (`WEBKIT_DISABLE_SANDBOX=1`) to allow access to local artifacts.
+- **Web Preview UI**:
+    - Added a **Refresh Button** to the Artifacts Panel toolbar.
+    - Improved artifact loading logic with smarter caching and debounce handling to prevent blank pages on initial load.
 ## [0.2.9] - 2026-01-08
 
 ### Fixed

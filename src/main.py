@@ -1,5 +1,10 @@
 import sys
 import os
+
+# Fix for blank WebView in packaged apps (Debian/Flatpak)
+# WebKitGTK sandbox can block access to local files (~/.gaia/artifacts)
+os.environ["WEBKIT_DISABLE_SANDBOX"] = "1"
+
 import gi
 
 # Ensure project root is in sys.path

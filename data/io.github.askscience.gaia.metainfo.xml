@@ -71,6 +71,15 @@
   </content_rating>
   
   <releases>
+    <release version="0.3.0" date="2026-01-08">
+      <description>
+        <p>Web Builder Fixes:</p>
+        <ul>
+          <li><strong>Reliability:</strong> Fixed blank page issues in packaged apps by disabling WebKit sandbox.</li>
+          <li><strong>Feedback:</strong> Improved partial failure reporting and added a Refresh button for previews.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.2.9" date="2026-01-08">
       <description>
         <p>Hotfix Release:</p>
