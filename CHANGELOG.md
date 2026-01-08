@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 
 
+
+## [0.2.9] - 2026-01-08
+
+### Fixed
+- **Crash Fix**: Resolved a `TypeError` in `CodeBlock` rendering on systems with stricter GTK bindings (forcing explicit length parameter) which caused the app to crash when displaying code.
+
 ## [0.2.8] - 2026-01-08
 
 ### Added

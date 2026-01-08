@@ -44,7 +44,7 @@ class CodeBlock(Gtk.Box):
         text_view.add_css_class("code-content")
         
         buffer = text_view.get_buffer()
-        buffer.set_text(self.content)
+        buffer.set_text(self.content, -1)
         
         scrolled.set_child(text_view)
         self.append(scrolled)
