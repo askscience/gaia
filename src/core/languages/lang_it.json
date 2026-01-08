@@ -71,7 +71,7 @@
         "deep_research": {
             "title": "Deep Research",
             "research_params_title": "Parametri di Ricerca",
-            "research_params_desc": "Configura il comportamento dell'Agente Deep Research.",
+            "research_params_desc": "Configura il comportamento dell'Agente Deep Research. Default ottimizzati per l'API gratuita di DuckDuckGo.",
             "max_loops": "Max Cicli di Ricerca",
             "max_loops_subtitle": "Numero massimo di iterazioni per perfezionare i risultati",
             "max_results": "Max Risultati Ricerca",
@@ -91,7 +91,17 @@
             "image_search_title": "API Ricerca Immagini",
             "image_search_desc": "Fornisci chiavi API per includere immagini di alta qualità con attribuzione nei tuoi rapporti.",
             "unsplash_key": "Chiave Accesso Unsplash",
-            "pexels_key": "Chiave API Pexels"
+            "pexels_key": "Chiave API Pexels",
+            "search_config_title": "Configurazione Ricerca",
+            "search_config_desc": "Configura fornitori. L'API Brave sarà usata anche per Ricerca Web.",
+            "brave_key": "Chiave API Brave Search",
+            "brave_key_disclaimer": "L'API di Brave Search verrà utilizzata anche per la Ricerca Web. Le impostazioni predefinite di Deep Research sono ottimizzate per l'API gratuita di DuckDuckGo.",
+            "advanced_config_title": "Configurazione Avanzata",
+            "advanced_config_desc": "Regola i limiti di concorrenza per il tuo livello API.",
+            "concurrent_searches": "Max Ricerche Concorrenti",
+            "concurrent_searches_subtitle": "Esegui ricerche in parallelo (Più veloce).",
+            "concurrent_llm": "Max Chiamate LLM Concorrenti",
+            "concurrent_llm_subtitle": "Esegui compiti AI in parallelo (Più veloce)."
         },
         "dialogs": {
             "tor_unavailable_title": "Porta di Controllo Tor Non Disponibile",

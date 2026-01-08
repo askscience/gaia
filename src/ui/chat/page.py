@@ -10,8 +10,10 @@ gi.require_version('Gtk', '4.0')
 from gi.repository import Gtk, GLib, Gio, Gdk
 
 from src.core.chat_storage import ChatStorage
-from src.ui.utils import markdown_to_pango
+from src.core.config import get_artifacts_dir
+from src.ui.utils import markdown_to_pango, parse_markdown_segments
 from src.ui.components import SourceCard, ArtifactCard, ResearchCard, PlanConfirmationCard
+from src.ui.components.code_block import CodeBlock
 from src.core.ai_client import AIClient
 from src.tools.manager import ToolManager
 from src.core.tool_call_parser import ToolCallParser
@@ -55,9 +57,24 @@ class ChatPage(Gtk.Box):
         self._cancel_event = threading.Event()
         
         # Chat Area
+        # Chat Area
+        # Use Overlay to allow floating status widgets
+        self.overlay = Gtk.Overlay()
+        self.overlay.set_vexpand(True)
+        self.append(self.overlay)
+        
         self.scrolled = Gtk.ScrolledWindow()
-        self.scrolled.set_vexpand(True)
-        self.append(self.scrolled)
+        self.overlay.set_child(self.scrolled)
+        
+        # Floating Status Box
+        self.status_overlay_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.status_overlay_box.set_halign(Gtk.Align.START)
+        self.status_overlay_box.set_valign(Gtk.Align.END)
+        self.status_overlay_box.set_margin_start(20)
+        self.status_overlay_box.set_margin_bottom(20)
+        self.status_overlay_box.set_visible(False) # Hidden by default
+        self.status_overlay_box.add_css_class("floating-status-box")
+        self.overlay.add_overlay(self.status_overlay_box)
         
         self.chat_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.chat_box.set_spacing(6)
@@ -150,7 +167,8 @@ class ChatPage(Gtk.Box):
             return False
             
         for role, parsed_content, original_content, metadata, has_sources, has_artifacts, sources, artifacts in batch_messages:
-            self._add_message_with_parsed_content(role, parsed_content, original_content, metadata=metadata, save=False, scroll=False)
+            # History messages should always be rendered nicely
+            self._add_message_with_parsed_content(role, parsed_content, original_content, metadata=metadata, save=False, scroll=False, render_rich=True)
             
             # Add sources and artifacts AFTER the message bubble
             if has_sources and sources:
@@ -182,6 +200,20 @@ class ChatPage(Gtk.Box):
 
         self._markdown_cache.clear()
         self._markdown_cache_order.clear()
+        
+        # Ensure we save any pending changes when the page is unmapped (tab switch/close)
+        # CRITICAL: Do NOT save if lazy loading is still active, as self.history will be empty/partial
+        # and we would overwrite the actual file on disk with empty data.
+        if self.lazy_loading:
+            return
+
+        if hasattr(self, 'history') and hasattr(self, 'storage'):
+             try:
+                self.chat_data['history'] = self.history
+                self.storage.save_chat(self.chat_data)
+             except Exception as e:
+                print(f"[DEBUG] Error saving on unmap: {e}")
+                
         return False
     
 
@@ -223,6 +255,7 @@ class ChatPage(Gtk.Box):
         thread.start()
 
     def enable_ui(self):
+        self.remove_spinner() # Ensure spinner is removed on completion/error (Robust Cleanup)
         self._is_generating = False
         self._cancel_event.clear()
         self.entry.set_sensitive(True)
@@ -230,6 +263,15 @@ class ChatPage(Gtk.Box):
         self.send_button.set_icon_name("mail-send-symbolic")
         self.send_button.set_tooltip_text(self.lang_manager.get("chat.send_tooltip"))
         self.entry.grab_focus()
+
+    def restore_artifacts(self, artifacts_panel):
+        """Check if artifacts exist for this chat and load them."""
+        project_dir = os.path.join(get_artifacts_dir(), self.chat_data['id'])
+        if os.path.exists(project_dir):
+            # Check for deep research marker or just assume standard project
+            is_research = os.path.exists(os.path.join(project_dir, "research_data.json"))
+            artifacts_panel.load_project(project_dir, is_research=is_research)
+
 
     def add_message(self, role: str, text: str, metadata: dict = None, parsed_text: str = None):
         if '<tool_call>' in text:
@@ -271,7 +313,7 @@ class ChatPage(Gtk.Box):
             parsed_text = markdown_to_pango(text)
         return self._add_message_with_parsed_content(role, parsed_text, text, metadata, save, scroll)
     
-    def _add_message_with_parsed_content(self, role: str, parsed_text: str, original_text: str, metadata: dict = None, save: bool = True, scroll: bool = True):
+    def _add_message_with_parsed_content(self, role: str, parsed_text: str, original_text: str, metadata: dict = None, save: bool = True, scroll: bool = True, render_rich: bool = False):
         msg_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         msg_row.add_css_class("message-row")
         msg_row.set_halign(Gtk.Align.END if role == "user" else Gtk.Align.START)
@@ -289,6 +331,13 @@ class ChatPage(Gtk.Box):
         msg_label.set_selectable(True)
         bubble.append(msg_label)
         
+        # Try rich rendering if requested (history or final)
+        if render_rich: 
+             self._render_rich_content(bubble, original_text)
+        else:
+             # Streaming / Temporary: Use the label created above
+             pass 
+
         if metadata and 'plan' in metadata and not metadata.get('plan_approved'):
             self._add_plan_button(bubble)
 
@@ -296,7 +345,66 @@ class ChatPage(Gtk.Box):
         self.chat_box.append(msg_row)
         if scroll:
             self._scroll_to_bottom()
-        return msg_label
+        return msg_label # Return label for streaming updates
+    
+    def _render_rich_content(self, bubble, text):
+        """Render text mixed with code blocks."""
+        # Remove existing children (e.g. the initial placeholder label)
+        child = bubble.get_first_child()
+        while child:
+            bubble.remove(child)
+            child = bubble.get_first_child()
+            
+        segments = parse_markdown_segments(text)
+        for i, seg in enumerate(segments):
+            if seg['type'] == 'code':
+                block = CodeBlock(seg['content'], seg['lang'])
+                bubble.append(block)
+            else:
+                # Text segment
+                if not seg['content'].strip(): continue
+                
+                label = Gtk.Label()
+                label.set_use_markup(True)
+                label.set_markup(markdown_to_pango(seg['content']))
+                label.set_wrap(True)
+                label.set_max_width_chars(50)
+                label.set_xalign(0)
+                label.set_selectable(True)
+                bubble.append(label)
+
+    def refresh_last_message_rich(self):
+        """Re-renders the last message using rich content (segments)."""
+        child = self.chat_box.get_last_child()
+        # Skip spinner overlay logic if present in children list (it shouldn't be, it's overlay)
+        while child:
+            if child.has_css_class("message-row"):
+                break
+            child = child.get_prev_sibling()
+            
+        if not child: return
+
+        # Find bubble
+        bubble = None
+        # Structure is Row -> Bubble -> Label
+        # Row has children: [Bubble]
+        # Bubble has children: [Label, maybe PlanButton]
+        
+        # msg_row children
+        c = child.get_first_child() 
+        while c:
+            if c.has_css_class("message-bubble"):
+                bubble = c
+                break
+            c = c.get_next_sibling()
+            
+        if bubble and self.history:
+            last_content = self.history[-1]['content']
+            self._render_rich_content(bubble, last_content)
+            
+            # Re-add plan button if needed
+            if 'plan' in (self.history[-1].get('metadata') or {}) and not self.history[-1]['metadata'].get('plan_approved'):
+                 self._add_plan_button(bubble)
     
     def _scroll_to_bottom(self):
         def do_scroll():
@@ -343,7 +451,17 @@ class ChatPage(Gtk.Box):
         
         if self.history and self.history[-1]['role'] == 'assistant':
             self.history[-1]['content'] = text
-
+            
+            # Throttled auto-save to prevent data loss
+            current_time = time.time()
+            if current_time - getattr(self, '_last_save_time', 0) > 2.0:
+                try:
+                    self.chat_data['history'] = self.history
+                    self.storage.save_chat(self.chat_data)
+                    self._last_save_time = current_time
+                except Exception as e:
+                    print(f"[DEBUG] Error auto-saving chat: {e}")
+        
         self._scroll_to_bottom()
 
     def update_last_message_metadata(self, metadata: dict):
@@ -352,47 +470,61 @@ class ChatPage(Gtk.Box):
                 self.history[-1]['metadata'] = {}
             self.history[-1]['metadata'].update(metadata)
             
-            chat = self.storage.load_chat(self.chat_data['id'])
-            if chat and chat['history']:
-                if 'metadata' not in chat['history'][-1]:
-                    chat['history'][-1]['metadata'] = {}
-                chat['history'][-1]['metadata'].update(metadata)
-                self.storage.save_chat(chat)
+            # Save the updated metadata AND the current content
+            # Do NOT reload from disk as it may have stale content
+            try:
+                self.chat_data['history'] = self.history
+                self.storage.save_chat(self.chat_data)
+            except Exception as e:
+                print(f"[DEBUG] Error saving metadata: {e}")
 
     def show_spinner(self, text: str = None):
         if text is None:
             text = self.prompt_manager.get("ui.spinner.thinking")
-        if hasattr(self, 'spinner_box') and self.spinner_box:
-            c = self.spinner_box.get_first_child()
-            while c:
-                if isinstance(c, Gtk.Label):
-                    c.set_text(text)
-                    return
-                c = c.get_next_sibling()
+            
+        self.status_overlay_box.set_visible(True)
+        
+        # Check if we can just update the label
+        existing_label = None
+        child = self.status_overlay_box.get_first_child()
+        while child:
+            if isinstance(child, Gtk.Label):
+                existing_label = child
+            child = child.get_next_sibling()
+            
+        if existing_label:
+            existing_label.set_text(text)
             return
 
-        self.spinner_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        self.spinner_box.set_halign(Gtk.Align.START)
-        self.spinner_box.set_margin_start(10)
-        self.spinner_box.set_margin_bottom(5)
-        self.spinner_box.add_css_class("spinner-box")
+        # Clear and Rebuild if needed (though simplified update above handles most cases)
+        child = self.status_overlay_box.get_first_child()
+        while child:
+            self.status_overlay_box.remove(child)
+            child = self.status_overlay_box.get_first_child()
+
+        self.spinner_box = self.status_overlay_box # Alias for compatibility if needed
         
         spinner = Gtk.Spinner()
         spinner.start()
-        self.spinner_box.append(spinner)
+        self.status_overlay_box.append(spinner)
         
         label = Gtk.Label(label=text)
         label.set_margin_start(10)
         label.add_css_class("dim-label")
-        self.spinner_box.append(label)
+        self.status_overlay_box.append(label)
         
-        self.chat_box.append(self.spinner_box)
+        # self.chat_box.append(self.spinner_box) # No longer appending to chat flow
         self._scroll_to_bottom()
 
     def remove_spinner(self):
-        if hasattr(self, 'spinner_box') and self.spinner_box:
-            self.chat_box.remove(self.spinner_box)
-            self.spinner_box = None
+        if hasattr(self, 'status_overlay_box'):
+            self.status_overlay_box.set_visible(False)
+            # Optional: Clear children if we want a fresh start every time
+            # child = self.status_overlay_box.get_first_child()
+            # while child:
+            #     self.status_overlay_box.remove(child)
+            #     child = self.status_overlay_box.get_first_child()
+        self.spinner_box = None
 
     def replace_spinner_with_msg(self, role: str, text: str, metadata: dict = None, parsed_text: str = None):
         self.remove_spinner()
@@ -444,20 +576,9 @@ class ChatPage(Gtk.Box):
         plan_artifact = next((a for a in artifacts if a.get('type') == 'implementation_plan'), None)
         
         if plan_artifact:
+            # Delegate directly to the centralized method to ensure consistency
             def on_proceed():
-                # Trigger resumption
-                text = "Plan approved. Proceed with the build."
-                self.add_message("user", text)
-                
-                def run_thread():
-                    try:
-                        self.run_ai(text)
-                    except Exception as e:
-                        print(f"Error resuming: {e}")
-                        GLib.idle_add(self.enable_ui)
-                        
-                thread = threading.Thread(target=run_thread, daemon=True)
-                thread.start()
+                self.on_plan_proceed()
 
             card = PlanConfirmationCard(plan_artifact, on_proceed)
             
@@ -485,7 +606,7 @@ class ChatPage(Gtk.Box):
             if first_path:
                 if "deepresearch" in first_path:
                     # Deep Research - Load directly into Artifacts Panel with research mode
-                    project_dir = os.path.dirname(first_path)
+                    project_dir = os.path.join(get_artifacts_dir(), self.chat_data['id'])
                     
                     def load_research_panel():
                         root = self.get_native()
@@ -496,7 +617,8 @@ class ChatPage(Gtk.Box):
                     GLib.idle_add(load_research_panel)
                 else:
                     # Web Project - Load directly into Artifacts Panel, no chat card
-                    project_dir = os.path.dirname(first_path)
+                    # FIXED: Use the project root, not the file's directory (which might be a subdir like css/)
+                    project_dir = os.path.join(get_artifacts_dir(), self.chat_data['id'])
                     
                     def load_into_panel():
                         root = self.get_native()
@@ -540,7 +662,8 @@ class ChatPage(Gtk.Box):
         }]
         messages.extend(self.history)
         
-        is_plan_approval = "The user approved the plan" in user_text
+        # Updated check to match the new prompt string
+        is_plan_approval = "Plan approved" in user_text
         
         if not is_hidden:
             messages.append({'role': 'user', 'content': user_text})
@@ -631,25 +754,19 @@ class ChatPage(Gtk.Box):
                         fname = tool_call['function']['name']
                         args = tool_call['function']['arguments']
                         
-                        # Dynamic Status Update via StatusManager
-                        # The tool execution wrapper in ToolManager now handles calling StatusManager
-                        # We just need to make sure we are listening to signals.
-                        # (Note: Listener is set up in __init__ now)
-                        
-                        print(f"[DEBUG] Executing tool {fname} with args: {args}")
-                        # We don't need to pass a local lambda anymore if ToolManager handles it,
-                        # BUT ToolManager passes a wrapper that calls StatusManager.
-                        # So we can pass None or just let it do its thing.
-                        # Actually, ToolManager expects us to NOT pass it unless we want extra local handling.
-                        # We'll rely on the signal.
-                        
-                        # We'll rely on the signal.
-                        
                         # Fix for "multiple values for keyword argument 'project_id'"
-                        # We force the project_id from the chat_data to be the authority
+                        # Fix for "multiple values for keyword argument 'project_id'"
                         project_id = self.chat_data["id"]
-                        
-                        # Remove project_id from args if it exists to avoid double passing
+
+                        # HARDCODED FIX: If this is a plan approval, FORCE web_builder to execute.
+                        # The AI sometimes ignores instructions and tries to plan again.
+                        if is_plan_approval and fname == "web_builder":
+                            print("[DEBUG] Plan approval detected: Forcing web_builder action='execute'")
+                            args["action"] = "execute"
+                            # Do NOT delete description, so we can use it as fallback 
+                            # if "description" in args:
+                            #     del args["description"]
+                                
                         if "project_id" in args:
                             del args["project_id"]
                         
@@ -660,21 +777,37 @@ class ChatPage(Gtk.Box):
                             try: all_sources.extend(json.loads(match.group(1).strip()))
                             except: pass
                         artifact_matches = re.finditer(r'\[ARTIFACT\](.*?)\[/ARTIFACT\]', str(result), re.DOTALL)
+                        
+                        # Track if we found a plan in this specific tool call
+                        found_plan_in_call = False
+                        
                         for match in artifact_matches:
                             try:
                                 datum = json.loads(match.group(1).strip())
                                 all_artifacts.append(datum)
                                 
+                                if datum.get('type') == 'implementation_plan':
+                                    found_plan_in_call = True
+                                
                                 # Auto-refresh preview if web-related files change
                                 if datum.get('language') in ['html', 'css', 'javascript']:
                                     root = self.get_native()
                                     if hasattr(root, "artifacts_panel"):
-                                        project_dir = os.path.dirname(datum['path'])
+                                        # FIXED: Use the project root, not the file's directory
+                                        project_dir = os.path.join(get_artifacts_dir(), self.chat_data['id'])
                                         GLib.idle_add(root.artifacts_panel.load_project, project_dir)
                                         GLib.idle_add(root.show_artifacts)
                             except: pass
                         messages.append({'role': 'tool', 'tool_call_id': tool_call.get('id', f"call_{fname}_{id(tool_call)}"), 'content': str(result)})
                         print(f"[DEBUG] Tool {fname} returned: {str(result)}")
+                        
+                        # CRITICAL: If a plan was generated, STOP immediately. 
+                        # Do not execute any subsequent tool calls in this turn (e.g. hypothetical 'execute' calls).
+                        if found_plan_in_call and not is_plan_approval:
+                            print("[DEBUG] Implementation plan detected in tool output. Aborting remaining tool calls.")
+                            pending_tool_calls = [] # Clear remaining calls
+                            break
+                            
                     except Exception as te:
                         error_msg = f"Error executing tool {tool_call.get('function', {}).get('name', 'unknown')}: {str(te)}"
                         print(f"[DEBUG] {error_msg}")
@@ -687,6 +820,12 @@ class ChatPage(Gtk.Box):
                     if current_metadata: GLib.idle_add(self.update_last_message_metadata, current_metadata)
                     if all_sources: GLib.idle_add(self.add_sources_to_ui, all_sources)
                     if all_artifacts: GLib.idle_add(self.add_artifacts_to_ui, all_artifacts)
+
+                # CRITICAL: Stop if an implementation_plan artifact was returned (pending approval)
+                has_pending_plan = any(a.get('type') == 'implementation_plan' for a in all_artifacts)
+                if has_pending_plan and not is_plan_approval:
+                    print("[DEBUG] Implementation plan detected, stopping for approval.")
+                    break
 
                 any_error = False
                 for msg in messages:
@@ -708,6 +847,13 @@ class ChatPage(Gtk.Box):
                 if current_metadata.get('artifacts'): GLib.idle_add(self.add_artifacts_to_ui, current_metadata['artifacts'])
             elif current_metadata:
                 GLib.idle_add(self.update_last_message_metadata, current_metadata)
+
+            # ALWAYS upgrade to rich content (Copy buttons) after posting, if we displayed something
+            if has_shown_initial_ui or (accumulated_ui_text.strip()):
+                 def upgrade_ui():
+                    self.refresh_last_message_rich()
+                    return False
+                 GLib.timeout_add(100, upgrade_ui)
 
             # Check for plan after the loop ends or if it was interrupted
             combined_text = accumulated_ui_text + full_content
@@ -775,9 +921,25 @@ class ChatPage(Gtk.Box):
 
     def on_plan_proceed(self):
         self.update_last_message_metadata({'plan_approved': True})
+        
+        # Get the standardized message
+        text = self.prompt_manager.get("ui.plan_approval_message")
+        
+        # Add to history silently (HIDDEN FROM UI)
+        if not self.chat_data.get('_is_persisted', True):
+            self.chat_data['_is_persisted'] = True
+            
+        msg = {'role': 'user', 'content': text}
+        self.history.append(msg)
+        self.chat_data['history'] = self.history.copy()
+        self.storage.save_chat(self.chat_data)
+        
+        # Do NOT call self.add_message or _add_message_ui here
+        # self.add_message("user", text)
+        
         def run_with_exception_handler():
             try:
-                self.run_ai(self.prompt_manager.get("ui.plan_approval_message"))
+                self.run_ai(text)
             except Exception as e:
                 traceback.print_exc()
                 GLib.idle_add(self.enable_ui)

@@ -3,6 +3,7 @@ import os
 import shutil
 import zipfile
 import random
+import time
 import cairo
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
@@ -35,6 +36,7 @@ class ArtifactsPanel(Gtk.Box):
         self.current_project_path = None
         self.project_files = [] # List of strings (filenames)
         self._internal_change = False
+        self._last_load_time = 0  # Debounce for WebView reloads
 
         # Header
         self.header = Adw.HeaderBar()
@@ -103,6 +105,11 @@ class ArtifactsPanel(Gtk.Box):
             self.code_view.set_show_line_numbers(True)
             self.code_view.set_monospace(True)
             self.code_scroll.set_child(self.code_view)
+            
+            # Setup theme and react to system theme changes
+            self._setup_code_view_theme()
+            style_manager = Adw.StyleManager.get_default()
+            style_manager.connect("notify::dark", self._on_style_changed)
         else:
             self.code_view = Gtk.TextView()
             self.code_view.set_editable(False)
@@ -119,6 +126,13 @@ class ArtifactsPanel(Gtk.Box):
             self.web_view = WebKit.WebView()
             self.web_view.set_vexpand(True)
             self.web_view.set_hexpand(True)
+            
+            # Enable local file access (Critical for relative imports)
+            settings = self.web_view.get_settings()
+            settings.set_allow_file_access_from_file_urls(True)
+            settings.set_allow_universal_access_from_file_urls(True)
+            settings.set_enable_write_console_messages_to_stdout(True)
+            
             self.preview_box.append(self.web_view)
             
             # Setup Bridge
@@ -142,10 +156,19 @@ class ArtifactsPanel(Gtk.Box):
         self.stack.add_named(self.placeholder, "placeholder")
         
         self.stack.set_visible_child_name("placeholder")
+        
+        # Reload WebView when panel becomes visible
+        self.connect("map", self._on_map)
 
-    def load_project(self, folder_path: str, is_research: bool = False):
+    def load_project(self, folder_path: str, is_research: bool = False, force: bool = False):
         """Load a web project from a folder path."""
         if not os.path.exists(folder_path):
+            return
+        
+        # Debounce: skip if same project was loaded very recently (unless forced)
+        if (not force and 
+            self.current_project_path == folder_path and 
+            time.time() - self._last_load_time < 0.5):
             return
 
         # Start logging for this project
@@ -160,14 +183,19 @@ class ArtifactsPanel(Gtk.Box):
         self.is_research_mode = is_research
         self._internal_change = True  # Block all signal handlers
         
-        # 1. Scan files
+        # 1. Scan files (FLAT ONLY)
         files = []
-        for root, dirs, fnames in os.walk(folder_path):
-            for f in fnames:
-                # Filter useful files
-                if f.endswith(('.html', '.css', '.js', '.py', '.md', '.json', '.txt')):
-                    rel_path = os.path.relpath(os.path.join(root, f), folder_path)
-                    files.append(rel_path)
+        if os.path.exists(folder_path):
+            with os.scandir(folder_path) as entries:
+                for entry in entries:
+                    if entry.is_file():
+                        f = entry.name
+                        # Filter out internal files
+                        if f == "console.json":
+                            continue
+                        # Filter useful files
+                        if f.endswith(('.html', '.css', '.js', '.py', '.md', '.json', '.txt')):
+                            files.append(f)
         
         files.sort()
         # Ensure index.html is first if exists
@@ -215,18 +243,45 @@ class ArtifactsPanel(Gtk.Box):
             if WebKit:
                 full_path = os.path.join(self.current_project_path, entry_point)
                 target_uri = f"file://{full_path}"
-                current_uri = self.web_view.get_uri()
                 
-                if current_uri == target_uri:
-                    # Force reload from disk if we are already correctly on this page
-                    # This fixes the issue where edited files aren't shown immediately
-                    self.web_view.reload_bypass_cache()
-                else:
-                    self.web_view.load_uri(target_uri)
+                # Delay loading to ensure files are fully flushed to disk
+                def delayed_load():
+                    # If loaded recently (e.g. by _on_map race), skip
+                    if time.time() - self._last_load_time < 0.2:
+                        return False
+
+                    if os.path.exists(full_path):
+                        # If panel is hidden, prefer waiting for _on_map
+                        # This prevents updating _last_load_time for a load that might fail/be invisible
+                        if not self.get_mapped():
+                            print("[DEBUG ArtifactsPanel] Hidden during delayed_load, deferring to _on_map")
+                            return False
+
+                        current_uri = self.web_view.get_uri()
+                        if current_uri == target_uri:
+                            self.web_view.reload_bypass_cache()
+                        else:
+                            self.web_view.load_uri(target_uri)
+                        self._last_load_time = time.time()
+                    return False
+                
+                GLib.timeout_add(300, delayed_load)
             
             # Use GLib.timeout_add to guarantee this runs AFTER all signal handlers and UI updates
             def force_preview_mode():
                 print(f"[DEBUG] Forcing preview mode for {entry_point}")
+                
+                # Check if we need to update the dropdown selection to match the preview
+                if hasattr(self, 'project_files') and entry_point in self.project_files:
+                    try:
+                        idx = self.project_files.index(entry_point)
+                        self._internal_change = True # Block signals
+                        self.file_dropdown.set_selected(idx)
+                        self._load_file_content(entry_point) 
+                        self._internal_change = False
+                    except Exception as e:
+                        print(f"[DEBUG] Failed to sync dropdown: {e}")
+
                 if hasattr(self, 'preview_btn'):
                     self.preview_btn.set_active(True)
                 self.stack.set_visible_child_name("preview")
@@ -243,6 +298,7 @@ class ArtifactsPanel(Gtk.Box):
             else:
                 self.stack.set_visible_child_name("placeholder")
             self._internal_change = False
+            self._last_load_time = time.time()
 
     def on_file_selected(self, dropdown, param):
         """Handle file selection from dropdown."""
@@ -337,15 +393,63 @@ class ArtifactsPanel(Gtk.Box):
         self.stack.set_visible_child_name("placeholder")
         self._internal_change = False
 
+    def _setup_code_view_theme(self):
+        """Apply style scheme based on system dark/light preference."""
+        if not GtkSource:
+            return
+        
+        style_manager = Adw.StyleManager.get_default()
+        is_dark = style_manager.get_dark()
+        
+        scheme_manager = GtkSource.StyleSchemeManager.get_default()
+        
+        # Choose scheme based on dark mode
+        scheme_name = "Adwaita-dark" if is_dark else "Adwaita"
+        scheme = scheme_manager.get_scheme(scheme_name)
+        
+        # Fallbacks
+        if not scheme:
+            scheme = scheme_manager.get_scheme("oblivion" if is_dark else "classic")
+        
+        if scheme:
+            buffer = self.code_view.get_buffer()
+            buffer.set_style_scheme(scheme)
+
+    def _on_style_changed(self, style_manager, param):
+        """React to system theme changes."""
+        self._setup_code_view_theme()
+
+    def _on_map(self, widget):
+        """Reload content when panel becomes visible."""
+        # Debounce: don't reload if we just loaded recently
+        if time.time() - self._last_load_time < 1.0:
+            return
+            
+        if self.current_project_path and WebKit and hasattr(self, 'web_view'):
+            # Find entry point
+            entry_point = None
+            if "index.html" in self.project_files:
+                entry_point = "index.html"
+            else:
+                for f in self.project_files:
+                    if f.endswith(".html"):
+                        entry_point = f
+                        break
+            if entry_point:
+                full_path = os.path.join(self.current_project_path, entry_point)
+                if os.path.exists(full_path):
+                    self.web_view.load_uri(f"file://{full_path}")
+                    self._last_load_time = time.time()
+
     def load_artifact(self, path, language="text"):
         """Legacy compatibility or single file loading."""
         # For now, if we get a single file, treat parent as project?
         if os.path.exists(path):
             if os.path.isdir(path):
-                self.load_project(path)
+                self.load_project(path, force=True)
             else:
                 parent = os.path.dirname(path)
-                self.load_project(parent)
+                self.load_project(parent, force=True)
                 # Try to select the specific file
                 fname = os.path.basename(path)
                 if fname in self.project_files:

@@ -24,6 +24,9 @@ def UNSPLASH_KEY():
 def PEXELS_KEY():
     return config.get("pexels_api_key", "")
 
+def BRAVE_SEARCH_KEY():
+    return config.get("brave_search_api_key", "")
+
 # LLM Configuration (Fetched from AIClient globally)
 TEMPERATURE = 0.2
 
@@ -31,4 +34,11 @@ TEMPERATURE = 0.2
 # API Timeouts
 SEARCH_TIMEOUT = 10
 SCRAPE_TIMEOUT = 15
-MAX_CONCURRENT_SEARCHES = 2  # Conservative limit to avoid DDGS 429 errors
+SEARCH_TIMEOUT = 10
+SCRAPE_TIMEOUT = 15
+
+def MAX_CONCURRENT_SEARCHES():
+    return config.get("dr_max_concurrent_searches", 1)
+
+def MAX_CONCURRENT_LLM_CALLS():
+    return config.get("dr_max_concurrent_llm", 1)

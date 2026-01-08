@@ -3,6 +3,27 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.2.8] - 2026-01-08
+
+### Added
+- **Rich Chat Markup**:
+    - Code blocks are now rendered with distinct styling and syntax coloring.
+    - Added a **Copy Button** to every code block for one-click copying of commands and snippets.
+    - Improved copy button behavior with visual feedback on click.
+
+### Fixed
+- **Chat Persistence**:
+    - Fixed a critical issue where chat history was being truncated to the last 100 messages upon loading, causing permanent data loss for older conversations.
+    - Resolved a lazy-loading bug where background tabs could overwrite valid chat files with empty data on application exit.
+- **Status UI**:
+    - Moved the "Thinking..." spinner to a floating overlay in the bottom-left corner, ensuring it remains visible without cluttering the chat flow.
+    - Fixed a race condition where the status spinner could get stuck indefinitely if an error occurred or generation stopped unexpectedly.
+- **Markdown Parsing**: Adjusted the parser to leniently handle code blocks with trailing spaces in the language identifier (e.g., `bash `).
+- **History Rendering**: Existing chats now correctly load with rich formatting (code blocks and copy buttons) instead of loading as plain text.
+
+### Changed
+- **Styling**: Refined the appearance of the floating status indicator for a cleaner, more professional look consistent with GNOME Adwaita.
+
 ## [0.2.7] - 2026-01-06
 
 ### Added

@@ -207,7 +207,7 @@ class MainWindow(Adw.ApplicationWindow):
         about.set_application_name(self.lang_manager.get("window.about.name"))
         about.set_application_icon("io.github.askscience.gaia")
         about.set_developer_name(self.lang_manager.get("window.about.developer"))
-        about.set_version("0.2.7")
+        about.set_version("0.2.8")
         about.set_comments(self.lang_manager.get("window.about.comments"))
         about.set_copyright(self.lang_manager.get("window.about.copyright"))
         about.set_website("https://github.com/askscience/gaia")
@@ -266,13 +266,18 @@ class MainWindow(Adw.ApplicationWindow):
         selected_page = self.tab_view.get_selected_page()
         if selected_page:
             child = selected_page.get_child()
-            if isinstance(child, ChatPage) and child.lazy_loading:
-                child.lazy_loading = False
-                # Load limited chat data if we only have metadata
-                if 'history' not in child.chat_data:
-                    # Only load the most recent messages for performance
-                    full_chat = self.storage.load_chat(child.chat_data['id'], limit_messages=child.max_visible_messages)
-                    if full_chat:
-                        child.chat_data = full_chat
-                        child.history = full_chat.get('history', [])
-                GLib.idle_add(child._load_history_batch)
+            if isinstance(child, ChatPage):
+                # Restore artifacts (Simple preview restore)
+                child.restore_artifacts(self.artifacts_panel)
+
+                if child.lazy_loading:
+                    child.lazy_loading = False
+                    # Load limited chat data if we only have metadata
+                    if 'history' not in child.chat_data:
+                        # Load FULL history to ensure we don't lose data when saving back
+                        full_chat = self.storage.load_chat(child.chat_data['id'])
+                        if full_chat:
+                            child.chat_data = full_chat
+                            child.history = full_chat.get('history', [])
+                    GLib.idle_add(child._load_history_batch)
+

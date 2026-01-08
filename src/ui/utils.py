@@ -55,5 +55,51 @@ def markdown_to_pango(text):
         return text
     except Exception as e:
         # On any parsing error, return escaped plain text
-        print(f"[DEBUG markdown_to_pango] Error: {e}")
         return html.escape(text) if text else ""
+
+def parse_markdown_segments(text):
+    """
+    Parses markdown text into segments of 'text' and 'code'.
+    Returns a list of dicts:
+    [
+      {'type': 'text', 'content': '...'},
+      {'type': 'code', 'content': '...', 'lang': '...'}
+    ]
+    """
+    if not text:
+        return []
+        
+    segments = []
+    
+    # Regex to match code blocks: ```lang\ncode\n```
+    # Captures: 1=lang (any chars until newline), 2=code
+    # Fixed: Changed (\w*) to ([^\n]*) to handle trailing spaces or complex lang strings
+    pattern = r'```([^\n]*)\n(.*?)```'
+    
+    last_idx = 0
+    for match in re.finditer(pattern, text, re.DOTALL):
+        # Add text before the code block
+        start, end = match.span()
+        if start > last_idx:
+            segments.append({
+                'type': 'text',
+                'content': text[last_idx:start]
+            })
+            
+        # Add the code block
+        segments.append({
+            'type': 'code',
+            'lang': match.group(1).strip() or "text",
+            'content': match.group(2) # Content inside backticks
+        })
+        
+        last_idx = end
+        
+    # Add remaining text
+    if last_idx < len(text):
+        segments.append({
+            'type': 'text',
+            'content': text[last_idx:]
+        })
+        
+    return segments

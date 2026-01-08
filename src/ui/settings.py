@@ -372,6 +372,54 @@ class SettingsWindow(Adw.PreferencesWindow):
         self.pexels_key_row.connect("changed", self.on_pexels_key_changed)
         img_group.add(self.pexels_key_row)
 
+        # Search Configuration Group
+        search_group = Adw.PreferencesGroup()
+        search_group.set_title(self.lang_manager.get("settings.deep_research.search_config_title"))
+        search_group.set_description(self.lang_manager.get("settings.deep_research.search_config_desc"))
+        dr_page.add(search_group)
+
+        # Brave Search API Key
+        self.brave_key_row = Adw.PasswordEntryRow()
+        self.brave_key_row.set_title(self.lang_manager.get("settings.deep_research.brave_key"))
+        self.brave_key_row.set_text(self.config.get("brave_search_api_key", ""))
+        self.brave_key_row.connect("changed", self.on_brave_key_changed)
+        search_group.add(self.brave_key_row)
+
+        # Advanced Configuration Group
+        adv_group = Adw.PreferencesGroup()
+        adv_group.set_title(self.lang_manager.get("settings.deep_research.advanced_config_title"))
+        adv_group.set_description(self.lang_manager.get("settings.deep_research.advanced_config_desc"))
+        dr_page.add(adv_group)
+
+        # Max Concurrent Searches
+        self.conc_search_row = Adw.ActionRow()
+        self.conc_search_row.set_title(self.lang_manager.get("settings.deep_research.concurrent_searches"))
+        self.conc_search_row.set_subtitle(self.lang_manager.get("settings.deep_research.concurrent_searches_subtitle"))
+        
+        # Default 1, Range 1-10
+        conc_search_adj = Gtk.Adjustment.new(self.config.get("dr_max_concurrent_searches", 1), 1, 10, 1, 1, 0)
+        self.conc_search_spin = Gtk.SpinButton.new(conc_search_adj, 1, 0)
+        self.conc_search_spin.set_valign(Gtk.Align.CENTER)
+        self.conc_search_spin.connect("value-changed", self.on_concurrent_searches_changed)
+        self.conc_search_row.add_suffix(self.conc_search_spin)
+        adv_group.add(self.conc_search_row)
+
+        # Max Concurrent LLM Calls
+        self.conc_llm_row = Adw.ActionRow()
+        self.conc_llm_row.set_title(self.lang_manager.get("settings.deep_research.concurrent_llm"))
+        self.conc_llm_row.set_subtitle(self.lang_manager.get("settings.deep_research.concurrent_llm_subtitle"))
+        
+        # Default 1, Range 1-10
+        conc_llm_adj = Gtk.Adjustment.new(self.config.get("dr_max_concurrent_llm", 1), 1, 10, 1, 1, 0)
+        self.conc_llm_spin = Gtk.SpinButton.new(conc_llm_adj, 1, 0)
+        self.conc_llm_spin.set_valign(Gtk.Align.CENTER)
+        self.conc_llm_spin.connect("value-changed", self.on_concurrent_llm_changed)
+        self.conc_llm_row.add_suffix(self.conc_llm_spin)
+        adv_group.add(self.conc_llm_row)
+
+
+
+
     def _update_visibility(self):
         selected = self.provider_row.get_selected()
         # Hide API key for Ollama (index 0)
@@ -519,6 +567,15 @@ class SettingsWindow(Adw.PreferencesWindow):
 
     def on_pexels_key_changed(self, entry):
         self.config.set("pexels_api_key", entry.get_text())
+
+    def on_brave_key_changed(self, entry):
+        self.config.set("brave_search_api_key", entry.get_text())
+
+    def on_concurrent_searches_changed(self, spin):
+        self.config.set("dr_max_concurrent_searches", int(spin.get_value()))
+
+    def on_concurrent_llm_changed(self, spin):
+        self.config.set("dr_max_concurrent_llm", int(spin.get_value()))
 
     def on_calendar_group_toggled(self, row, tools_list):
         """Handle toggle for the calendar tool group."""

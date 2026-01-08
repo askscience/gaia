@@ -7,7 +7,7 @@ import json
 from typing import List, Dict, Any
 from src.tools.deep_research.state import AgentState, ResearchNote
 from src.tools.deep_research.tools import async_search, async_scrape, async_search_unsplash, async_search_pexels
-from src.tools.deep_research.config import MAX_LOOPS, MAX_SEARCH_RESULTS, OUTLINE_STEPS, SEARCH_BREADTH, UNSPLASH_KEY, PEXELS_KEY
+from src.tools.deep_research.config import MAX_LOOPS, MAX_SEARCH_RESULTS, OUTLINE_STEPS, SEARCH_BREADTH, UNSPLASH_KEY, PEXELS_KEY, MAX_CONCURRENT_LLM_CALLS, MAX_CONCURRENT_SEARCHES
 from src.core.ai_client import AIClient
 from src.core.prompt_manager import PromptManager
 
@@ -15,12 +15,35 @@ ai_client = AIClient()
 prompt_manager = PromptManager()
 
 
+
+# Semaphore to limit concurrent LLM calls
+# We need to recreate the semaphore dynamically because config can change? 
+# Usually semaphores are long lived. 
+# But if the user changes settings, we want it to apply.
+# For now, let's initialize it with a default, but inside the function we might need to respect the limit.
+# Actually, asyncio.Semaphore doesn't support changing limit easily.
+# But since this is a one-shot process (each run is a new graph execution?), maybe we can create it per run?
+# However, async_generate_response is a global function. 
+
+# Solution: We will use a BoundedSemaphore and acquire it multiple times if the limit is higher? No.
+# Simpler: Just use a global lock that respects the CURRENT config value?
+# Or just accept that restart is needed for this setting? 
+# For now, let's keep it global but initialize it lazily or allow it to exceed if we change logic.
+# Actually, we can just use the config value in the graph state or pass it.
+# But nodes are stateless functions. 
+
+# Let's stick to the simple global for now, but use the function call to get the INITIAL value.
+# Note: Changing this at runtime might not work perfectly without app restart or reloading module.
+llm_semaphore = asyncio.Semaphore(MAX_CONCURRENT_LLM_CALLS())
+
 async def async_generate_response(messages):
     """
     Async wrapper for AI client generation to avoid blocking the event loop.
+    Protected by a semaphore to prevent hitting provider rate limits.
     """
-    loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(None, ai_client.generate_response, messages)
+    async with llm_semaphore:
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, ai_client.generate_response, messages)
 
 async def global_planner(state: AgentState) -> Dict[str, Any]:
     """
@@ -85,7 +108,19 @@ async def section_researcher_node(query: str, section_title: str, sub_queries: L
     
     # 1. Search & Scrape
     search_depth = MAX_SEARCH_RESULTS()
-    search_tasks = [async_search(q, max_results=search_depth) for q in sub_queries]
+    
+    # Apply concurrency limit for searches
+    # We can use a semaphore here too or just chunking.
+    # Since async_search is a tool, let's limit the number of task created or use a semaphore inside async_search?
+    # Actually async_search in tools.py uses a semaphore if we check it?
+    # Let's check tools.py... but for now let's just use a semaphore here to be safe.
+    search_sem = asyncio.Semaphore(MAX_CONCURRENT_SEARCHES())
+    
+    async def run_search(q):
+        async with search_sem:
+            return await async_search(q, max_results=search_depth)
+
+    search_tasks = [run_search(q) for q in sub_queries]
     all_search_results = await asyncio.gather(*search_tasks)
     
     urls_to_scrape = []

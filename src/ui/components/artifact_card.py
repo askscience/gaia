@@ -43,5 +43,5 @@ class ArtifactCard(Gtk.Frame):
     def on_clicked(self, *args):
         root = self.get_native()
         if hasattr(root, "artifacts_panel"):
-            root.artifacts_panel.load_artifact({"path": self.path, "language": self.language, "filename": self.filename})
+            root.artifacts_panel.load_artifact(self.path, self.language)
             root.show_artifacts()

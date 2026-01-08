@@ -13,3 +13,4 @@ class AgentState(TypedDict):
     results: List[str]
     graph: Any # WebBuilderGraph
     error: Optional[str]
+    file_contents: Dict[str, str]

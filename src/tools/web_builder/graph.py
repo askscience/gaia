@@ -56,6 +56,7 @@ class WebBuilderGraph:
         # 2. Execution
         total_files = len(files_plan)
         completed_count = 0
+        state["file_contents"] = {} # Initialize
         
         if status_callback:
             status_callback(f"Starting {total_files} subagents to write files...", 20)
@@ -83,6 +84,11 @@ class WebBuilderGraph:
         # Run assets in parallel first
         asset_tasks = [run_subagent(f) for f in asset_files]
         asset_results = await asyncio.gather(*asset_tasks)
+        
+        # Collect content from assets for the next phase
+        for res in asset_results:
+            if res.get("success") and res.get("content"):
+                state["file_contents"][res["filename"]] = res["content"]
         
         if self.cancelled:
             state["error"] = "Cancelled by user."

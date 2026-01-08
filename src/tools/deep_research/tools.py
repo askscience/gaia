@@ -19,7 +19,7 @@ async def async_search(query: str, max_results: int = 3) -> List[Dict[str, str]]
     
     # Static semaphore to reuse across calls
     if not hasattr(async_search, "_semaphore"):
-        async_search._semaphore = asyncio.Semaphore(MAX_CONCURRENT_SEARCHES)
+        async_search._semaphore = asyncio.Semaphore(MAX_CONCURRENT_SEARCHES())
 
     async with async_search._semaphore:
         loop = asyncio.get_event_loop()

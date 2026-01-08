@@ -71,6 +71,16 @@
   </content_rating>
   
   <releases>
+    <release version="0.2.8" date="2026-01-08">
+      <description>
+        <p>Chat Persistence and UI Improvements:</p>
+        <ul>
+          <li><strong>Rich Chat Markup:</strong> Added code block styling with one-click Copy button.</li>
+          <li><strong>Data Safety:</strong> Fixed critical chat history truncation and data loss bugs.</li>
+          <li><strong>Floating Status:</strong> Moved AI thinking spinner to a non-intrusive floating overlay.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.2.7" date="2026-01-06">
       <description>
         <p>Web Builder Improvements:</p>

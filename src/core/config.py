@@ -27,7 +27,8 @@ class ConfigManager:
         },
         "enabled_tools": {},  # Tool name -> boolean. Missing means enabled.
         "proxy_enabled": False,
-        "proxy_url": ""
+        "proxy_url": "",
+        "brave_search_api_key": ""
     }
 
     def __new__(cls):

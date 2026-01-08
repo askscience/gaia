@@ -58,7 +58,19 @@ class WebBuilderTool(BaseTool):
         # MODE 1: EXECUTE PENDING
         if action == "execute":
             manager = BackgroundWebBuilderManager()
-            return manager.execute_pending_plan(project_id)
+            result = manager.execute_pending_plan(project_id)
+            
+            # Fallback: If no pending plan but we have a description, create and run immediately
+            if "No pending plan" in str(result) and description:
+                print(f"[WebBuilder] No pending plan found, but description provided. Creating and executing immediately.")
+                plan_res = manager.create_plan(description, project_id)
+                if isinstance(plan_res, dict) and "error" in plan_res:
+                     return f" {result} And failed to create new plan: {plan_res['error']}"
+                
+                # Now execute the newly created plan
+                return manager.execute_pending_plan(project_id)
+                
+            return result
 
         # MODE 2: PLAN (Asynchronous Description provided)
         if description:
