@@ -71,6 +71,14 @@
   </content_rating>
   
   <releases>
+    <release version="0.3.2" date="2026-01-09">
+      <description>
+        <p>Performance Improvements:</p>
+        <ul>
+          <li><strong>Web Preview:</strong> Eliminated load delay when reopening updated chats.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.3.1" date="2026-01-09">
       <description>
         <p>Global Concurrency &amp; Fixes:</p>

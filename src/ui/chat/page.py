@@ -270,7 +270,7 @@ class ChatPage(Gtk.Box):
         if os.path.exists(project_dir):
             # Check for deep research marker or just assume standard project
             is_research = os.path.exists(os.path.join(project_dir, "research_data.json"))
-            artifacts_panel.load_project(project_dir, is_research=is_research)
+            artifacts_panel.load_project(project_dir, is_research=is_research, quick_load=True)
 
 
     def add_message(self, role: str, text: str, metadata: dict = None, parsed_text: str = None):

@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.3.2] - 2026-01-09
+
+### Fixed
+- **Web Preview Performance**: Eliminated an unnecessary 300ms delay when reopening chats with existing web artifacts. Project restoration is now practically instant.
+
 ## [0.3.1] - 2026-01-09
 
 ### Added

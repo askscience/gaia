@@ -160,8 +160,11 @@ class ArtifactsPanel(Gtk.Box):
         # Reload WebView when panel becomes visible
         self.connect("map", self._on_map)
 
-    def load_project(self, folder_path: str, is_research: bool = False, force: bool = False):
-        """Load a web project from a folder path."""
+    def load_project(self, folder_path: str, is_research: bool = False, force: bool = False, quick_load: bool = False):
+        """
+        Load a web project from a folder path.
+        :param quick_load: If True, minimizes the loading delay (use when checking existing files).
+        """
         if not os.path.exists(folder_path):
             return
         
@@ -265,7 +268,8 @@ class ArtifactsPanel(Gtk.Box):
                         self._last_load_time = time.time()
                     return False
                 
-                GLib.timeout_add(300, delayed_load)
+                delay_ms = 10 if quick_load else 300
+                GLib.timeout_add(delay_ms, delayed_load)
             
             # Use GLib.timeout_add to guarantee this runs AFTER all signal handlers and UI updates
             def force_preview_mode():
