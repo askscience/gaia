@@ -71,6 +71,15 @@
   </content_rating>
   
   <releases>
+    <release version="0.3.1" date="2026-01-09">
+      <description>
+        <p>Global Concurrency &amp; Fixes:</p>
+        <ul>
+          <li><strong>Stability:</strong> Implemented global API concurrency limits (e.g., restricted Z.ai to 2 concurrent requests) to prevent rate limit errors.</li>
+          <li><strong>UI:</strong> Fixed chat layout to prevent status messages from obscuring the conversation.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.3.0" date="2026-01-08">
       <description>
         <p>Web Builder Fixes:</p>

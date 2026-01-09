@@ -61,14 +61,18 @@ class WebBuilderGraph:
         if status_callback:
             status_callback(f"Starting {total_files} subagents to write files...", 20)
             
+        from src.core.concurrency.manager import ConcurrencyManager
+        concurrency_manager = ConcurrencyManager()
+
         async def run_subagent(file_item):
             nonlocal completed_count
             filename = file_item["filename"]
             instruction = file_item["instruction"]
             dependencies = file_item.get("dependencies", [])
             
-            # Subagent specific execution
-            result = await file_writer_node(filename, instruction, dependencies, state)
+            async with concurrency_manager.get_async_semaphore():
+                # Subagent specific execution
+                result = await file_writer_node(filename, instruction, dependencies, state)
             
             completed_count += 1
             if status_callback:

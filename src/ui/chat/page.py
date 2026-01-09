@@ -79,7 +79,7 @@ class ChatPage(Gtk.Box):
         self.chat_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.chat_box.set_spacing(6)
         self.chat_box.set_margin_top(12)
-        self.chat_box.set_margin_bottom(12)
+        self.chat_box.set_margin_bottom(80) # Increased to avoid overlap with floating status
         self.chat_box.set_margin_start(12)
         self.chat_box.set_margin_end(12)
         self.chat_box.add_css_class("chat-box")

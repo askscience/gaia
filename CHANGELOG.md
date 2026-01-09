@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.3.1] - 2026-01-09
+
+### Added
+- **Global Concurrency Manager**: Implemented a centralized system to manage API limits across all tools.
+    - Added strict default limits for **Z.ai** (2), **Ollama** (4), **Anthropic** (4), and others to prevent "429 Too Many Requests" errors.
+    - Refactored `Web Builder` and `Deep Research` to use this shared system.
+- **Provider-Specific Limits**: The app now automatically detects the active AI provider and applies the appropriate safety limit.
+
+### Fixed
+- **Chat UI Overlap**: Increased the bottom margin of the chat view to prevent the "Thinking..." status overlay from obscuring the latest messages.
+- **Z.ai API Stability**: Resolved critical "Error 1302: High concurrency usage" issues by strictly throttling Z.ai requests to 2 concurrent calls.
+
 ## [0.3.0] - 2026-01-08
 
 ### Fixed

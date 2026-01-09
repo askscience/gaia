@@ -69,7 +69,27 @@ def execute(self, query: str, status_callback=None, **kwargs):
 - **Purpose**: Reads `console.json` logs from WebKit previews.
 - **Usage**: Used to debug generated web projects.
 
-## 4. Adding New Tools
+## 4. Concurrency & Rate Limiting
+To prevent "429 Too Many Requests" errors when using cloud AI providers (e.g., Z.ai, OpenAI), all tools MUST use the centralized **Concurrency Manager**.
+
+**Do NOT use `asyncio.Semaphore` directly** for limiting LLM or API calls.
+
+### How to Implement
+1.  Import the manager:
+    ```python
+    from src.core.concurrency.manager import ConcurrencyManager
+    ```
+2.  Wrap your API calls:
+    ```python
+    manager = ConcurrencyManager()
+    
+    async def my_parallel_task(item):
+        async with manager.get_async_semaphore():
+             # Your API call here (e.g., AIClient.generate_response)
+             result = await perform_api_call(item)
+    ```
+
+## 5. Adding New Tools
 1.  Create a folder in `src/tools/`.
 2.  Implement `tool.py` inheriting from `BaseTool`.
 3.  Add prompts to `src/core/prompts/en.json`.
