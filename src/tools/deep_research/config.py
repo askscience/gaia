@@ -42,3 +42,6 @@ def MAX_CONCURRENT_SEARCHES():
 
 def MAX_CONCURRENT_LLM_CALLS():
     return config.get("dr_max_concurrent_llm", 1)
+
+def INTEGRATE_IMAGES():
+    return config.get("dr_integrate_images", True)

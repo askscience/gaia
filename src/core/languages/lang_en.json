@@ -82,6 +82,8 @@
             "outline_depth_subtitle": "How many chapters the report will have.",
             "search_breadth": "Search Breadth",
             "search_breadth_subtitle": "How many different searches to run per chapter.",
+            "integrate_images_title": "Integrate Images",
+            "integrate_images_subtitle": "Search for and include images in the report.",
             "scraping_config_title": "Scraping Configuration",
             "scraping_config_desc": "Advanced settings for content extraction (Trafilatura).",
             "min_extracted_size": "Min Extracted Size",

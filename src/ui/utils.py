@@ -59,11 +59,12 @@ def markdown_to_pango(text):
 
 def parse_markdown_segments(text):
     """
-    Parses markdown text into segments of 'text' and 'code'.
+    Parses markdown text into segments of 'text', 'code', and 'image'.
     Returns a list of dicts:
     [
       {'type': 'text', 'content': '...'},
-      {'type': 'code', 'content': '...', 'lang': '...'}
+      {'type': 'code', 'content': '...', 'lang': '...'},
+      {'type': 'image', 'alt': '...', 'url': '...'}
     ]
     """
     if not text:
@@ -71,35 +72,61 @@ def parse_markdown_segments(text):
         
     segments = []
     
-    # Regex to match code blocks: ```lang\ncode\n```
-    # Captures: 1=lang (any chars until newline), 2=code
-    # Fixed: Changed (\w*) to ([^\n]*) to handle trailing spaces or complex lang strings
-    pattern = r'```([^\n]*)\n(.*?)```'
+    # Combined regex to match:
+    # 1. Wallpaper Grid: [WALLPAPER_GRID]...[/WALLPAPER_GRID]
+    # 2. Code: ```lang\ncode\n```
+    # 3. Image: ![alt](url)
     
-    last_idx = 0
-    for match in re.finditer(pattern, text, re.DOTALL):
-        # Add text before the code block
-        start, end = match.span()
-        if start > last_idx:
-            segments.append({
-                'type': 'text',
-                'content': text[last_idx:start]
-            })
+    grid_pattern = r'\[WALLPAPER_GRID\](.*?)\[/WALLPAPER_GRID\]'
+    code_pattern = r'```([^\n]*)\n(.*?)```'
+    image_pattern = r'!\[([^\]]*)\]\s*\(([^)]+)\)'
+    
+    current_idx = 0
+    
+    while current_idx < len(text):
+        # Search for all patterns
+        grid_match = re.search(grid_pattern, text[current_idx:], re.DOTALL)
+        code_match = re.search(code_pattern, text[current_idx:], re.DOTALL)
+        image_match = re.search(image_pattern, text[current_idx:])
+        
+        # Calculate absolute positions (inf if not found)
+        grid_start = grid_match.start() + current_idx if grid_match else float('inf')
+        code_start = code_match.start() + current_idx if code_match else float('inf')
+        image_start = image_match.start() + current_idx if image_match else float('inf')
+        
+        # No matches left
+        if grid_start == float('inf') and code_start == float('inf') and image_start == float('inf'):
+            segments.append({'type': 'text', 'content': text[current_idx:]})
+            break
             
-        # Add the code block
-        segments.append({
-            'type': 'code',
-            'lang': match.group(1).strip() or "text",
-            'content': match.group(2) # Content inside backticks
-        })
+        # Find the earliest match
+        earliest = min(grid_start, code_start, image_start)
         
-        last_idx = end
-        
-    # Add remaining text
-    if last_idx < len(text):
-        segments.append({
-            'type': 'text',
-            'content': text[last_idx:]
-        })
-        
+        # Add text before match
+        if earliest > current_idx:
+            segments.append({'type': 'text', 'content': text[current_idx:earliest]})
+            
+        if grid_start == earliest:
+            segments.append({
+                'type': 'wallpaper_grid',
+                'content': grid_match.group(1) # JSON content
+            })
+            current_idx = grid_match.end() + current_idx
+            
+        elif code_start == earliest:
+            segments.append({
+                'type': 'code', 
+                'lang': code_match.group(1).strip() or "text",
+                'content': code_match.group(2)
+            })
+            current_idx = code_match.end() + current_idx
+            
+        elif image_start == earliest:
+            segments.append({
+                'type': 'image',
+                'alt': image_match.group(1),
+                'url': image_match.group(2)
+            })
+            current_idx = image_match.end() + current_idx
+            
     return segments

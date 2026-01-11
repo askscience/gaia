@@ -95,7 +95,28 @@ class SettingsWindow(Adw.PreferencesWindow):
         self.model_row = Adw.ComboRow()
         self.model_row.set_title(self.lang_manager.get("settings.general.model_title"))
         self.model_row.set_subtitle(self.lang_manager.get("settings.general.model_subtitle"))
+        self.model_row.set_subtitle(self.lang_manager.get("settings.general.model_subtitle"))
         ai_group.add(self.model_row)
+
+        # Image Search APIs Group (Moved from Deep Research)
+        img_group = Adw.PreferencesGroup()
+        img_group.set_title(self.lang_manager.get("settings.deep_research.image_search_title", default="Image Search"))
+        img_group.set_description(self.lang_manager.get("settings.deep_research.image_search_desc", default="Configure APIs for image integration."))
+        page.add(img_group) # Add to General Page
+
+        # Unsplash Key
+        self.unsplash_key_row = Adw.PasswordEntryRow()
+        self.unsplash_key_row.set_title(self.lang_manager.get("settings.deep_research.unsplash_key", default="Unsplash Access Key"))
+        self.unsplash_key_row.set_text(self.config.get("unsplash_access_key", ""))
+        self.unsplash_key_row.connect("changed", self.on_unsplash_key_changed)
+        img_group.add(self.unsplash_key_row)
+
+        # Pexels Key
+        self.pexels_key_row = Adw.PasswordEntryRow()
+        self.pexels_key_row.set_title(self.lang_manager.get("settings.deep_research.pexels_key", default="Pexels API Key"))
+        self.pexels_key_row.set_text(self.config.get("pexels_api_key", ""))
+        self.pexels_key_row.connect("changed", self.on_pexels_key_changed)
+        img_group.add(self.pexels_key_row)
 
         # Add refresh button to the model row
         refresh_btn = Gtk.Button.new_from_icon_name("view-refresh-symbolic")
@@ -319,7 +340,16 @@ class SettingsWindow(Adw.PreferencesWindow):
         self.breadth_spin.set_valign(Gtk.Align.CENTER)
         self.breadth_spin.connect("value-changed", self.on_search_breadth_changed)
         self.search_breadth_row.add_suffix(self.breadth_spin)
+        self.search_breadth_row.add_suffix(self.breadth_spin)
         dr_group.add(self.search_breadth_row)
+
+        # Integrate Images Toggle
+        self.integrate_images_row = Adw.SwitchRow()
+        self.integrate_images_row.set_title(self.lang_manager.get("settings.deep_research.integrate_images_title", default="Integrate Images"))
+        self.integrate_images_row.set_subtitle(self.lang_manager.get("settings.deep_research.integrate_images_subtitle", default="Search for and include images in the report."))
+        self.integrate_images_row.set_active(self.config.get("dr_integrate_images", True))
+        self.integrate_images_row.connect("notify::active", self.on_integrate_images_toggled)
+        dr_group.add(self.integrate_images_row)
 
         # Scrape Settings Group
         scrape_group = Adw.PreferencesGroup()
@@ -352,25 +382,6 @@ class SettingsWindow(Adw.PreferencesWindow):
         self.min_out_row.add_suffix(self.min_out_spin)
         scrape_group.add(self.min_out_row)
 
-        # Image Search APIs Group
-        img_group = Adw.PreferencesGroup()
-        img_group.set_title(self.lang_manager.get("settings.deep_research.image_search_title"))
-        img_group.set_description(self.lang_manager.get("settings.deep_research.image_search_desc"))
-        dr_page.add(img_group)
-
-        # Unsplash Key
-        self.unsplash_key_row = Adw.PasswordEntryRow()
-        self.unsplash_key_row.set_title(self.lang_manager.get("settings.deep_research.unsplash_key"))
-        self.unsplash_key_row.set_text(self.config.get("unsplash_access_key", ""))
-        self.unsplash_key_row.connect("changed", self.on_unsplash_key_changed)
-        img_group.add(self.unsplash_key_row)
-
-        # Pexels Key
-        self.pexels_key_row = Adw.PasswordEntryRow()
-        self.pexels_key_row.set_title(self.lang_manager.get("settings.deep_research.pexels_key"))
-        self.pexels_key_row.set_text(self.config.get("pexels_api_key", ""))
-        self.pexels_key_row.connect("changed", self.on_pexels_key_changed)
-        img_group.add(self.pexels_key_row)
 
         # Search Configuration Group
         search_group = Adw.PreferencesGroup()
@@ -584,6 +595,9 @@ class SettingsWindow(Adw.PreferencesWindow):
         for t in tools_list:
             enabled_map[t] = is_active
         self.config.set("enabled_tools", enabled_map)
+
+    def on_integrate_images_toggled(self, row, pspec):
+        self.config.set("dr_integrate_images", row.get_active())
 
     def on_proxy_toggled(self, row, pspec):
         self.config.set("proxy_enabled", row.get_active())

@@ -71,6 +71,16 @@
   </content_rating>
   
   <releases>
+    <release version="0.3.3" date="2026-01-11">
+      <description>
+        <p>New Features for Desktop &amp; Audio:</p>
+        <ul>
+          <li><strong>Audio Control:</strong> New tool to control system volume (get, set, mute, unmute).</li>
+          <li><strong>Radio Tuner:</strong> Search and play internet radio stations using the community radio-browser API.</li>
+          <li><strong>Gnome Tools Refactor:</strong> Improved modularity and reliability of desktop integration tools.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.3.2" date="2026-01-09">
       <description>
         <p>Performance Improvements:</p>

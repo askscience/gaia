@@ -16,6 +16,46 @@
         "web_search_disabled": "- RICERCA WEB: Lo strumento `web_search` è DISABILITATO. Non puoi cercare nel web. Se l'utente chiede informazioni esterne, scusati e spiega che la ricerca web è disabilitata nelle impostazioni.",
         "calendar_enabled": "- CALENDARIO: L'ora attuale del sistema è {current_time}. NON hai bisogno di creare un piano di implementazione per le operazioni del calendario. Dovresti eseguire gli strumenti del calendario (aggiungi, rimuovi, elenca) direttamente e immediatamente usando questo orario come riferimento."
     },
+    "gnome_search_background": {
+        "status_searching": "Searching for wallpapers: {query}...",
+        "error_no_keys": "No image provider keys found. Please add Unsplash or Pexels keys in Settings.",
+        "success_header": "### Found Wallpapers",
+        "error_failed": "Failed to search wallpapers: {error}"
+    },
+    "gnome_set_background": {
+        "status_setting": "Initiating wallpaper change...",
+        "status_downloading": "Downloading image...",
+        "status_applying": "Applying to desktop...",
+        "error_download": "Failed to download image (Status: {code}).",
+        "success": "Desktop wallpaper updated successfully.",
+        "error_failed": "Failed to set wallpaper: {error}"
+    },
+    "gnome_theme": {
+        "status_changing": "Switching to {theme} theme...",
+        "error_invalid": "Invalid theme '{theme}'. Please use 'light' or 'dark'.",
+        "success": "Switched to {theme} theme.",
+        "error_failed": "Failed to change theme: {error}"
+    },
+    "gnome_opener": {
+        "status_opening": "Opening {uri}...",
+        "success": "Opened {uri}.",
+        "error_failed": "Failed to open {uri}: {error}"
+    },
+    "gnome_audio_control": {
+        "status_working": "Audio: {action}...",
+        "success_get": "Il volume attuale è {volume}%.",
+        "success_set": "Volume impostato al {level}%.",
+        "success_mute": "Audio: {state}.",
+        "error_failed": "Controllo audio fallito: {error}"
+    },
+    "gnome_radio": {
+        "status_searching": "Ricerca stazioni radio per: {query}...",
+        "status_playing": "Apertura flusso nel player predefinito...",
+        "success_search": "Trovate {count} stazioni:\n{json}",
+        "success_play": "In riproduzione: {url}",
+        "error_no_results": "Nessuna stazione radio trovata per: {query}",
+        "error_failed": "Azione radio fallita: {error}"
+    },
     "deep_research": {
         "outline": "Crea uno schema di ricerca dettagliato e completo per il rapporto: \"{query}\".\n    Lo schema deve contenere {outline_steps} sezioni logiche.\n    Restituisci SOLO un elenco JSON di stringhe (i titoli delle sezioni).\n    \n    IMPORTANTE: NON numerare le sezioni (es. no \"1. Introduzione\", no \"Passo 1\"). Restituisci solo i titoli.",
         "sub_queries": "Genera {search_breadth} query di ricerca di alta qualità per approfondire la sezione \"{section}\" per un rapporto su \"{query}\".\nRestituisci SOLO un elenco JSON di stringhe.",

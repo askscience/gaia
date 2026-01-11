@@ -82,6 +82,8 @@
             "outline_depth_subtitle": "Cuántos capítulos tendrá el informe.",
             "search_breadth": "Amplitud de Búsqueda",
             "search_breadth_subtitle": "Cuántas búsquedas diferentes hacer por capítulo.",
+            "integrate_images_title": "Integrar Imágenes",
+            "integrate_images_subtitle": "Buscar e incluir imágenes en el informe.",
             "scraping_config_title": "Configuración de Rastreo",
             "scraping_config_desc": "Ajustes avanzados para extracción de contenido (Trafilatura).",
             "min_extracted_size": "Tamaño Mín. Extraído",

@@ -198,6 +198,11 @@ async def image_researcher_node(state: AgentState) -> Dict[str, Any]:
     query = state["query"]
     if state["graph"].cancelled: return {"images": []}
     
+    # Check global toggle first
+    from src.tools.deep_research.config import INTEGRATE_IMAGES
+    if not INTEGRATE_IMAGES():
+        return {"images": []}
+
     unsplash_key = UNSPLASH_KEY()
     pexels_key = PEXELS_KEY()
     

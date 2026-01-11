@@ -14,6 +14,7 @@ from src.core.config import get_artifacts_dir
 from src.ui.utils import markdown_to_pango, parse_markdown_segments
 from src.ui.components import SourceCard, ArtifactCard, ResearchCard, PlanConfirmationCard
 from src.ui.components.code_block import CodeBlock
+from src.ui.components.wallpaper_grid import WallpaperGrid
 from src.core.ai_client import AIClient
 from src.tools.manager import ToolManager
 from src.core.tool_call_parser import ToolCallParser
@@ -348,7 +349,7 @@ class ChatPage(Gtk.Box):
         return msg_label # Return label for streaming updates
     
     def _render_rich_content(self, bubble, text):
-        """Render text mixed with code blocks."""
+        """Render text mixed with code blocks and images."""
         # Remove existing children (e.g. the initial placeholder label)
         child = bubble.get_first_child()
         while child:
@@ -360,6 +361,92 @@ class ChatPage(Gtk.Box):
             if seg['type'] == 'code':
                 block = CodeBlock(seg['content'], seg['lang'])
                 bubble.append(block)
+                
+            elif seg['type'] == 'wallpaper_grid':
+                try:
+                    images = json.loads(seg['content'])
+                    
+                    def on_wallpaper_click(index):
+                        # Auto-fill input and send immediately
+                        if hasattr(self, 'entry'):
+                            self.entry.set_text(f"Set wallpaper {index}")
+                            # Trigger send
+                            self.on_send_clicked(None)
+                            
+                    grid = WallpaperGrid(images, on_click_callback=on_wallpaper_click)
+                    bubble.append(grid)
+                except Exception as e:
+                    print(f"Error rendering wallpaper grid: {e}")
+                    # Fallback to text
+                    label = Gtk.Label(label="[Error rendering grid]")
+                    bubble.append(label)
+                    
+            elif seg['type'] == 'image':
+                # Render Image
+                # Use a custom simple card for images
+                # Box -> [Image] -> Label (Alt)
+                img_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+                img_box.set_spacing(6)
+                img_box.set_margin_top(10)
+                img_box.set_margin_bottom(10)
+                # Max width for images
+                img_box.set_size_request(300, -1) 
+                
+                # We need to fetch the image asynchronously
+                # Create a placeholder
+                # Use Gtk.Picture for scaling content
+                picture = Gtk.Picture()
+                picture.set_content_fit(Gtk.ContentFit.COVER)
+                picture.set_can_shrink(True)
+                
+                # Check for cached file if it's a local path or we downloaded it
+                url = seg['url']
+                
+                # Helper to load image
+                def load_image(url, pic):
+                    try:
+                        import requests
+                        from gi.repository import GdkPixbuf, Gio
+                        
+                        # Handle local file:// URI
+                        if url.startswith("file://"):
+                            path = url.replace("file://", "")
+                            f = Gio.File.new_for_path(path)
+                            pic.set_file(f)
+                            return
+
+                        # Download with session to handle blocks
+                        session = requests.Session()
+                        session.headers.update({'User-Agent': 'Mozilla/5.0 GaiaBot/1.0'})
+                        resp = session.get(url, timeout=10, stream=True)
+                        
+                        if resp.status_code == 200:
+                            # Load data into Pixbuf? 
+                            # Or save to tmp? Saving to tmp is safer for Gtk.Picture
+                            import tempfile
+                            fd, path = tempfile.mkstemp(suffix=".jpg")
+                            with os.fdopen(fd, 'wb') as tmp:
+                                for chunk in resp.iter_content(chunk_size=1024):
+                                    tmp.write(chunk)
+                                    
+                            f = Gio.File.new_for_path(path)
+                            GLib.idle_add(pic.set_file, f)
+                    except Exception as e:
+                        print(f"Failed to load image {url}: {e}")
+
+                threading.Thread(target=load_image, args=(url, picture), daemon=True).start()
+                
+                img_box.append(picture)
+                
+                if seg.get('alt'):
+                     caption = Gtk.Label(label=seg['alt'])
+                     caption.add_css_class("dim-label")
+                     caption.set_wrap(True)
+                     caption.set_max_width_chars(40)
+                     img_box.append(caption)
+                
+                bubble.append(img_box)
+
             else:
                 # Text segment
                 if not seg['content'].strip(): continue
@@ -701,11 +788,20 @@ class ChatPage(Gtk.Box):
                             pending_tool_calls.extend(msg_chunk['tool_calls'])
                         if content_chunk:
                             full_content += content_chunk
-                            if '<tool_call>' in full_content:
-                                streaming_display = re.sub(r'<tool_call>[^<]*(?:</tool_call>|$)', '', full_content, flags=re.DOTALL)
-                                streaming_display = re.sub(r'<tool_call.*$', '', streaming_display, flags=re.DOTALL) 
-                            else:
-                                streaming_display = full_content
+                            
+                            # Filter out internal tags from streaming display
+                            streaming_display = full_content
+                            
+                            # Hide <tool_call>
+                            if '<tool_call>' in streaming_display:
+                                streaming_display = re.sub(r'<tool_call>[^<]*(?:</tool_call>|$)', '', streaming_display, flags=re.DOTALL)
+                                streaming_display = re.sub(r'<tool_call.*$', '', streaming_display, flags=re.DOTALL)
+                                
+                            # Hide [WALLPAPER_GRID]
+                            if '[WALLPAPER_GRID]' in streaming_display:
+                                streaming_display = re.sub(r'\[WALLPAPER_GRID\].*?\[/WALLPAPER_GRID\]', '', streaming_display, flags=re.DOTALL)
+                                # Hide partial open tag
+                                streaming_display = re.sub(r'\[WALLPAPER_GRID\].*$', '', streaming_display, flags=re.DOTALL)
                             display_text = accumulated_ui_text + streaming_display
                             
                             if not has_shown_initial_ui:
@@ -772,6 +868,43 @@ class ChatPage(Gtk.Box):
                         
                         result = tm.execute_tool(fname, project_id=project_id, **args)
                         
+                        # Immediate UI Rendering for Wallpaper Grid
+                        # This bypasses the AI summary latency
+                        grid_match = re.search(r'\[WALLPAPER_GRID\](.*?)\[/WALLPAPER_GRID\]', str(result), re.DOTALL)
+                        if grid_match:
+                            try:
+                                grid_json = json.loads(grid_match.group(1))
+                                def _render_direct():
+                                    try:
+                                        # Create a standalone bubble or just append to chat
+                                        # To look consistent, maybe wrap in a "System" bubble or just append widget
+                                        
+                                        # Create a separate container for this grid
+                                        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+                                        row.set_halign(Gtk.Align.START)
+                                        row.add_css_class("message-row")
+                                        
+                                        # Wrapper bubble to look like AI sent it (or system)
+                                        bubble = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+                                        bubble.add_css_class("message-bubble")
+                                        bubble.add_css_class("ai-message") # Make it look like AI content
+                                        
+                                        def on_click_direct(idx):
+                                            if hasattr(self, 'entry'):
+                                                self.entry.set_text(f"Set wallpaper {idx}")
+                                                self.on_send_clicked(None)
+
+                                        grid_widget = WallpaperGrid(grid_json, on_click_callback=on_click_direct)
+                                        bubble.append(grid_widget)
+                                        row.append(bubble)
+                                        self.chat_box.append(row)
+                                        self._scroll_to_bottom()
+                                    except Exception as e:
+                                        print(f"Error direct rendering grid: {e}")
+                                
+                                GLib.idle_add(_render_direct)
+                            except: pass
+
                         sources_matches = re.finditer(r'\[SOURCES\](.*?)\[/SOURCES\]', str(result), re.DOTALL)
                         for match in sources_matches:
                             try: all_sources.extend(json.loads(match.group(1).strip()))

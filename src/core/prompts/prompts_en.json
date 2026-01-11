@@ -16,6 +16,46 @@
         "web_search_disabled": "- WEB SEARCH: The `web_search` tool is DISABLED. You cannot search the web. If the user asks for external information, apologize and explain that web search is disabled in settings.",
         "calendar_enabled": "- CALENDAR: Current System Time is {current_time}. You do NOT need to create an implementation plan for calendar operations. You should execute calendar tools (add, remove, list) directly and immediately using this current time as reference."
     },
+    "gnome_search_background": {
+        "status_searching": "Searching for wallpapers: {query}...",
+        "error_no_keys": "No image provider keys found. Please add Unsplash or Pexels keys in Settings.",
+        "success_header": "Found wallpapers:",
+        "error_failed": "Failed to search wallpapers: {error}"
+    },
+    "gnome_set_background": {
+        "status_setting": "Initiating wallpaper change...",
+        "status_downloading": "Downloading image...",
+        "status_applying": "Applying to desktop...",
+        "error_download": "Failed to download image (Status: {code}).",
+        "success": "Desktop wallpaper updated successfully.",
+        "error_failed": "Failed to set wallpaper: {error}"
+    },
+    "gnome_theme": {
+        "status_changing": "Switching to {theme} theme...",
+        "error_invalid": "Invalid theme '{theme}'. Please use 'light' or 'dark'.",
+        "success": "Switched to {theme} theme.",
+        "error_failed": "Failed to change theme: {error}"
+    },
+    "gnome_opener": {
+        "status_opening": "Opening {uri}...",
+        "success": "Opened {uri}.",
+        "error_failed": "Failed to open {uri}: {error}"
+    },
+    "gnome_audio_control": {
+        "status_working": "Audio: {action}...",
+        "success_get": "Current volume is {volume}%.",
+        "success_set": "Volume set to {level}%.",
+        "success_mute": "Audio {state}d.",
+        "error_failed": "Audio control failed: {error}"
+    },
+    "gnome_radio": {
+        "status_searching": "Searching radio stations for: {query}...",
+        "status_playing": "Opening stream in default player...",
+        "success_search": "Found {count} stations:\n{json}",
+        "success_play": "Now playing: {url}",
+        "error_no_results": "No radio stations found for query: {query}",
+        "error_failed": "Radio action failed: {error}"
+    },
     "deep_research": {
         "outline": "Create a detailed, comprehensive research outline for the report: \"{query}\".\n    The outline should contain {outline_steps} logical sections.\n    Return ONLY a JSON list of strings (the section titles).\n    \n    IMPORTANT: Do NOT number the sections (e.g. no \"1. Introduction\", no \"Step 1\"). Just return the titles.",
         "sub_queries": "Generate {search_breadth} high-quality search queries to deeply research the section \"{section}\" for a report on \"{query}\".\nReturn ONLY a JSON list of strings.",
@@ -67,7 +107,7 @@
         "error_file": "Error creating file {filename}: {error}",
         "plan_prompt": "You are a Senior Web Architect. Your goal is to design a robust file structure for a web application.\n\nProject Description:\n{description}\n\nREQUIREMENTS:\n1.  **Flat Architecture**: All files must be in the root directory. Do NOT create `css/`, `js/` or other subfolders.\n2.  **Modern Practices**: Use ES6+ JavaScript modules if applicable. Use CSS variables for theming.\n3.  **Dependency Management**: Ensure 'index.html' correctly links all CSS and JS files in the right order. The 'dependencies' field in the plan MUST list files that a specific file depends on (e.g., `app.js` depends on `utils.js`).\n4.  **Completeness**: the plan must be fully executable.\n5.  **Complexity Limit**: Create MAXIMUM {max_files} files. Do not over-engineer. Focus on the core request.\n6.  **Pathing**: Use simple filenames (e.g. `styles.css`) in instructions.\n\nReturn **ONLY** a JSON list of objects. Each object must have:\n- `filename`: simple filename (e.g. `utils.js`)\n- `instruction`: extremely detailed prompt for the coding agent that will write this SPECIFIC file. Mention exactly what functions/exports it creates.\n- `dependencies`: list of filenames this file imports or needs.\n",
         "plan_update_prompt": "You are a Senior Web Architect. Your goal is to UPDATE an existing web application.\n\nProject Description (User Request):\n{description}\n\nExisting Files in Project:\n{existing_files}\n\nREQUIREMENTS:\n1.  **Modify vs Create**: specific files that need changes (e.g. `styles.css`) should be included in the plan. Files that do not need changes should NOT be in the plan.\n2.  **Use EXACT Filenames**: You MUST use the exact filenames listed above. Do not hallucinate new names (e.g. do not use `style.css` if `styles.css` exists).\n3.  **Flat Architecture**: Maintain the flat structure.\n4.  **Efficiency**: Do not rewrite files unnecessarily.\n5.  **Complexity Limit**: Update MAXIMUM {max_files} files.\n\nReturn **ONLY** a JSON list of objects (same format as creation):\n- `filename`: filename to create or overwrite (e.g. `styles.css`)\n- `instruction`: detailed prompt for the new content of this file.\n- `dependencies`: files this depends on.\n",
-        "writer_prompt": "You are an Expert Full-Stack Developer.\n\nTask: Write the code for `{filename}`.\n\nContext: {description}\n\nProject Structure (All files being created):\n{project_structure}\n\n{file_context}\n\nSpecific Instruction:\n{instruction}\n\nDependencies/Imports:\n{dependencies}\n\nRules:\n- Return ONLY the code.\n- Do not include markdown code blocks (```).\n- Ensure it integrates perfectly with the dependencies listed.\n- Use modern syntax.\n- CHECK IMPORTS: If writing HTML, ensure `<link>` and `<script>` tags are included for ALL CSS and JS files listed in the 'Project Structure' above, using simple filenames (e.g. `styles.css`).\n",
+        "writer_prompt": "You are an Expert Full-Stack Developer.\n\nTask: Write (or Update) the code for `{filename}`.\n\nContext: {description}\n\nProject Structure:\n{project_structure}\n\n{file_context}\n\n[EXISTING CONTENT of {filename}]\n{current_content}\n[/EXISTING CONTENT]\n\nSpecific Instruction:\n{instruction}\n\nDependencies/Imports:\n{dependencies}\n\nRules:\n- Return ONLY the code.\n- Do not include markdown code blocks (```).\n- IF EXISTING CONTENT IS PROVIDED: You MUST respect it. Do not rewrite functionality unless instructed. Apply the 'Specific Instruction' to the existing code.\n- Ensure it integrates perfectly with the dependencies listed.\n- Use modern syntax.\n- CHECK IMPORTS: If writing HTML, ensure `<link>` and `<script>` tags are included for ALL CSS and JS files listed in the 'Project Structure' above, using simple filenames (e.g. `styles.css`).\n",
         "plan_pending": "Plan created ({count} files). Click 'Proceed' to build. STOP NOW."
     },
     "web_search": {

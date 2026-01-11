@@ -90,7 +90,37 @@ To prevent "429 Too Many Requests" errors when using cloud AI providers (e.g., Z
     ```
 
 ## 5. Adding New Tools
-1.  Create a folder in `src/tools/`.
+1.  Create a folder in `src/tools/` (e.g., `src/tools/my_tool/`).
 2.  Implement `tool.py` inheriting from `BaseTool`.
-3.  Add prompts to `src/core/prompts/en.json`.
-4.  Register the tool in `src/core/agent/tool_manager.py` (if manual registration is valid) or ensure it's discoverable.
+    *   **CRITICAL**: You MUST implement the abstract properties `name`, `description`, and `parameters` using the `@property` decorator.
+    *   `parameters` must return a valid JSON schema dictionary.
+3.  Add prompts to `src/core/prompts/prompts_en.json`.
+    *   **CRITICAL**: You MUST also add the corresponding keys to all other language files (`prompts_es.json`, `prompts_fr.json`, `prompts_de.json`, `prompts_it.json`) to ensure full localization support.
+    *   If you cannot translate, use the English string as a placeholder, but ensure the keys exist to prevent runtime errors.
+4.  Register the tool (if not auto-discovered) and TEST that it can be instantiated.
+5.  Ensure the tool appears in the Settings > Tools menu for toggling.
+
+Example Implementation:
+```python
+class MyTool(BaseTool):
+    @property
+    def name(self):
+        return "my_tool_name"
+
+    @property
+    def description(self):
+        return "What the tool does."
+
+    @property
+    def parameters(self):
+        return {
+            "type": "object",
+            "properties": {
+                "param1": {"type": "string"}
+            },
+            "required": ["param1"]
+        }
+
+    def execute(self, param1, status_callback=None, **kwargs):
+        # Implementation...
+```

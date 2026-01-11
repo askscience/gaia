@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.3.3] - 2026-01-11
+
+### Added
+- **Gnome Desktop Suite**: A complete set of tools to integrate with your GNOME environment.
+    - **Radio Tuner**: (`gnome_radio`) Search and play internet radio stations via radio-browser.info.
+    - **Audio Control**: (`gnome_audio_control`) Manage system volume (get, set, mute, unmute).
+    - **Wallpaper Search**: (`gnome_search_background`) Find high-quality wallpapers via Unsplash/Pexels.
+    - **Wallpaper Set**: (`gnome_set_background`) Apply images as desktop background.
+    - **Theme Manager**: (`gnome_theme`) Switch system-wide light/dark theme.
+    - **File Opener**: (`gnome_opener`) Intelligent file and URL opener.
+
+### Changed
+- **Refactoring**:
+    - Modularized the monolithic `gnome_tools` into dedicated subfolders (`background/`, `theme/`, `opener/`, `audio/`, `radio/`) for better maintainability.
+
 ## [0.3.2] - 2026-01-09
 
 ### Fixed

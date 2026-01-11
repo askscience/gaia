@@ -16,6 +16,46 @@
         "web_search_disabled": "- BÚSQUEDA WEB: La herramienta `web_search` está DESACTIVADA. No puedes buscar en la web. Si el usuario pide información externa, discúlpate y explica que la búsqueda web está desactivada en la configuración.",
         "calendar_enabled": "- CALENDARIO: La hora actual del sistema es {current_time}. No necesitas crear un plan de implementación para operaciones de calendario. Debes ejecutar las herramientas de calendario (añadir, eliminar, listar) directa e inmediatamente usando esta hora como referencia."
     },
+    "gnome_search_background": {
+        "status_searching": "Searching for wallpapers: {query}...",
+        "error_no_keys": "No image provider keys found. Please add Unsplash or Pexels keys in Settings.",
+        "success_header": "### Found Wallpapers",
+        "error_failed": "Failed to search wallpapers: {error}"
+    },
+    "gnome_set_background": {
+        "status_setting": "Initiating wallpaper change...",
+        "status_downloading": "Downloading image...",
+        "status_applying": "Applying to desktop...",
+        "error_download": "Failed to download image (Status: {code}).",
+        "success": "Desktop wallpaper updated successfully.",
+        "error_failed": "Failed to set wallpaper: {error}"
+    },
+    "gnome_theme": {
+        "status_changing": "Switching to {theme} theme...",
+        "error_invalid": "Invalid theme '{theme}'. Please use 'light' or 'dark'.",
+        "success": "Switched to {theme} theme.",
+        "error_failed": "Failed to change theme: {error}"
+    },
+    "gnome_opener": {
+        "status_opening": "Opening {uri}...",
+        "success": "Opened {uri}.",
+        "error_failed": "Failed to open {uri}: {error}"
+    },
+    "gnome_audio_control": {
+        "status_working": "Audio: {action}...",
+        "success_get": "El volumen actual es del {volume}%.",
+        "success_set": "Volumen establecido en {level}%.",
+        "success_mute": "Audio: {state}.",
+        "error_failed": "Fallo en control de audio: {error}"
+    },
+    "gnome_radio": {
+        "status_searching": "Buscando emisoras de radio para: {query}...",
+        "status_playing": "Abriendo transmisión en reproductor predeterminado...",
+        "success_search": "Se encontraron {count} emisoras:\n{json}",
+        "success_play": "Reproduciendo ahora: {url}",
+        "error_no_results": "No se encontraron emisoras de radio para la consulta: {query}",
+        "error_failed": "Fallo en la acción de radio: {error}"
+    },
     "deep_research": {
         "outline": "Crea un esquema de investigación detallado y completo para el informe: \"{query}\".\n    El esquema debe contener {outline_steps} secciones lógicas.\n    Devuelve SOLO una lista JSON de cadenas (los títulos de las secciones).\n    \n    IMPORTANTE: NO numeres las secciones (ej. no \"1. Introducción\", no \"Paso 1\"). Devuelve solo los títulos.",
         "sub_queries": "Genera {search_breadth} consultas de búsqueda de alta calidad para profundizar en la sección \"{section}\" para un informe sobre \"{query}\".\nDevuelve SOLO una lista JSON de cadenas.",

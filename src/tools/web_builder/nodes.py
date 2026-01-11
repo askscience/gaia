@@ -105,6 +105,20 @@ async def file_writer_node(filename: str, instruction: str, dependencies: List[s
              for fname, fcontent in file_contents.items():
                  file_context += f"\n--- {fname} ---\n{fcontent}\n"
 
+    # Write file
+    project_dir = os.path.join(get_artifacts_dir(), project_id)
+    file_path = os.path.join(project_dir, filename)
+    
+    # READ EXISTING CONTENT (for robust updates)
+    current_content = ""
+    if os.path.exists(file_path):
+        try:
+            with open(file_path, "r") as f:
+                current_content = f.read()
+            print(f"--- [WebBuilder] Reading existing {filename} ({len(current_content)} bytes) ---")
+        except Exception as e:
+            print(f"--- [WebBuilder] Failed to read existing {filename}: {e} ---")
+
     writer_prompt = prompt_manager.get(
         "web_builder.writer_prompt", 
         filename=filename, 
@@ -112,7 +126,8 @@ async def file_writer_node(filename: str, instruction: str, dependencies: List[s
         description=description,
         dependencies=", ".join(dependencies),
         project_structure=project_structure,
-        file_context=file_context
+        file_context=file_context,
+        current_content=current_content if current_content else "(New File)"
     )
     
     response = await async_generate_response([{"role": "user", "content": writer_prompt}])

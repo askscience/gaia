@@ -82,6 +82,8 @@
             "outline_depth_subtitle": "Wie viele Kapitel der Bericht haben soll.",
             "search_breadth": "Suchbreite",
             "search_breadth_subtitle": "Wie viele verschiedene Suchen pro Kapitel.",
+            "integrate_images_title": "Bilder integrieren",
+            "integrate_images_subtitle": "Suche nach und füge Bilder in den Bericht ein.",
             "scraping_config_title": "Scraping-Konfiguration",
             "scraping_config_desc": "Erweiterte Einstellungen für die Inhaltsextraktion (Trafilatura).",
             "min_extracted_size": "Min. extrahierte Größe",

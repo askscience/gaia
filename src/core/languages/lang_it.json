@@ -82,6 +82,8 @@
             "outline_depth_subtitle": "Numero di sezioni nel rapporto generato",
             "search_breadth": "Ampiezza Ricerca",
             "search_breadth_subtitle": "Numero di query di ricerca per sezione",
+            "integrate_images_title": "Integra Immagini",
+            "integrate_images_subtitle": "Cerca e includi immagini nel rapporto.",
             "scraping_config_title": "Configurazione Scraping",
             "scraping_config_desc": "Impostazioni avanzate per l'estrazione dei contenuti (Trafilatura).",
             "min_extracted_size": "Dimensione Minima Estratta",

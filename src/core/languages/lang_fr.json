@@ -82,6 +82,8 @@
             "outline_depth_subtitle": "Combien de chapitres aura le rapport.",
             "search_breadth": "Largeur de Recherche",
             "search_breadth_subtitle": "Combien de recherches différentes par chapitre.",
+            "integrate_images_title": "Intégrer des Images",
+            "integrate_images_subtitle": "Rechercher et inclure des images dans le rapport.",
             "scraping_config_title": "Configuration du Scraping",
             "scraping_config_desc": "Paramètres avancés pour l'extraction de contenu (Trafilatura).",
             "min_extracted_size": "Taille Extraite Min",
