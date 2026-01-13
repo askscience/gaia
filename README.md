@@ -5,9 +5,17 @@
 Gaia is a fast, beautiful, and private AI assistant that lives on your Linux desktop. It integrates seamlessly with your system, offering a native experience powered by local LLMs or top-tier cloud models.
 
 <div align="center">
-  <img src="demo.gif" width="100%" alt="Gaia Demo" />
+  <img src="images/image01.png" width="100%" alt="Gaia Interface" />
   <br>
-  <em>See Gaia in action</em>
+  <em>Clean, native GNOME interface</em>
+  <br><br>
+  <img src="images/image02.png" width="100%" alt="Gaia Chat" />
+  <br>
+  <em>Rich chat with markdown and code blocks</em>
+  <br><br>
+  <img src="images/image03.png" width="100%" alt="Gaia Features" />
+  <br>
+  <em>Powerful tools and artifacts panel</em>
 </div>
 
 ## Why Gaia?
