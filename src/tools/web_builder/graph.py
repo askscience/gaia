@@ -44,7 +44,7 @@ class WebBuilderGraph:
 
     async def execute_from_plan(self, state: AgentState, status_callback=None) -> AgentState:
         """
-        Phase 2: Executes the file plan.
+        Phase 2: Executes the file plan sequentially.
         """
         self.cancelled = False
         files_plan = state.get("files_plan", [])
@@ -59,65 +59,66 @@ class WebBuilderGraph:
         state["file_contents"] = {} # Initialize
         
         if status_callback:
-            status_callback(f"Starting {total_files} subagents to write files...", 20)
+            status_callback(f"Starting sequential build of {total_files} files...", 20)
             
-        from src.core.concurrency.manager import ConcurrencyManager
-        concurrency_manager = ConcurrencyManager()
+        state["status_callback"] = status_callback
 
-        async def run_subagent(file_item):
-            nonlocal completed_count
-            filename = file_item["filename"]
-            instruction = file_item["instruction"]
+        # SORT FILES: HTML first, then others (CSS, JS)
+        # This ensures style classes and IDs exist before we implement logic/styling
+        def sort_priority(f):
+            fname = f.get("filename", "").lower()
+            if fname.endswith(".html"): return 0
+            if fname.endswith(".css"): return 1
+            if fname.endswith(".js"): return 2
+            return 3
+            
+        sorted_plan = sorted(files_plan, key=sort_priority)
+        
+        results = []
+        messages = []
+        artifacts = []
+        
+        for i, file_item in enumerate(sorted_plan):
+            if self.cancelled:
+                state["error"] = "Cancelled by user."
+                break
+                
+            filename = file_item.get("filename")
+            instruction = file_item.get("instruction")
             dependencies = file_item.get("dependencies", [])
             
-            async with concurrency_manager.get_async_semaphore():
-                # Subagent specific execution
-                result = await file_writer_node(filename, instruction, dependencies, state)
-            
-            completed_count += 1
+            # Update status
             if status_callback:
                 progress = 20 + int((completed_count / total_files) * 80)
-                status_callback(f"Built {completed_count}/{total_files}: {filename}", progress)
-                
-            return result
-        
-        # Separate HTML files (to run LAST) from assets (CSS, JS, etc.)
-        html_files = [f for f in files_plan if f.get("filename", "").endswith(".html")]
-        asset_files = [f for f in files_plan if not f.get("filename", "").endswith(".html")]
-        
-        # Run assets in parallel first
-        asset_tasks = [run_subagent(f) for f in asset_files]
-        asset_results = await asyncio.gather(*asset_tasks)
-        
-        # Collect content from assets for the next phase
-        for res in asset_results:
-            if res.get("success") and res.get("content"):
-                state["file_contents"][res["filename"]] = res["content"]
-        
-        if self.cancelled:
-            state["error"] = "Cancelled by user."
-            return state
-        
-        # Then run HTML files (index.html) last, so they know all assets exist
-        html_tasks = [run_subagent(f) for f in html_files]
-        html_results = await asyncio.gather(*html_tasks)
-        
-        results = list(asset_results) + list(html_results)
-        
-        if self.cancelled:
-            state["error"] = "Cancelled by user."
-            return state
+                status_callback(f"Building {i+1}/{total_files}: {filename}...", progress)
             
-        # Aggregate
-        artifacts = []
-        messages = []
-        for res in results:
-            if res.get("success"):
-                artifacts.append(res["artifact"])
-                messages.append(res["message"])
-            else:
-                messages.append(res.get("message", f"Failed: {res.get('filename')}"))
+            # Execute Node Sequentially
+            # We don't need the concurrency manager here because we are running sequentially
+            # However, the node 'file_writer_node' calls 'async_generate_response' which uses the semaphore.
+            # So rate limiting is still active, but we only use 1 slot at a time here.
+            try:
+                res = await file_writer_node(filename, instruction, dependencies, state)
+                results.append(res)
                 
+                if res.get("success"):
+                    # IMMEDIATE CONTEXT UPDATE
+                    # This is key: the next file will see this file's content
+                    if res.get("content"):
+                         state["file_contents"][filename] = res["content"]
+                         print(f"--- [WebBuilder] Context updated with {filename} ---")
+                    
+                    artifacts.append(res["artifact"])
+                    messages.append(res["message"])
+                else:
+                    messages.append(res.get("message", f"Failed: {filename}"))
+                    
+            except Exception as e:
+                msg = f"Error building {filename}: {str(e)}"
+                messages.append(msg)
+                if status_callback: status_callback(msg)
+            
+            completed_count += 1
+            
         state["results"] = messages
         state["artifacts"] = artifacts 
         

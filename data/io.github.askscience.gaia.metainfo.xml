@@ -71,6 +71,16 @@
   </content_rating>
   
   <releases>
+    <release version="0.3.4" date="2026-01-13">
+      <description>
+        <p>Web Builder &amp; Packaging Fixes:</p>
+        <ul>
+          <li><strong>Web Builder:</strong> Refactored to sequential logic (HTML first) with better status reporting and single-plan enforcement.</li>
+          <li><strong>UI Fix:</strong> Resolved blank web preview issue when reopening chats.</li>
+          <li><strong>KDE Support:</strong> Fixed "WebKit not available" error on KDE Plasma by adding missing dependencies.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.3.3" date="2026-01-11">
       <description>
         <p>New Features for Desktop &amp; Audio:</p>

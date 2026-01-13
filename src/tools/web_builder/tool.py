@@ -12,7 +12,7 @@ class WebBuilderTool(BaseTool):
 
     @property
     def description(self) -> str:
-        return "MANDATORY: Use this tool to create web projects. Provide a 'description' to generate a plan. Once the user approves the plan via the UI, call with action='execute' to build."
+        return "MANDATORY: Use this tool to create web projects. Provide a 'description' to generate a plan (action='plan'). Once the user approves the plan, use action='execute' to build. Do NOT create a new plan if one is pending."
 
     @property
     def parameters(self) -> dict:
@@ -75,6 +75,16 @@ class WebBuilderTool(BaseTool):
         # MODE 2: PLAN (Asynchronous Description provided)
         if description:
             manager = BackgroundWebBuilderManager()
+            
+            # HARDCODE BLOCK: Check if a plan/task is already active for this project
+            if project_id in manager.active_tasks:
+                task = manager.active_tasks[project_id]
+                status = task.get("status", "unknown")
+                if status == "pending_approval":
+                    return "A plan is ALREADY pending approval for this project. Do NOT generate a new one. Call action='execute' to proceed."
+                elif status == "running":
+                    return "Web Builder is already running for this project. Do NOT generate a new plan. Wait for it to finish."
+            
             result = manager.create_plan(description, project_id)
             
             if isinstance(result, dict) and "error" in result:

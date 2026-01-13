@@ -108,7 +108,7 @@ class BackgroundWebBuilderManager:
         
         notification.show()
         
-        return "Web Builder started. You'll be notified when files are ready."
+        return "Web Builder started in background. Please inform the user that the website creation is IN PROGRESS and you will notify them when it is complete. Do not say you have finished effectively."
 
     def stop_building(self, project_id):
         if project_id in self.active_tasks:
@@ -189,6 +189,7 @@ class BackgroundWebBuilderManager:
         if notification: notification.close()
         
         GLib.idle_add(self._trigger_ui_update, project_id, artifacts)
+        StatusManager().emit_status(project_id, "Web Builder: Complete!")
         
         del self.active_tasks[project_id]
 

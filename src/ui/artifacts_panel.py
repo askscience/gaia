@@ -254,12 +254,7 @@ class ArtifactsPanel(Gtk.Box):
                         return False
 
                     if os.path.exists(full_path):
-                        # If panel is hidden, prefer waiting for _on_map
-                        # This prevents updating _last_load_time for a load that might fail/be invisible
-                        if not self.get_mapped():
-                            print("[DEBUG ArtifactsPanel] Hidden during delayed_load, deferring to _on_map")
-                            return False
-
+                        # Always load, even if hidden. WebKit can handle background loading.
                         current_uri = self.web_view.get_uri()
                         if current_uri == target_uri:
                             self.web_view.reload_bypass_cache()

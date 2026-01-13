@@ -11,9 +11,22 @@ from src.core.config import get_artifacts_dir
 ai_client = AIClient()
 prompt_manager = PromptManager()
 
-async def async_generate_response(messages):
-    loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(None, ai_client.generate_response, messages)
+from src.core.concurrency.manager import ConcurrencyManager
+concurrency_manager = ConcurrencyManager()
+
+async def async_generate_response(messages, status_callback=None):
+    """
+    Async wrapper for AI client generation to avoid blocking the event loop.
+    Protected by a global semaphore (via ConcurrencyManager).
+    """
+    if status_callback:
+        status_callback("Waiting for API slot...")
+        
+    async with concurrency_manager.get_async_semaphore():
+        # Do not overwrite status here to "Generating content..." as it hides the specific file task
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, ai_client.generate_response, messages)
+
 
 async def builder_planner(state: AgentState) -> Dict[str, Any]:
     """
@@ -57,7 +70,7 @@ async def builder_planner(state: AgentState) -> Dict[str, Any]:
     else:
         plan_prompt = prompt_manager.get("web_builder.plan_prompt", description=description, max_files=max_files)
     
-    response = await async_generate_response([{"role": "user", "content": plan_prompt}])
+    response = await async_generate_response([{"role": "user", "content": plan_prompt}], status_callback=state.get("status_callback"))
     content = response["message"]["content"]
     
     try:
@@ -130,7 +143,10 @@ async def file_writer_node(filename: str, instruction: str, dependencies: List[s
         current_content=current_content if current_content else "(New File)"
     )
     
-    response = await async_generate_response([{"role": "user", "content": writer_prompt}])
+    response = await async_generate_response(
+        [{"role": "user", "content": writer_prompt}], 
+        status_callback=state.get("status_callback")
+    )
     content = response["message"]["content"]
     
     # Strip markdown code blocks if present

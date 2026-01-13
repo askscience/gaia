@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.3.4] - 2026-01-13
+
+### Fixed
+- **Web Builder Reliability**:
+    - **Sequential Execution**: Refactored the build process to generate files sequentially (HTML first) to ensure correct context sharing and prevent "stuck" builds.
+    - **Token Optimization**: Enforced a strict single-plan workflow, preventing the AI from wasting tokens on redundant planning steps.
+    - **Status Reporting**: Improved status visibility to show specific file progress (e.g., "Building 1/3: index.html") instead of generic messages.
+- **Web Preview UI**:
+    - **Blank Page Fix**: Resolved a race condition where the Artifacts Panel displayed a blank page when opening a chat if the panel was initially hidden.
+- **Packaging**:
+    - **KDE Support**: Added missing `gir1.2-webkit-6.0` dependency to the `.deb` package, ensuring the Web Preview works correctly on KDE Plasma and other environments.
+
 ## [0.3.3] - 2026-01-11
 
 ### Added
