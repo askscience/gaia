@@ -17,6 +17,7 @@ modules:
       - -DCMAKE_BUILD_TYPE=Release
       - -DPA_BUILD_SHARED=ON
       - -DPA_BUILD_STATIC=OFF
+      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
     sources:
       - type: archive
         url: https://github.com/PortAudio/portaudio/archive/v19.7.0.tar.gz
