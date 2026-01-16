@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.4.1] - 2026-01-16
+
+### Fixed
+- **Packaging**:
+    - **Missing Dependencies**: Bundled `pypdf`, `python-docx`, and `vosk` directly into the application binary. This fixes runtime errors (missing modules) on Debian and Flatpak installations where system libraries were missing or incompatible.
+    - **Dependency Cleanup**: Removed redundant and hardcoded dependencies from the Debian control file to improve installation compatibility.
+
 ## [0.4.0] - 2026-01-16
 
 ### Added

@@ -51,6 +51,8 @@ jobs:
             --hidden-import="python_socks" \
             --collect-all="vosk" \
             --collect-all="sounddevice" \
+            --collect-all="pypdf" \
+            --collect-all="docx" \
             src/main.py
 
       - name: Get version
