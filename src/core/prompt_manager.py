@@ -121,6 +121,14 @@ class PromptManager:
             calendar_prompt = p["guidelines"]["calendar_enabled"].format(current_time=current_time_str)
             guidelines.append(calendar_prompt)
 
+        # 6. VOICE MODE
+        is_voice = enabled_tools_map.get("voice_mode", False)
+        if is_voice:
+             # Use voice mode prompt if available, else a default hardcoded one for safety
+             voice_prompt = p.get("voice_mode_guidelines", 
+                "You are in Voice Mode. Keep answers conversational, short, and purely text. Do not use markdown, lists, or code blocks.")
+             guidelines.append(voice_prompt)
+
         # Assemble logic
         parts = [
             p["system_prompt_intro"],

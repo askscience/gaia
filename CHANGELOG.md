@@ -3,6 +3,28 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.4.0] - 2026-01-16
+
+### Added
+- **Voice Mode**:
+    - Experience a completely new way to interact with Gaia. By enabling **Voice Mode**, the application transforms into a distraction-free, audio-first assistant.
+    - **Hands-Free Operation**: The main GUI hides automatically to keep you focused. You can restore it anytime by right-clicking the Gaia icon in your dock.
+    - **Privacy-First Speech Recognition**: Powered by **Vosk**, all speech recognition happens locally on your device—no audio is ever sent to the cloud.
+    - **Natural Voice Response**: Responses are spoken aloud using **Piper TTS**, providing high-quality, natural-sounding speech in your selected language.
+    - **Wake Word Activation**: Just say "Hey Gaia" to wake the assistant and start speaking.
+    - **Seamless Transcription**: Every voice interaction is transcribed and saved to your chat history, so you can review the text later just like a normal chat.
+    - **Optimized Prompts**: In Voice Mode, AI responses are automatically tuned to be more conversational, concise, and spoken-word friendly (avoiding markdown or complex formatting).
+
+### Fixed
+- **Chat Persistence**: Resolved an issue where reopening old chats could result in truncated message history, ensuring your entire conversation is always preserved.
+- **Table Rendering**: Fixed a race condition that caused tables to appear twice (once as raw text, once as a rendered table) in the chat view.
+- **Deep Research**: Fixed a crash related to concurrency settings ("NameError: MAX_CONCURRENT_SEARCHES"), improving the stability of the research settings UI.
+- **Web Preview**:
+    - Optimized the artifact loading process to eliminate delays when reopening chats with web projects.
+    - Fixed issues causing "Blank Page" errors on initial load.
+    - Ensured Code Viewer correctly respects the system's dark/light theme preference.
+- **TTS Synchronization**: Fixed a bug where the Text-to-Speech voice model did not correctly update when switching application languages.
+
 ## [0.3.4] - 2026-01-13
 
 ### Fixed

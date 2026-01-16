@@ -16,6 +16,28 @@
         }
     },
     "settings": {
+        "voice": {
+            "title": "Modo de Voz",
+            "config_title": "Configuración de Voz",
+            "config_desc": "Administra la configuración de interacción por voz y recursos.",
+            "enable_title": "Habilitar Modo de Voz",
+            "enable_subtitle": "Escucha 'Hola', 'Oye' o 'Hey Gaia' en segundo plano.",
+            "resources_title": "Recursos de Voz",
+            "resources_subtitle": "Instalar modelos para reconocimiento de voz y TTS.",
+            "install_btn": "Instalar / Actualizar",
+            "installing_btn": "Instalando...",
+            "reinstall_btn": "Reinstalar",
+            "install_btn_short": "Instalar",
+            "model_title": "Modelo de Voz",
+            "model_subtitle": "Selecciona la voz para TTS.",
+            "activated_title": "Modo de Voz Activado",
+            "activated_body": "Gaia ahora escuchará 'Hola', 'Oye' o 'Hey Gaia'. La ventana se ocultará.\n\nHaz clic en el icono del Dock para restaurar la ventana.",
+            "status_installed": "Todos los recursos instalados.",
+            "status_missing": "Faltante: ",
+            "missing_audio": "Controlador de Audio (PortAudio)",
+            "missing_speaker": "Altavoz",
+            "missing_model": "Modelo"
+        },
         "title": "Ajustes",
         "general": {
             "title": "General",

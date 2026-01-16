@@ -56,6 +56,14 @@
         "error_no_results": "Aucune station de radio trouvée pour : {query}",
         "error_failed": "Échec de l'action radio : {error}"
     },
+    "gnome_document": {
+        "status_finding": "Recherche du fichier : {filename}...",
+        "status_reading": "Lecture du fichier : {filename}...",
+        "found_files": "{count} fichiers trouvés : {files}",
+        "error_not_found": "Fichier '{filename}' introuvable.",
+        "read_success": "Contenu de {filename} :\n{content}",
+        "error_read": "Erreur lors de la lecture de {filename} : {error}"
+    },
     "deep_research": {
         "outline": "Créez un plan de recherche détaillé et complet pour le rapport : \"{query}\".\n    Le plan doit contenir {outline_steps} sections logiques.\n    Retournez UNIQUEMENT une liste JSON de chaînes (les titres des sections).\n    \n    IMPORTANT : Ne numérotez PAS les sections (ex. pas \"1. Introduction\", pas \"Étape 1\"). Retournez seulement les titres.",
         "sub_queries": "Générez {search_breadth} requêtes de recherche de haute qualité pour approfondir la section \"{section}\" pour un rapport sur \"{query}\".\nRetournez UNIQUEMENT une liste JSON de chaînes.",
@@ -164,6 +172,7 @@
     "current_time": {
         "format": "%d-%m-%Y %H:%M:%S"
     },
+    "voice_mode_guidelines": "Vous êtes en mode vocal. Gardez des réponses conversationnelles, courtes et purement textuelles. N'utilisez pas de markdown, de listes ou de blocs de code. Parlez naturellement.",
     "ui": {
         "plan_approval_message": "J'approuve votre plan. Procédez à la mise en œuvre en utilisant les outils disponibles maintenant. NE répétez PAS le plan, exécutez-le simplement.",
         "spinner": {

@@ -56,6 +56,14 @@
         "error_no_results": "No se encontraron emisoras de radio para la consulta: {query}",
         "error_failed": "Fallo en la acción de radio: {error}"
     },
+    "gnome_document": {
+        "status_finding": "Buscando archivo: {filename}...",
+        "status_reading": "Leyendo archivo: {filename}...",
+        "found_files": "Encontrados {count} archivos: {files}",
+        "error_not_found": "Archivo '{filename}' no encontrado.",
+        "read_success": "Contenido de {filename}:\n{content}",
+        "error_read": "Error leyendo {filename}: {error}"
+    },
     "deep_research": {
         "outline": "Crea un esquema de investigación detallado y completo para el informe: \"{query}\".\n    El esquema debe contener {outline_steps} secciones lógicas.\n    Devuelve SOLO una lista JSON de cadenas (los títulos de las secciones).\n    \n    IMPORTANTE: NO numeres las secciones (ej. no \"1. Introducción\", no \"Paso 1\"). Devuelve solo los títulos.",
         "sub_queries": "Genera {search_breadth} consultas de búsqueda de alta calidad para profundizar en la sección \"{section}\" para un informe sobre \"{query}\".\nDevuelve SOLO una lista JSON de cadenas.",
@@ -164,6 +172,7 @@
     "current_time": {
         "format": "%d-%m-%Y %H:%M:%S"
     },
+    "voice_mode_guidelines": "Estás en modo de voz. Mantén las respuestas conversacionales, breves y puramente textuales. No uses markdown, listas ni bloques de código. Habla con naturalidad.",
     "ui": {
         "plan_approval_message": "Apruebo tu plan. Procede con la implementación usando las herramientas disponibles ahora. NO repitas el plan, simplemente ejecútalo.",
         "spinner": {

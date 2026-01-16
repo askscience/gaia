@@ -7,9 +7,21 @@ finish-args:
   - --share=network
   - --socket=fallback-x11
   - --socket=wayland
+  - --socket=pulseaudio
   - --device=dri
   - --filesystem=host
 modules:
+  - name: portaudio
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DPA_BUILD_SHARED=ON
+      - -DPA_BUILD_STATIC=OFF
+    sources:
+      - type: archive
+        url: https://github.com/PortAudio/portaudio/archive/v19.7.0.tar.gz
+        sha256: 6451dc089cb1f76d47b59e51c140409860b093393b4823297a7a78377da20163
+
   - name: gaia
     buildsystem: simple
     build-commands:

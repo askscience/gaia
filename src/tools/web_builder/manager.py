@@ -207,8 +207,16 @@ class BackgroundWebBuilderManager:
                     
                 index_artifact = next((a for a in artifacts if "index.html" in a["filename"]), None)
                 if index_artifact and hasattr(win, "artifacts_panel"):
+                    # Web Builder Complete: Force Window Visibility (for Voice Mode)
+                    win.set_visible(True)
+                    win.present()
+                    
                     win.artifacts_panel.load_artifact(index_artifact['path'], "html")
                     win.show_artifacts()
+                    
+                    # Ensure Fullscreen (Hide Chat)
+                    if hasattr(win, "tab_overview") and win.tab_overview.get_visible():
+                        win.toggle_artifact_fullscreen()
                     
         except Exception as e:
             print(f"Error auto-opening artifact: {e}")

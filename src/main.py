@@ -27,10 +27,17 @@ class GaiaApplication(Adw.Application):
         self.storage = ChatStorage()
 
     def do_activate(self):
+        # Check active window first
         win = self.props.active_window
         if not win:
-            win = MainWindow(storage=self.storage, application=self)
-            self.load_css()
+            # Check if we have any windows (hidden ones?)
+            windows = self.get_windows()
+            if windows:
+                win = windows[0]
+            else:
+                win = MainWindow(storage=self.storage, application=self)
+                self.load_css()
+        
         win.present()
 
     def load_css(self):

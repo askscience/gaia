@@ -56,6 +56,14 @@
         "error_no_results": "Nessuna stazione radio trovata per: {query}",
         "error_failed": "Azione radio fallita: {error}"
     },
+    "gnome_document": {
+        "status_finding": "Ricerca file: {filename}...",
+        "status_reading": "Lettura file: {filename}...",
+        "found_files": "Trovati {count} file: {files}",
+        "error_not_found": "File '{filename}' non trovato.",
+        "read_success": "Contenuto di {filename}:\n{content}",
+        "error_read": "Errore lettura {filename}: {error}"
+    },
     "deep_research": {
         "outline": "Crea uno schema di ricerca dettagliato e completo per il rapporto: \"{query}\".\n    Lo schema deve contenere {outline_steps} sezioni logiche.\n    Restituisci SOLO un elenco JSON di stringhe (i titoli delle sezioni).\n    \n    IMPORTANTE: NON numerare le sezioni (es. no \"1. Introduzione\", no \"Passo 1\"). Restituisci solo i titoli.",
         "sub_queries": "Genera {search_breadth} query di ricerca di alta qualità per approfondire la sezione \"{section}\" per un rapporto su \"{query}\".\nRestituisci SOLO un elenco JSON di stringhe.",
@@ -164,6 +172,7 @@
     "current_time": {
         "format": "%d-%m-%Y %H:%M:%S"
     },
+    "voice_mode_guidelines": "Sei in modalità vocale. Mantieni le risposte colloquiali, brevi e puramente testuali. Non usare markdown, elenchi o blocchi di codice. Parla in modo naturale.",
     "ui": {
         "plan_approval_message": "Approvo il tuo piano. Procedi con l'implementazione utilizzando gli strumenti disponibili ora. NON ripetere il piano, eseguilo e basta.",
         "spinner": {

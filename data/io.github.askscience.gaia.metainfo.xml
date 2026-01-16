@@ -71,6 +71,17 @@
   </content_rating>
   
   <releases>
+    <release version="0.4.0" date="2026-01-16">
+      <description>
+        <p>Introducing Voice Mode:</p>
+        <ul>
+          <li><strong>Voice Mode:</strong> Hands-free interaction with local speech recognition (Vosk) and natural TTS (Piper).</li>
+          <li><strong>Privacy-Focused:</strong> All voice processing happens locally on your device.</li>
+          <li><strong>Improved Chat Persistence:</strong> Fixed truncation issues to ensure full history is preserved.</li>
+          <li><strong>Bug Fixes:</strong> Resolved table rendering race conditions and Deep Research stability issues.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.3.4" date="2026-01-13">
       <description>
         <p>Web Builder &amp; Packaging Fixes:</p>

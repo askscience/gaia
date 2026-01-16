@@ -11,6 +11,7 @@ from src.ui.artifacts_panel import ArtifactsPanel
 from src.ui.chat.page import ChatPage
 from src.core.network.proxy import apply_proxy_settings # Proxy support
 from src.core.language_manager import LanguageManager
+from src.voice.manager import VoiceManager
 
 class MainWindow(Adw.ApplicationWindow):
     def __init__(self, storage: ChatStorage, *args, **kwargs):
@@ -18,6 +19,9 @@ class MainWindow(Adw.ApplicationWindow):
         
         # Apply global network settings on startup
         apply_proxy_settings()
+        
+        # Initialize VoiceManager
+        self.voice_manager = VoiceManager(self)
 
         self.lang_manager = LanguageManager()
         self.set_title(self.lang_manager.get("window.title"))
@@ -207,7 +211,7 @@ class MainWindow(Adw.ApplicationWindow):
         about.set_application_name(self.lang_manager.get("window.about.name"))
         about.set_application_icon("io.github.askscience.gaia")
         about.set_developer_name(self.lang_manager.get("window.about.developer"))
-        about.set_version("0.3.4")
+        about.set_version("0.4.0")
         about.set_comments(self.lang_manager.get("window.about.comments"))
         about.set_copyright(self.lang_manager.get("window.about.copyright"))
         about.set_website("https://github.com/askscience/gaia")
@@ -280,4 +284,36 @@ class MainWindow(Adw.ApplicationWindow):
                             child.chat_data = full_chat
                             child.history = full_chat.get('history', [])
                     GLib.idle_add(child._load_history_batch)
+
+    def get_active_chat_page(self):
+        """Return the currently active ChatPage or None."""
+        page = self.tab_view.get_selected_page()
+        if page:
+            child = page.get_child()
+            if isinstance(child, ChatPage):
+                return child
+        return None
+
+    def refresh_active_artifacts(self):
+        """Force refresh of the artifacts panel for the current chat."""
+        page = self.get_active_chat_page()
+        if page:
+            # We assume ChatPage saves artifact path or we derive it
+            project_id = page.chat_data['id']
+            # Logic to find path. Usually stored in chat_data or constructed?
+            # ChatPage.restore_artifacts does it.
+            # Let's peek at ChatPage.restore_artifacts logic or replicate it.
+            # Actually simplest is to call child.restore_artifacts(self.artifacts_panel)
+            # But that might be heavy? load_project has debounce.
+            # Let's force it.
+            
+            # Construct path (Standard location)
+            import os
+            from src.core.config import get_artifacts_dir
+            base_dir = get_artifacts_dir()
+            project_path = os.path.join(base_dir, project_id)
+            
+            # Check if deep research or web
+            # Actually ArtifactsPanel.load_project handles content detection
+            self.artifacts_panel.load_project(project_path, force=True, quick_load=True)
 

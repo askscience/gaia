@@ -420,10 +420,7 @@ class ArtifactsPanel(Gtk.Box):
 
     def _on_map(self, widget):
         """Reload content when panel becomes visible."""
-        # Debounce: don't reload if we just loaded recently
-        if time.time() - self._last_load_time < 1.0:
-            return
-            
+                         
         if self.current_project_path and WebKit and hasattr(self, 'web_view'):
             # Find entry point
             entry_point = None

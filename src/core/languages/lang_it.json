@@ -16,6 +16,28 @@
         }
     },
     "settings": {
+        "voice": {
+            "title": "Modalità Vocale",
+            "config_title": "Configurazione Vocale",
+            "config_desc": "Gestisci le impostazioni di interazione vocale e le risorse.",
+            "enable_title": "Abilita Modalità Vocale",
+            "enable_subtitle": "Ascolta per 'Ehi', 'Ei', 'Ciao' o 'Ehi Gaia' in sottofondo.",
+            "resources_title": "Risorse Vocali",
+            "resources_subtitle": "Installa modelli per riconoscimento vocale e sintesi vocale.",
+            "install_btn": "Installa / Aggiorna",
+            "installing_btn": "Installazione...",
+            "reinstall_btn": "Re-installa",
+            "install_btn_short": "Installa",
+            "model_title": "Modello Vocale",
+            "model_subtitle": "Seleziona la voce per la sintesi vocale.",
+            "activated_title": "Modalità Vocale Attivata",
+            "activated_body": "Gaia ascolterà ora 'Ehi', 'Ei', 'Ciao' o 'Ehi Gaia'. La finestra verrà nascosta.\n\nClicca sull'icona nel Dock per ripristinare la finestra.",
+            "status_installed": "Tutte le risorse installate.",
+            "status_missing": "Mancante: ",
+            "missing_audio": "Driver Audio (PortAudio)",
+            "missing_speaker": "Altoparlante",
+            "missing_model": "Modello"
+        },
         "title": "Impostazioni",
         "general": {
             "title": "Generale",

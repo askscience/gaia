@@ -14,6 +14,7 @@ from src.core.config import get_artifacts_dir
 from src.ui.utils import markdown_to_pango, parse_markdown_segments
 from src.ui.components import SourceCard, ArtifactCard, ResearchCard, PlanConfirmationCard
 from src.ui.components.code_block import CodeBlock
+from src.ui.components.table_block import TableBlock
 from src.ui.components.wallpaper_grid import WallpaperGrid
 from src.core.ai_client import AIClient
 from src.tools.manager import ToolManager
@@ -137,6 +138,10 @@ class ChatPage(Gtk.Box):
                 metadata = msg.get('metadata')
                 content = msg['content']
                 
+                # Skip hidden messages
+                if metadata and metadata.get('hidden'):
+                    continue
+
                 if content not in self._markdown_cache:
                     self._markdown_cache[content] = markdown_to_pango(content)
                     self._markdown_cache_order.append(content)
@@ -310,6 +315,10 @@ class ChatPage(Gtk.Box):
         self._add_message_ui(role, text, metadata=metadata, save=False, parsed_text=parsed_text)
     
     def _add_message_ui(self, role: str, text: str, metadata: dict = None, save: bool = True, scroll: bool = True, parsed_text: str = None):
+        # Don't render hidden messages
+        if metadata and metadata.get('hidden'):
+            return None
+
         if parsed_text is None:
             parsed_text = markdown_to_pango(text)
         return self._add_message_with_parsed_content(role, parsed_text, text, metadata, save, scroll)
@@ -356,6 +365,8 @@ class ChatPage(Gtk.Box):
             bubble.remove(child)
             child = bubble.get_first_child()
             
+        bubble.add_css_class("rich-content")
+            
         segments = parse_markdown_segments(text)
         for i, seg in enumerate(segments):
             if seg['type'] == 'code':
@@ -367,11 +378,34 @@ class ChatPage(Gtk.Box):
                     images = json.loads(seg['content'])
                     
                     def on_wallpaper_click(index):
-                        # Auto-fill input and send immediately
-                        if hasattr(self, 'entry'):
-                            self.entry.set_text(f"Set wallpaper {index}")
-                            # Trigger send
-                            self.on_send_clicked(None)
+                        # Silent set: Add to history as hidden, run AI, don't update UI input
+                        try:
+                            # 1. Get the specific image object
+                            if 0 <= index < len(images):
+                                img_data = images[index]
+                                url = img_data.get('url')
+                                if url:
+                                    command = f"Set wallpaper to URL: {url}"
+                                    
+                                    # 2. Add hidden message to history
+                                    self.add_message("user", command, metadata={'hidden': True})
+                                    
+                                    # 3. Create a system/status message to show something is happening?
+                                    # Or just let the tool status callback handle it. The tool usually emits status.
+                                    # But we can show a spinner immediately.
+                                    self.show_spinner(self.prompt_manager.get("gnome_set_background.status_downloading") or "Setting wallpaper...")
+                                    
+                                    # 4. Run AI with hidden flag
+                                    def run_silent():
+                                        try:
+                                            self.run_ai(command, is_hidden=True)
+                                        except Exception as e:
+                                            print(f"Error in silent wallpaper set: {e}")
+                                            GLib.idle_add(self.enable_ui)
+                                            
+                                    threading.Thread(target=run_silent, daemon=True).start()
+                        except Exception as e:
+                             print(f"Error handling wallpaper click: {e}")
                             
                     grid = WallpaperGrid(images, on_click_callback=on_wallpaper_click)
                     bubble.append(grid)
@@ -381,6 +415,17 @@ class ChatPage(Gtk.Box):
                     label = Gtk.Label(label="[Error rendering grid]")
                     bubble.append(label)
                     
+
+            
+            elif seg['type'] == 'table':
+                try:
+                    table = TableBlock(seg['content'])
+                    bubble.append(table)
+                except Exception as e:
+                    print(f"Error rendering table: {e}")
+                    label = Gtk.Label(label=seg['content'])
+                    bubble.append(label)
+
             elif seg['type'] == 'image':
                 # Render Image
                 # Use a custom simple card for images
@@ -526,6 +571,11 @@ class ChatPage(Gtk.Box):
 
         label = find_label(child)
         if label:
+            # Check if bubble is already upgraded to rich content
+            bubble_parent = label.get_parent()
+            if bubble_parent and bubble_parent.has_css_class("rich-content"):
+                return
+
             if parsed_text is None:
                 parsed_text = markdown_to_pango(text)
             label.set_markup(parsed_text)
@@ -732,6 +782,139 @@ class ChatPage(Gtk.Box):
             self.chat_box.append(msg_row)
             self._scroll_to_bottom()
 
+    def run_ai_voice(self, user_text: str, callback):
+        """
+        Run AI for voice mode with tool support.
+        Args:
+            user_text (str): The transcribed text.
+            callback (func): Function to call with the AI response text.
+        """
+        self.add_message("user", user_text)
+        
+        # Run in thread
+        def run():
+            client = AIClient()
+            tm = ToolManager()
+            tm.load_tools()
+            tools_def = tm.get_ollama_tools_definitions()
+            
+            # Inject voice_mode flag
+            enabled_map = tm.config.get("enabled_tools", {}).copy()
+            enabled_map["voice_mode"] = True
+            
+            system_prompt = self.prompt_manager.get_system_prompt(enabled_map)
+            
+            messages = [{'role': 'system', 'content': system_prompt}]
+            messages.extend(self.history)
+            messages.append({'role': 'user', 'content': user_text})
+            
+            MAX_TURNS = 5
+            turn = 0
+            final_spoken_text = ""
+            has_artifacts = False
+            
+            try:
+                while turn < MAX_TURNS:
+                    turn += 1
+                    full_content = ""
+                    pending_tool_calls = []
+                    
+                    try:
+                        stream = client.stream_response(messages, tools=tools_def)
+                        for chunk in stream:
+                            msg_chunk = chunk.get('message', {})
+                            content_chunk = msg_chunk.get('content', '')
+                            if msg_chunk.get('tool_calls'):
+                                pending_tool_calls.extend(msg_chunk['tool_calls'])
+                            if content_chunk:
+                                full_content += content_chunk
+                    except Exception as e:
+                        print(f"[Voice] Stream error: {e}")
+                        final_spoken_text = "I encountered an error processing your request."
+                        break
+
+                    # Check for text-based tool calls if native ones missing
+                    if not pending_tool_calls:
+                        clean_content, parsed_calls = ToolCallParser.parse_tool_calls(full_content, project_id=self.chat_data['id'])
+                        if parsed_calls:
+                            pending_tool_calls.extend(parsed_calls)
+                            full_content = clean_content
+
+                    # If we have content, that might be part of the spoken response
+                    # Usually if tools are called, content is empty or reasoning.
+                    # We accumulate content if no tools, or if tools are done.
+                    
+                    if not pending_tool_calls:
+                        # No tools called -> This is the final answer or just text
+                        final_spoken_text = full_content
+                        self.add_message("assistant", final_spoken_text)
+                        break
+                    
+                    # Execute Tools
+                    print(f"[Voice] Executing {len(pending_tool_calls)} tools...")
+                    messages.append({'role': 'assistant', 'content': full_content, 'tool_calls': pending_tool_calls})
+                    
+                    for tool_call in pending_tool_calls:
+                        try:
+                            fname = tool_call['function']['name']
+                            args = tool_call['function']['arguments']
+                            
+                            # Fix project_id
+                            if "project_id" in args: del args["project_id"]
+                            
+                            print(f"[Voice] Calling tool: {fname}")
+                            result = tm.execute_tool(fname, project_id=self.chat_data["id"], **args)
+                            
+                            # Clean result (remove large base64 or internal tags if needed)
+                            # For voice, we assume the AI handles the text result
+                            
+                            # Clean result (remove large base64 or internal tags if needed)
+                            # For voice, we assume the AI handles the text result
+                            
+                            # Note: web_builder and deep_research are async and manage their own UI updates/opening.
+                            # We do NOT want to trigger open here, as they just started.
+                            
+                            messages.append({
+                                'role': 'tool',
+                                'content': str(result),
+                                'name': fname
+                            })
+                        except Exception as e:
+                            print(f"[Voice] Tool Execution Error: {e}")
+                            messages.append({
+                                'role': 'tool',
+                                'content': f"Error executing {fname}: {str(e)}",
+                                'name': fname
+                            })
+
+                    # Break loop if tools executed but we want to confirm?
+                    # Continue to let AI summarize the tool output
+                
+                # --- End While ---
+                
+                # If we are here, we have a final answer in final_spoken_text (or full_content if no loop break)
+                if not final_spoken_text and full_content:
+                    final_spoken_text = full_content
+                
+                # Callback with text AND artifact flag
+                # use GLib to call back on main thread
+                GLib.idle_add(callback, final_spoken_text, has_artifacts)
+
+            except Exception as e:
+                print(f"[Voice] Critical Error: {e}")
+                import traceback
+                traceback.print_exc()
+                GLib.idle_add(callback, f"Error: {e}", False)
+
+        threading.Thread(target=run, daemon=True).start()
+
+    def _trigger_artifact_refresh(self):
+        """Helper to call window refresh safely."""
+        root = self.get_native()
+        if hasattr(root, "refresh_active_artifacts"):
+            root.refresh_active_artifacts()
+        return False
+
     def run_ai(self, user_text: str, is_hidden: bool = False):
         client = AIClient()
         tm = ToolManager()
@@ -890,9 +1073,24 @@ class ChatPage(Gtk.Box):
                                         bubble.add_css_class("ai-message") # Make it look like AI content
                                         
                                         def on_click_direct(idx):
-                                            if hasattr(self, 'entry'):
-                                                self.entry.set_text(f"Set wallpaper {idx}")
-                                                self.on_send_clicked(None)
+                                            try:
+                                                if 0 <= idx < len(grid_json):
+                                                    img_data = grid_json[idx]
+                                                    url = img_data.get('url')
+                                                    if url:
+                                                        command = f"Set wallpaper to URL: {url}"
+                                                        self.add_message("user", command, metadata={'hidden': True})
+                                                        self.show_spinner("Setting wallpaper...")
+                                                        
+                                                        def run_silent():
+                                                            try:
+                                                                self.run_ai(command, is_hidden=True)
+                                                            except Exception as e:
+                                                                print(f"Error in silent wallpaper set: {e}")
+                                                                GLib.idle_add(self.enable_ui)
+                                                        threading.Thread(target=run_silent, daemon=True).start()
+                                            except Exception as e:
+                                                 print(f"Error handling direct wallpaper click: {e}")
 
                                         grid_widget = WallpaperGrid(grid_json, on_click_callback=on_click_direct)
                                         bubble.append(grid_widget)

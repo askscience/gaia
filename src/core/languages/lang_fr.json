@@ -16,6 +16,28 @@
         }
     },
     "settings": {
+        "voice": {
+            "title": "Mode Vocal",
+            "config_title": "Configuration Vocale",
+            "config_desc": "Gérer les paramètres d'interaction vocale et les ressources.",
+            "enable_title": "Activer le Mode Vocal",
+            "enable_subtitle": "Écoute 'Bonjour', 'Salut', 'Hé' ou 'Hey Gaia' en arrière-plan.",
+            "resources_title": "Ressources Vocales",
+            "resources_subtitle": "Installer des modèles pour la reconnaissance vocale et la synthèse vocale.",
+            "install_btn": "Installer / Mettre à jour",
+            "installing_btn": "Installation...",
+            "reinstall_btn": "Réinstaller",
+            "install_btn_short": "Installer",
+            "model_title": "Modèle Vocal",
+            "model_subtitle": "Sélectionnez la voix pour la synthèse vocale.",
+            "activated_title": "Mode Vocal Activé",
+            "activated_body": "Gaia écoutera désormais 'Bonjour', 'Salut', 'Hé' ou 'Hey Gaia'. La fenêtre sera masquée.\n\nCliquez sur l'icône du Dock pour restaurer la fenêtre.",
+            "status_installed": "Toutes les ressources installées.",
+            "status_missing": "Manquant : ",
+            "missing_audio": "Pilote Audio (PortAudio)",
+            "missing_speaker": "Haut-parleur",
+            "missing_model": "Modèle"
+        },
         "title": "Paramètres",
         "general": {
             "title": "Général",

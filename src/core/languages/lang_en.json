@@ -16,6 +16,28 @@
         }
     },
     "settings": {
+        "voice": {
+            "title": "Voice Mode",
+            "config_title": "Voice Configuration",
+            "config_desc": "Manage voice interaction settings and resources.",
+            "enable_title": "Enable Voice Mode",
+            "enable_subtitle": "Listen for 'Hey', 'Hi', 'Hello' or 'Hey Gaia' in the background.",
+            "resources_title": "Voice Resources",
+            "resources_subtitle": "Install models for speech recognition and TTS.",
+            "install_btn": "Install / Update",
+            "installing_btn": "Installing...",
+            "reinstall_btn": "Re-install",
+            "install_btn_short": "Install",
+            "model_title": "Voice Model",
+            "model_subtitle": "Select the speaker for TTS.",
+            "activated_title": "Voice Mode Activated",
+            "activated_body": "Gaia will now listen for 'Hey', 'Hi', 'Hello' or 'Hey Gaia'. The window will hide.\n\nClick the Dock icon to restore the window.",
+            "status_installed": "All resources installed.",
+            "status_missing": "Missing: ",
+            "missing_audio": "Audio Driver (PortAudio)",
+            "missing_speaker": "Speaker",
+            "missing_model": "Model"
+        },
         "title": "Settings",
         "general": {
             "title": "General",

@@ -4,7 +4,7 @@ import html
 def markdown_to_pango(text):
     """
     Converts basic Markdown to Pango Markup.
-    Handles cases to avoid nested/broken tags.
+    Handles headers, bold, italic.
     """
     if not text:
         return ""
@@ -12,6 +12,13 @@ def markdown_to_pango(text):
     try:
         # Escape HTML special characters first
         text = html.escape(text)
+
+        # Process headers (H1-H3)
+        # Note: We must process these before other text to ensure start-of-line matching works
+        # Use simple span sizing
+        text = re.sub(r'^#\s+(.*?)$', r'<span size="x-large" weight="bold">\1</span>', text, flags=re.MULTILINE)
+        text = re.sub(r'^##\s+(.*?)$', r'<span size="large" weight="bold">\1</span>', text, flags=re.MULTILINE)
+        text = re.sub(r'^###\s+(.*?)$', r'<span weight="bold">\1</span>', text, flags=re.MULTILINE)
 
         # Process PLAN blocks - strip tags and add simple header
         def format_plan(match):
@@ -59,57 +66,53 @@ def markdown_to_pango(text):
 
 def parse_markdown_segments(text):
     """
-    Parses markdown text into segments of 'text', 'code', and 'image'.
-    Returns a list of dicts:
-    [
-      {'type': 'text', 'content': '...'},
-      {'type': 'code', 'content': '...', 'lang': '...'},
-      {'type': 'image', 'alt': '...', 'url': '...'}
-    ]
+    Parses markdown text into segments of 'text', 'code', 'image', 'table', 'wallpaper_grid'.
     """
     if not text:
         return []
         
     segments = []
     
-    # Combined regex to match:
-    # 1. Wallpaper Grid: [WALLPAPER_GRID]...[/WALLPAPER_GRID]
-    # 2. Code: ```lang\ncode\n```
-    # 3. Image: ![alt](url)
-    
+    # Combined regex patterns
     grid_pattern = r'\[WALLPAPER_GRID\](.*?)\[/WALLPAPER_GRID\]'
     code_pattern = r'```([^\n]*)\n(.*?)```'
     image_pattern = r'!\[([^\]]*)\]\s*\(([^)]+)\)'
+    # Table: Starts with |...|, has separator line |-...|
+    # Matches a block of lines starting with | until double newline or end
+    table_pattern = r'(\|[^\n]+\|\n\|[ \t:| -]+\|(?:\n\|[^\n]+\|)*)'
     
     current_idx = 0
     
     while current_idx < len(text):
-        # Search for all patterns
+        # Search for all patterns from current position
         grid_match = re.search(grid_pattern, text[current_idx:], re.DOTALL)
         code_match = re.search(code_pattern, text[current_idx:], re.DOTALL)
         image_match = re.search(image_pattern, text[current_idx:])
+        table_match = re.search(table_pattern, text[current_idx:])
         
-        # Calculate absolute positions (inf if not found)
+        # Calculate absolute positions
         grid_start = grid_match.start() + current_idx if grid_match else float('inf')
         code_start = code_match.start() + current_idx if code_match else float('inf')
         image_start = image_match.start() + current_idx if image_match else float('inf')
+        table_start = table_match.start() + current_idx if table_match else float('inf')
         
-        # No matches left
-        if grid_start == float('inf') and code_start == float('inf') and image_start == float('inf'):
+        # Find earliest match
+        earliest = min(grid_start, code_start, image_start, table_start)
+        
+        if earliest == float('inf'):
+            # Rest is text
             segments.append({'type': 'text', 'content': text[current_idx:]})
             break
             
-        # Find the earliest match
-        earliest = min(grid_start, code_start, image_start)
-        
         # Add text before match
         if earliest > current_idx:
             segments.append({'type': 'text', 'content': text[current_idx:earliest]})
             
+        # Process the match
         if grid_start == earliest:
             segments.append({
                 'type': 'wallpaper_grid',
-                'content': grid_match.group(1) # JSON content
+                'content': grid_match.group(1) 
             })
             current_idx = grid_match.end() + current_idx
             
@@ -129,4 +132,14 @@ def parse_markdown_segments(text):
             })
             current_idx = image_match.end() + current_idx
             
+        elif table_start == earliest:
+            segments.append({
+                'type': 'table',
+                'content': table_match.group(0)
+            })
+            current_idx = table_match.end() + current_idx
+            
     return segments
+
+
+

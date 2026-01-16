@@ -56,6 +56,14 @@
         "error_no_results": "Keine Radiosender gefunden für: {query}",
         "error_failed": "Radio-Aktion fehlgeschlagen: {error}"
     },
+    "gnome_document": {
+        "status_finding": "Suche Datei: {filename}...",
+        "status_reading": "Lese Datei: {filename}...",
+        "found_files": "{count} Dateien gefunden: {files}",
+        "error_not_found": "Datei '{filename}' nicht gefunden.",
+        "read_success": "Inhalt von {filename}:\n{content}",
+        "error_read": "Fehler beim Lesen von {filename}: {error}"
+    },
     "deep_research": {
         "outline": "Erstelle eine detaillierte und umfassende Forschungsgliederung für den Bericht: \"{query}\".\n    Die Gliederung muss {outline_steps} logische Abschnitte enthalten.\n    Gib NUR eine JSON-Liste von Strings zurück (die Titel der Abschnitte).\n    \n    WICHTIG: Nummeriere die Abschnitte NICHT (z.B. kein \"1. Einleitung\", kein \"Schritt 1\"). Gib nur die Titel zurück.",
         "sub_queries": "Generiere {search_breadth} hochwertige Suchanfragen, um den Abschnitt \"{section}\" für einen Bericht über \"{query}\" zu vertiefen.\nGib NUR eine JSON-Liste von Strings zurück.",
@@ -164,6 +172,7 @@
     "current_time": {
         "format": "%d-%m-%Y %H:%M:%S"
     },
+    "voice_mode_guidelines": "Sie befinden sich im Sprachmodus. Halten Sie die Antworten in einer Unterhaltung, kurz und rein textbasiert. Verwenden Sie kein Markdown, Listen oder Codeblöcke. Sprechen Sie natürlich.",
     "ui": {
         "plan_approval_message": "Ich genehmige deinen Plan. Fahre mit der Implementierung fort und verwende die jetzt verfügbaren Tools. Wiederhole den Plan NICHT, führe ihn einfach aus.",
         "spinner": {

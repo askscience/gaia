@@ -16,6 +16,28 @@
         }
     },
     "settings": {
+        "voice": {
+            "title": "Sprachmodus",
+            "config_title": "Sprachkonfiguration",
+            "config_desc": "Verwalten Sie Einstellungen und Ressourcen für die Sprachinteraktion.",
+            "enable_title": "Sprachmodus aktivieren",
+            "enable_subtitle": "Hört im Hintergrund auf 'Hallo', 'He' oder 'Hey Gaia'.",
+            "resources_title": "Sprachressourcen",
+            "resources_subtitle": "Modelle für Spracherkennung und TTS installieren.",
+            "install_btn": "Installieren / Aktualisieren",
+            "installing_btn": "Installieren...",
+            "reinstall_btn": "Neu installieren",
+            "install_btn_short": "Installieren",
+            "model_title": "Stimmmodell",
+            "model_subtitle": "Wählen Sie den Sprecher für TTS.",
+            "activated_title": "Sprachmodus aktiviert",
+            "activated_body": "Gaia hört jetzt auf 'Hallo', 'He' oder 'Hey Gaia'. Das Fenster wird ausgeblendet.\n\nKlicken Sie auf das Dock-Symbol, um das Fenster wiederherzustellen.",
+            "status_installed": "Alle Ressourcen installiert.",
+            "status_missing": "Fehlt: ",
+            "missing_audio": "Audiotreiber (PortAudio)",
+            "missing_speaker": "Sprecher",
+            "missing_model": "Modell"
+        },
         "title": "Einstellungen",
         "general": {
             "title": "Allgemein",

@@ -198,8 +198,16 @@ class BackgroundResearchManager:
             if win:
                 # Update Artifacts Panel
                 if hasattr(win, "artifacts_panel"):
+                    # Deep Research Complete: Force Window (Voice Mode)
+                    win.set_visible(True)
+                    win.present()
+                    
                     win.artifacts_panel.load_artifact(artifact_data['path'], artifact_data['language'])
                     win.show_artifacts()
+                    
+                    # Ensure Fullscreen (Hide Chat)
+                    if hasattr(win, "tab_overview") and win.tab_overview.get_visible():
+                        win.toggle_artifact_fullscreen()
                 
                 # Update Chat Persistence
                 if hasattr(win, "chat_pages") and chat_id in win.chat_pages:

@@ -1,4 +1,5 @@
 import gi
+import os
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 from gi.repository import Gtk, Adw
@@ -7,6 +8,8 @@ from src.core.ai_client import AIClient
 from src.tools.manager import ToolManager
 from src.core.network.proxy import apply_proxy_settings
 from src.core.language_manager import LanguageManager
+from src.voice.manager import VoiceManager
+from src.voice.installer import VoiceInstaller
 
 class SettingsWindow(Adw.PreferencesWindow):
     def __init__(self, parent=None):
@@ -15,6 +18,8 @@ class SettingsWindow(Adw.PreferencesWindow):
         self.set_title(self.lang_manager.get("settings.title"))
         self.config = ConfigManager()
         self.ai_client = AIClient()
+        # Initialize VoiceManager to ensure model validation occurs
+        self.voice_manager = VoiceManager()
 
         # General Page
         page = Adw.PreferencesPage()
@@ -55,6 +60,51 @@ class SettingsWindow(Adw.PreferencesWindow):
         
         self.lang_row.connect("notify::selected-item", self.on_language_changed)
         gen_group.add(self.lang_row)
+        
+        # Voice Mode is now in a separate page
+        
+        # --- Voice Mode Page ---
+        voice_page = Adw.PreferencesPage()
+        voice_page.set_title(self.lang_manager.get("settings.voice.title")) 
+        voice_page.set_icon_name("audio-input-microphone-symbolic")
+        self.add(voice_page)
+        
+        voice_group = Adw.PreferencesGroup()
+        voice_group.set_title(self.lang_manager.get("settings.voice.config_title"))
+        voice_group.set_description(self.lang_manager.get("settings.voice.config_desc"))
+        voice_page.add(voice_group)
+
+        # Voice Mode Toggle
+        self.voice_row = Adw.SwitchRow()
+        self.voice_row.set_title(self.lang_manager.get("settings.voice.enable_title"))
+        self.voice_row.set_subtitle(self.lang_manager.get("settings.voice.enable_subtitle"))
+        self.voice_row.set_active(self.config.get("voice_mode_enabled", False))
+        self.voice_row.connect("notify::active", self.on_voice_mode_toggled)
+        voice_group.add(self.voice_row)
+        
+        # Voice Installer Button
+        self.installer_row = Adw.ActionRow()
+        self.installer_row.set_title(self.lang_manager.get("settings.voice.resources_title"))
+        self.installer_row.set_subtitle(self.lang_manager.get("settings.voice.resources_subtitle"))
+        
+        self.install_btn = Gtk.Button(label=self.lang_manager.get("settings.voice.install_btn"))
+        self.install_btn.set_valign(Gtk.Align.CENTER)
+        self.install_btn.connect("clicked", self.on_voice_install_clicked)
+        self.installer_row.add_suffix(self.install_btn)
+        voice_group.add(self.installer_row)
+        
+        # Voice Selector
+        self.voice_select_row = Adw.ComboRow()
+        self.voice_select_row.set_title(self.lang_manager.get("settings.voice.model_title"))
+        self.voice_select_row.set_subtitle(self.lang_manager.get("settings.voice.model_subtitle"))
+        self.voice_select_row.connect("notify::selected-item", self.on_voice_model_changed)
+        voice_group.add(self.voice_select_row)
+
+        
+        # Update Installer Status
+        self.installer = VoiceInstaller()
+        self._update_voice_install_status()
+        self._populate_voice_models()
 
         # Provider Selection
         self.provider_row = Adw.ComboRow()
@@ -340,7 +390,6 @@ class SettingsWindow(Adw.PreferencesWindow):
         self.breadth_spin.set_valign(Gtk.Align.CENTER)
         self.breadth_spin.connect("value-changed", self.on_search_breadth_changed)
         self.search_breadth_row.add_suffix(self.breadth_spin)
-        self.search_breadth_row.add_suffix(self.breadth_spin)
         dr_group.add(self.search_breadth_row)
 
         # Integrate Images Toggle
@@ -490,8 +539,171 @@ class SettingsWindow(Adw.PreferencesWindow):
         
         if new_lang != old_lang:
             self.config.set("app_language", new_lang)
+            # Update voice models immediately to reflect language change (even if UI restart is needed for labels)
+            self._populate_voice_models()
+            
             # Show restart warning
             self._show_restart_dialog()
+            
+    def on_voice_mode_toggled(self, row, pspec):
+        is_active = row.get_active()
+        self.config.set("voice_mode_enabled", is_active)
+        
+        vm = VoiceManager()
+        if is_active:
+             # Show info message before hiding
+             dialog = Adw.MessageDialog(
+                 transient_for=self,
+                 heading=self.lang_manager.get("settings.voice.activated_title"),
+                 body=self.lang_manager.get("settings.voice.activated_body"),
+             )
+             dialog.add_response("ok", "OK")
+             dialog.connect("response", lambda d, r: self._activate_voice_mode(vm))
+             dialog.present()
+        else:
+            vm.stop_voice_mode()
+            
+    def _activate_voice_mode(self, vm):
+        vm.start_voice_mode()
+        # Close settings window
+        self.close()
+
+    def _update_voice_install_status(self):
+        status = self.installer.check_status()
+        self.is_piper_installed = status["piper_bin"]
+        
+        # Check sounddevice availability
+        try:
+            import sounddevice as sd
+            has_audio = (sd is not None)
+            # Optional: check query_devices? 
+        except:
+            has_audio = False
+            
+        # Helper to check vosk model
+        current_lang = self.config.get("app_language", "en")
+        if current_lang == "auto": current_lang = "en"
+        model_path = self.config.get(f"vosk_model_path_{current_lang}")
+        if not model_path: model_path = self.config.get("vosk_model_path")
+        is_model_installed = model_path and os.path.exists(model_path)
+        
+        # Overall readiness
+        is_ready = self.is_piper_installed and is_model_installed and has_audio
+        
+        self.voice_row.set_sensitive(is_ready)
+        if not is_ready and self.voice_row.get_active():
+             self.voice_row.set_active(False)
+             self.config.set("voice_mode_enabled", False)
+        
+        if is_ready:
+             self.installer_row.set_subtitle(self.lang_manager.get("settings.voice.status_installed"))
+             self.install_btn.set_label(self.lang_manager.get("settings.voice.reinstall_btn"))
+             self.install_btn.add_css_class("success")
+        else:
+             missing = []
+             if not has_audio: missing.append(self.lang_manager.get("settings.voice.missing_audio"))
+             if not self.is_piper_installed: missing.append(self.lang_manager.get("settings.voice.missing_speaker"))
+             if not is_model_installed: missing.append(self.lang_manager.get("settings.voice.missing_model"))
+             
+             missing_str = self.lang_manager.get("settings.voice.status_missing") + ", ".join(missing)
+             self.installer_row.set_subtitle(missing_str)
+             self.install_btn.set_label(self.lang_manager.get("settings.voice.install_btn_short"))
+             self.install_btn.remove_css_class("success")
+
+    def on_voice_install_clicked(self, btn):
+        # Disable button
+        self.install_btn.set_sensitive(False)
+        self.install_btn.set_label(self.lang_manager.get("settings.voice.installing_btn"))
+        
+        # Progress Dialog? Or just update subtitle
+        current_lang = self.config.get("app_language", "en")
+        if current_lang == "auto": current_lang = "en"
+        
+        def run_install():
+            def progress(p, msg):
+                from gi.repository import GLib
+                # Update UI
+                GLib.idle_add(lambda: self.installer_row.set_subtitle(f"{msg} ({int(p*100)}%)"))
+            
+            # Install Piper
+            if not self.installer.install_piper(current_lang, progress):
+                 print("Failed to install Piper")
+            
+            # Install Vosk Model
+            if not self.installer.install_vosk_model(current_lang, progress):
+                 print(f"Failed to install Vosk model for {current_lang}")
+                 
+            # Install Piper Voice (TODO: add to installer)
+            # For now, Piper release might contain voices or we need separate download? 
+            # In installer implementation I only added piper binary download.
+            # I must fix Installer to download voice!
+            
+            from gi.repository import GLib
+            GLib.idle_add(self._on_install_complete)
+
+        import threading
+        threading.Thread(target=run_install, daemon=True).start()
+
+    def _on_install_complete(self):
+        self.install_btn.set_sensitive(True)
+        self._update_voice_install_status()
+        self._populate_voice_models()
+
+    def _populate_voice_models(self):
+        """Scan for available .onnx models in Piper directory."""
+        piper_dir = os.path.join(os.path.expanduser("~/.gaia/voice/piper"))
+        voices = []
+        
+        if os.path.exists(piper_dir):
+            for root, dirs, files in os.walk(piper_dir):
+                for f in files:
+                    if f.endswith(".onnx"):
+                        # Found a model
+                        # Name it properly (filename without extension)
+                        voices.append(f[:-5]) # Remove .onnx
+        
+        if not voices:
+            voices = ["Default"]
+            self.voice_select_row.set_sensitive(False)
+        else:
+            self.voice_select_row.set_sensitive(True)
+            
+        model = Gtk.StringList.new(voices)
+        self.voice_select_row.set_model(model)
+        
+        # Set selection
+        current_lang = self.config.get("app_language", "en")
+        if current_lang == "auto": current_lang = "en"
+        
+        # Use the specific getter to resolve preference -> default
+        current = self.voice_manager.get_voice_for_language(current_lang)
+
+        if current in voices:
+            try:
+                self.voice_select_row.set_selected(voices.index(current))
+            except: pass
+        elif len(voices) > 0:
+             # Default to first one if installing new?
+             pass 
+             
+    def on_voice_model_changed(self, row, item):
+        model = row.get_model()
+        if not model: return
+        idx = row.get_selected()
+        if idx >= 0:
+            val = model.get_string(idx)
+            if val != "Default":
+                # Save ONLY to preferences, not global piper_voice_model (legacy)
+                # Or save to both to be safe, but prefs is source of truth
+                self.config.set("piper_voice_model", val)
+                
+                # Update language-specific preference
+                current_lang = self.config.get("app_language", "en")
+                if current_lang == "auto": current_lang = "en"
+                
+                voice_prefs = self.config.get("voice_preferences", {})
+                voice_prefs[current_lang] = val
+                self.config.set("voice_preferences", voice_prefs)
 
     def _show_restart_dialog(self):
         """Warn user that restart is needed."""
