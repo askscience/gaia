@@ -57,10 +57,19 @@ Gaia isn't just an app; it's part of your system. It comes with a suite of **GNO
 
 ### 1. Prerequisites
 You need a modern Linux distribution (Fedora/Ubuntu/Arch) with GNOME.
-Ensure **[Ollama](https://ollama.ai/)** is installed and running:
-```bash
-ollama pull granite4:latest
-```
+
+Gaia supports both local and cloud AI models. Choose what works best for you:
+
+*   **Local (Private)**: Install **[Ollama](https://ollama.ai/)** for completely offline usage.
+    ```bash
+    ollama pull granite4:latest
+    ```
+*   **Cloud (Powerful)**: Gaia natively integrates with top-tier cloud providers. You can configure your API keys directly in the application settings for:
+    *   **Anthropic** (Claude)
+    *   **OpenAI** (GPT)
+    *   **Google** (Gemini)
+    *   **Mistral AI**
+    *   **Z.ai** (GLM-4)
 
 ### 2. Installation
 Gaia relies on standard system libraries.
