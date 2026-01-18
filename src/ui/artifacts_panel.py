@@ -216,7 +216,7 @@ class ArtifactsPanel(Gtk.Box):
         # 3. Enable Actions
         self.export_btn.set_sensitive(True)
         if self.is_research_mode:
-            self.export_btn.set_icon_name("document-print-symbolic")
+            self.export_btn.set_icon_name("folder-download-symbolic")
             self.export_btn.set_tooltip_text("Download Report (PDF)")
             self.create_app_btn.set_sensitive(False)
         else:
@@ -458,7 +458,12 @@ class ArtifactsPanel(Gtk.Box):
         if not self.current_project_path: return
         
         if getattr(self, "is_research_mode", False):
-            self._print_to_pdf()
+            # Check for pre-generated PDF
+            pdf_path = os.path.join(self.current_project_path, "report.pdf")
+            if os.path.exists(pdf_path):
+                self._save_existing_pdf(pdf_path)
+            else:
+                self._print_to_pdf()
             return
         
         dialog = Gtk.FileDialog()
@@ -483,6 +488,26 @@ class ArtifactsPanel(Gtk.Box):
                 print(f"Export failed: {e}")
                 self._show_toast(f"Export failed: {e}")
 
+        dialog.save(self.get_native(), None, on_save_response)
+
+    def _save_existing_pdf(self, source_path):
+        """Save the pre-generated PDF to a user-selected location."""
+        dialog = Gtk.FileDialog()
+        dialog.set_title("Save Research Report")
+        dialog.set_initial_name("report.pdf")
+        
+        def on_save_response(dialog, result):
+            try:
+                file = dialog.save_finish(result)
+                if not file: return
+                dest_path = file.get_path()
+                shutil.copy2(source_path, dest_path)
+                print(f"Report saved to {dest_path}")
+                self._show_toast(f"Saved to {os.path.basename(dest_path)}")
+            except Exception as e:
+                print(f"Save failed: {e}")
+                self._show_toast(f"Save failed: {e}")
+                
         dialog.save(self.get_native(), None, on_save_response)
 
     def on_create_app_clicked(self, button):

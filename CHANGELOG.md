@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.4.2] - 2026-01-18
+
+### Added
+- **PDF Export for Research**:
+    - **Native PDF Generation**: Deep Research reports now automatically generate a high-quality PDF (`report.pdf`) alongside the HTML version.
+    - **WeasyPrint Integration**: The PDF faithfully reproduces the report's professional styling, including fonts, colors, and embedded images.
+    - **Direct Download**: The "Download" button in the Artifacts Panel and Research Cards now prioritizes this PDF file, allowing you to save the report directly to disk.
+    - **Updated UI**: Replaced the generic "Print" icon with a standard "Download" icon (`folder-download-symbolic`) to reflect the new functionality.
+
+### Fixed
+- **TTS Application**:
+    - **Voice Persistence**: Fixed a critical bug where the configured Text-to-Speech voice preference would be lost or incorrect when switching languages.
+    - **Language Switching**: The voice model now correctly updates immediately when the application language is changed in settings.
+    - **Preference Validation**: Added strict validation to ensure voice preferences (e.g., Spanish voice) are not applied to incompatible languages (e.g., English text), preventing "silent" failures.
+- **Code Stability**: Resolved a potential `IndentationError` in the settings module that could crash the application.
+
 ## [0.4.1] - 2026-01-16
 
 ### Fixed

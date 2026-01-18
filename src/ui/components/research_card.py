@@ -1,5 +1,6 @@
 import gi
 import os
+import shutil
 gi.require_version('Gtk', '4.0')
 gi.require_version('Gtk', '4.0')
 from gi.repository import Gtk, Gdk, Gio
@@ -93,7 +94,18 @@ class ResearchCard(Gtk.Frame):
         dialog.save(self.get_native(), None, on_save_response)
 
     def _export_to_pdf(self, pdf_path):
-        """Uses WebKit to print the report to PDF."""
+        """Uses pre-generated PDF or WebKit to print the report."""
+        # 1. Try to use pre-generated PDF
+        try:
+            source_dir = os.path.dirname(self.path)
+            pre_gen_pdf = os.path.join(source_dir, "report.pdf")
+            if os.path.exists(pre_gen_pdf):
+                shutil.copy2(pre_gen_pdf, pdf_path)
+                return
+        except Exception as e:
+            print(f"Failed to copy pre-generated PDF: {e}")
+
+        # 2. Fallback to WebKit Print
         try:
             from gi.repository import WebKit
             

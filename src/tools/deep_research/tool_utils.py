@@ -162,11 +162,36 @@ def save_report_artifact(report_md: str, query: str, project_id: str, notes: lis
     with open(report_path, "w") as f:
         f.write(final_html)
 
+    # 4b. Generate PDF
+    pdf_filename = "report.pdf"
+    pdf_path = os.path.join(artifact_dir, pdf_filename)
+    pdf_generated = False
+    
+    try:
+        import weasyprint
+        # Convert HTML to PDF
+        # We use empty list for stylesheets to force it to use inline styles from our template? 
+        # Actually our template has <style> which WeasyPrint parses.
+        weasyprint.HTML(string=final_html).write_pdf(pdf_path)
+        pdf_generated = True
+        print(f"[DeepResearch] PDF generated at {pdf_path}")
+    except Exception as e:
+        print(f"[DeepResearch] PDF generation failed: {e}")
+        # Not a critical failure, we still have HTML
     
     # 5. Return metadata
-    return {
-        "filename": report_filename,
-        "path": report_path,
-        "language": "html",
-        "type": "research_report"
-    }
+    # We prefer PDF if available, otherwise HTML
+    if pdf_generated:
+         return {
+            "filename": pdf_filename,
+            "path": pdf_path,
+            "language": "pdf", # 'pdf' isn't a language really, but used for mime type inference or UI display logic
+            "type": "research_report"
+        }
+    else:
+        return {
+            "filename": report_filename,
+            "path": report_path,
+            "language": "html",
+            "type": "research_report"
+        }

@@ -82,15 +82,32 @@ class VoiceManager:
         """Get the preferred voice model for a specific language."""
         if lang_code == "auto": lang_code = "en"
         
+        # Ensure config is fresh
+        self.config.load()
+        
         # 1. Check Preferences
         voice_prefs = self.config.get("voice_preferences", {})
         preferred = voice_prefs.get(lang_code)
         
-        # Verify preference validity (must match language prefix to be safe? or just trust user?)
-        # Let's trust the user selection, but maybe check file existence if we were strict. 
-        # For now, if it exists, use it.
         if preferred:
-            return preferred
+            # Validate that the preference matches the language
+            # This handles cases where a bug caused the wrong language voice to be saved
+            voice_lang_prefix = preferred.split('_')[0] if '_' in preferred else preferred[:2]
+            
+            if voice_lang_prefix.lower() == lang_code.lower():
+                 print(f"[VoiceManager] Used valid preference for {lang_code}: {preferred}")
+                 return preferred
+            else:
+                 print(f"[VoiceManager] DETECTED INVALID PREFERENCE: {preferred} for language {lang_code}. REMOVING IT.")
+                 # Remove bad entry from config permanently
+                 try:
+                     del voice_prefs[lang_code]
+                     self.config.set("voice_preferences", voice_prefs)
+                     print("[VoiceManager] Invalid preference removed from config.")
+                 except Exception as e:
+                     print(f"[VoiceManager] Failed to clean config: {e}")
+                 
+                 # Fall through to discovery
             
         # 2. Discovery / Fallback
         # No preference found, let's find a default for this language
@@ -102,18 +119,21 @@ class VoiceManager:
         
         if os.path.exists(piper_dir):
              # Try to find any model starting with the language prefix
-             for f in os.listdir(piper_dir):
+             # Sort to ensure deterministic result (e.g. prefer alphabetical or specific models if we added logic)
+             # Default order is essentially random in listdir
+             files = sorted(os.listdir(piper_dir))
+             for f in files:
                  if f.endswith(".onnx") and f.startswith(prefix):
                      found_model = f[:-5]
+                     print(f"[VoiceManager] Discovered model for {lang_code}: {found_model}")
                      break
         
-        # 3. Last Resort (English default)
         if not found_model:
+            print(f"[VoiceManager] No specific model found for {lang_code}. Using fallback.")
             found_model = "en_US-lessac-medium"
             
-        # Save this discovery as the preference so we remember it
-        voice_prefs[lang_code] = found_model
-        self.config.set("voice_preferences", voice_prefs)
+        # Do NOT save this discovery as the preference. 
+        # This allows future calls to re-discover better models.
             
         return found_model
 

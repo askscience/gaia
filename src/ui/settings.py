@@ -97,7 +97,7 @@ class SettingsWindow(Adw.PreferencesWindow):
         self.voice_select_row = Adw.ComboRow()
         self.voice_select_row.set_title(self.lang_manager.get("settings.voice.model_title"))
         self.voice_select_row.set_subtitle(self.lang_manager.get("settings.voice.model_subtitle"))
-        self.voice_select_row.connect("notify::selected-item", self.on_voice_model_changed)
+        self.voice_select_row_handler_id = self.voice_select_row.connect("notify::selected-item", self.on_voice_model_changed)
         voice_group.add(self.voice_select_row)
 
         
@@ -680,11 +680,23 @@ class SettingsWindow(Adw.PreferencesWindow):
 
         if current in voices:
             try:
+                # Block signal to prevent saving this as a user preference just because we selected it in UI
+                self.voice_select_row.handler_block(self.voice_select_row_handler_id)
                 self.voice_select_row.set_selected(voices.index(current))
+                self.voice_select_row.handler_unblock(self.voice_select_row_handler_id)
             except: pass
-        elif len(voices) > 0:
-             # Default to first one if installing new?
-             pass 
+        else:
+            # Current preference not available or invalid (discovery fallback used potentially)
+            # Try to select the discovered 'current' if available in list
+             if current in voices:
+                try:
+                    self.voice_select_row.handler_block(self.voice_select_row_handler_id)
+                    self.voice_select_row.set_selected(voices.index(current))
+                    self.voice_select_row.handler_unblock(self.voice_select_row_handler_id)
+                except: pass
+             elif len(voices) > 0:
+                 # Default to first one?
+                 pass 
              
     def on_voice_model_changed(self, row, item):
         model = row.get_model()

@@ -34,6 +34,8 @@ overrides:
       - gir1.2-gtksource-5
       - gir1.2-webkit-6.0
       - libportaudio2
+      - libpango-1.0-0
+      - libpangoft2-1.0-0
   rpm:
     depends:
       - gtk4
@@ -42,3 +44,5 @@ overrides:
       - python3-gobject
       - python3-cairo
       - portaudio
+      - pango
+      - libffi
