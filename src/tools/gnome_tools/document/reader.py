@@ -24,7 +24,12 @@ class DocumentReader:
         reader = PdfReader(path)
         text = ""
         for page in reader.pages:
-            text += page.extract_text() + "\n"
+            try:
+                text += page.extract_text() + "\n"
+            except Exception as e:
+                print(f"Error reading PDF page: {e}")
+                continue
+                
             if len(text) > max_chars:
                 break
         return text[:max_chars]

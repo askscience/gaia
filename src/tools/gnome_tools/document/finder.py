@@ -86,6 +86,6 @@ def find_files(filename: str, search_path: str = None, max_results: int = 5) -> 
                          results.append(os.path.join(root, f))
 
                     if len(results) >= max_results:
-                        return results
+                        return list(dict.fromkeys(results))  # Deduplicate preserving order
                         
-    return results[:max_results]
+    return list(dict.fromkeys(results[:max_results]))
