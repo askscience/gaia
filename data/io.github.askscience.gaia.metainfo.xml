@@ -71,6 +71,15 @@
   </content_rating>
   
   <releases>
+    <release version="0.4.3" date="2026-02-02">
+      <description>
+        <p>Chat Stability Improvements:</p>
+        <ul>
+          <li><strong>Chat Truncation Fix:</strong> Complete refactor of the rendering engine to ensure long messages are never cut off.</li>
+          <li><strong>Robust PDF Reader:</strong> Fixed crashes when reading certain PDF files (bbox error).</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.4.0" date="2026-01-16">
       <description>
         <p>Introducing Voice Mode:</p>

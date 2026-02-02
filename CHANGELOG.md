@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.4.3] - 2026-02-02
+
+### Fixed
+- **Chat Rendering**:
+    - **Truncation Fix**: Completely refactored the chat rendering logic to prevent text truncation, especially after tool usage.
+    - **Rich Text Rendering**: Optimized the "beautification" process to occur only after the full message is received, ensuring no data loss.
+    - **Race Condition**: Resolved a thread timing issue where the UI would update before the chat history was fully saved.
+- **Gnome Document Tool**:
+    - **Duplicate Results**: Fixed an issue where the `find_files` tool returned duplicate entries.
+    - **PDF Stability**: Added robust error handling to the PDF reader to skip corrupt pages (fixing `KeyError: 'bbox'`) instead of crashing.
+
 ## [0.4.2] - 2026-01-18
 
 ### Added
