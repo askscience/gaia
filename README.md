@@ -1,8 +1,10 @@
 # Gaia - GNOME AI Assistant
 
-**Your personal AI companion, built for GNOME.**
+**Your personal AI companion, built for GNOME. Now in Rust.**
 
 Gaia is a fast, beautiful, and private AI assistant that lives on your Linux desktop. It integrates seamlessly with your system, offering a native experience powered by local LLMs or top-tier cloud models. This isn't just a chat window—it's an agent capable of performing real work on your computer.
+
+This is the **Rust rewrite** (v0.5.0), maintaining the exact same GNOME interface as the Python original while providing better performance, memory safety, and native compilation.
 
 <div align="center">
   <img src="images/image01.png" width="100%" alt="Gaia Interface" />
@@ -20,94 +22,125 @@ Gaia is a fast, beautiful, and private AI assistant that lives on your Linux des
 
 ## ✨ Key Features
 
-### 🎙️ Voice Mode: Your Hands-Free Companion
+### Voice Mode: Your Hands-Free Companion
 Experience a completely new way to interact with your computer. With **Voice Mode**, Gaia transforms into a distraction-free, audio-first assistant.
-*   **Always Listening, Always Private**: Utilizing **Vosk** speech recognition, Gaia listens for your commands entirely offline. No audio is ever sent to the cloud, ensuring your privacy is never compromised.
-*   **Natural Conversation**: Gaia speaks back to you using **Piper TTS**, providing a fluid, natural voice that feels like chatting with a friend rather than a robot.
-*   **Distraction-Free**: When activated, the main window disappears, letting you focus on your work. Just say **"Hey Gaia"** to wake it up.
-*   **Seamless Integration**: Need to see the text? Deactivate Voice Mode, and you'll find a complete transcript of your voice conversation waiting for you in the chat history.
+- **Always Listening, Always Private**: Utilizing **Vosk** speech recognition, Gaia listens for your commands entirely offline.
+- **Natural Conversation**: Gaia speaks back using **Piper TTS**, providing a fluid, natural voice.
+- **Distraction-Free**: When activated, the main window disappears. Just say **"Hey Gaia"** to wake it up.
+- **Seamless Integration**: Deactivate Voice Mode and find a complete transcript waiting in chat history.
 
-### 🕵️ Deep Research Agent
-Go beyond simple web searches. Gaia's **Deep Research** agent is an autonomous investigator capable of tackling complex topics.
-*   **Autonomous Investigation**: Give Gaia a broad topic, and it will formulate a research plan, execute multiple targeted searches, read through dozens of websites, and synthesize the information.
-*   **Professional Reports**: The result isn't just a summary—it's a comprehensive report complete with citations, inline images from high-quality sources (Unsplash/Pexels), and a structured layout.
-*   **PDF Export**: Need to share your findings? You can download the entire research report as a polished, professionally formatted PDF file (`report.pdf`) with a single click, prioritizing the pre-generated file if available.
+### Deep Research Agent
+Gaia's **Deep Research** agent is an autonomous investigator capable of tackling complex topics.
+- **Autonomous Investigation**: Formulates a research plan, executes targeted searches, reads dozens of websites, and synthesizes information.
+- **Professional Reports**: Comprehensive reports with citations, inline images, and structured layout.
+- **PDF Export**: Download research reports as polished PDF files.
 
-### 🌐 Web & App Builder
+### Web & App Builder
 Turn your ideas into reality without leaving the chat.
-*   **Instant Web Previews**: Ask Gaia to build a website, a calculator, or a simple game. It will write the code (HTML/CSS/JS) and instantly render a live preview of the application right in the side panel.
-*   **Iterative Design**: Not quite right? Just talk to Gaia to make changes. "Make the button blue," "Add a dark mode"—Gaia updates the preview in real-time.
-*   **Console Debugging**: Includes a smart `web_console` tool that silently captures browser errors, allowing the AI to self-correct and fix buggy code without you needing to play developer.
+- **Instant Web Previews**: Build websites (HTML/CSS/JS) and see live previews in the side panel.
+- **Iterative Design**: Make changes conversationally — "Make the button blue", "Add dark mode".
+- **Console Debugging**: Smart `web_console` tool captures browser errors for AI self-correction.
 
-### 🖥️ Deep Desktop Integration
-Gaia isn't just an app; it's part of your system. It comes with a suite of **GNOME Tools** to control your environment:
-*   **Radio Tuner**: Uses the `radio-browser.info` API to search for and play thousands of internet radio stations from around the world.
-*   **Audio Control**: Adjust your system volume, mute/unmute speakers, and query current levels using native `pactl` or `amixer` commands.
-*   **Calendar**: Full two-way integration with GNOME Calendar. Ask Gaia to "Schedule a meeting next Friday" or "List my events for today," and it will handle the GDBus communication for you.
-*   **System Theme**: Switch between Light and Dark mode on the fly.
-*   **Wallpapers**: Search for beautiful 4K wallpapers and apply them to your desktop instantly.
+### Deep Desktop Integration
+- **Radio Tuner**: Search and play thousands of internet radio stations.
+- **Audio Control**: Adjust system volume, mute/unmute via native `pactl`.
+- **Calendar**: Full GNOME Calendar integration via GDBus.
+- **System Theme**: Toggle Light/Dark mode.
+- **Wallpapers**: Search and apply 4K wallpapers instantly.
 
-### 📁 Advanced File Tools
-*   **File Editor**: The AI can perform surgical edits on files using precise search-and-replace, meaning it can maintain large projects without rewriting entire files.
-*   **Smart Reader**: It can read local files to understand your codebase or document context before answering questions.
+### Advanced File Tools
+- **File Editor**: Surgical search-and-replace edits on files.
+- **Smart Reader**: Read local files to understand codebase context.
 
 ---
 
-## 🚀 Getting Started
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Language | Rust (2021 edition) |
+| UI Toolkit | GTK4 + Libadwaita |
+| Code Highlighting | GtkSourceView 5 |
+| Web Preview | WebKitGTK 6.0 |
+| Async Runtime | Tokio |
+| HTTP Client | Reqwest |
+| AI Providers | ollama-rs, async-openai, reqwest |
+| Config | serde_json (~/.gaia/config.json) |
+
+---
+
+## Getting Started
 
 ### 1. Prerequisites
-You need a modern Linux distribution (Fedora/Ubuntu/Arch) with GNOME.
+A modern Linux distribution (Fedora/Ubuntu/Arch) with GNOME. Also works on macOS with GTK4 installed.
 
-Gaia supports both local and cloud AI models. Choose what works best for you:
+Gaia supports both local and cloud AI models:
 
-*   **Local (Private)**: Install **[Ollama](https://ollama.ai/)** for completely offline usage.
-    ```bash
-    ollama pull granite4:latest
-    ```
-*   **Cloud (Powerful)**: Gaia natively integrates with top-tier cloud providers. You can configure your API keys directly in the application settings for:
-    *   **Anthropic** (Claude)
-    *   **OpenAI** (GPT)
-    *   **Google** (Gemini)
-    *   **Mistral AI**
-    *   **Z.ai** (GLM-4)
+- **Local (Private)**: Install **[Ollama](https://ollama.ai/)** for offline usage.
+  ```bash
+  ollama pull granite4:latest
+  ```
+- **Cloud (Powerful)**: Configure API keys in Settings for Anthropic, OpenAI, Google Gemini, Mistral, or Z.ai.
 
-### 2. Installation
-Gaia relies on standard system libraries.
+### 2. Install Dependencies
 
 **Ubuntu / Debian:**
 ```bash
-sudo apt install libgtk-4-dev libadwaita-1-dev python3-dev gobject-introspection libcairo2-dev libpango-1.0-0 libpangoft2-1.0-0
+sudo apt install libgtk-4-dev libadwaita-1-dev libwebkitgtk-6.0-dev libgtksourceview-5-dev cargo rustc
 ```
 
 **Fedora:**
 ```bash
-sudo dnf install gtk4-devel libadwaita-devel python3-devel gobject-introspection-devel cairo-gobject-devel pango-devel
+sudo dnf install gtk4-devel libadwaita-devel webkitgtk6.0-devel gtksourceview5-devel cargo rust
 ```
 
 **Arch Linux:**
 ```bash
-sudo pacman -S gtk4 libadwaita python python-gobject cairo pango
+sudo pacman -S gtk4 libadwaita webkitgtk-6.0 gtksourceview5 cargo rust
 ```
 
-### 3. Setup Python Environment
-Create a virtual environment and install dependencies:
+### 3. Build & Run
+
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+# Clone the repo
+git clone https://github.com/askscience/gaia.git
+cd gaia
+git checkout rust
+
+# Build (release)
+cargo build --release
+
+# Run
+./target/release/gaia
 ```
 
-### 4. Run Gaia
-Launch it casually from the terminal:
+Or use the quick install script:
+
 ```bash
-./.venv/bin/python3 src/main.py
+curl -fsSL https://raw.githubusercontent.com/askscience/gaia/rust/install.sh | bash
 ```
 
-## ⌨️ Pro Tip: Keyboard Shortcut
-Bind `Super+Space` to open Gaia instantly!
-1.  Go to **Settings** -> **Keyboard** -> **View and Customize Shortcuts** -> **Custom Shortcuts**.
-2.  Add a shortcut:
-    *   **Command**: `/path/to/gaia/src/main.py` (ensure you use the absolute path to the python interpreter in the venv)
+### 4. Development
 
-## 📄 License
-This project is licensed under the [GNU General Public License v3.0](LICENSE).
+```bash
+# Debug build with hot reload
+cargo run
+
+# Watch for changes
+cargo watch -x run
+
+# Run tests
+cargo test
+```
+
+---
+
+## Keyboard Shortcut
+Bind `Super+Space` to open Gaia instantly:
+1. Go to **Settings** → **Keyboard** → **Custom Shortcuts**
+2. Command: `/path/to/gaia/target/release/gaia`
+
+---
+
+## License
+Licensed under the [GNU General Public License v3.0](LICENSE).

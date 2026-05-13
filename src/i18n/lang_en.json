@@ -1,0 +1,24 @@
+{
+    "window": {
+        "title": "Gaia",
+        "new_chat": "New Chat",
+        "show_artifacts": "Toggle Artifacts Panel",
+        "view_all_chats": "View All Chats"
+    },
+    "chat": {
+        "placeholder": "Type a message...",
+        "send_tooltip": "Send message"
+    },
+    "settings": {
+        "title": "Settings",
+        "general": "General",
+        "ai_provider": "AI Provider",
+        "model": "Model",
+        "api_key": "API Key",
+        "tools": "Tools",
+        "voice": "Voice",
+        "deep_research": "Deep Research",
+        "save": "Save",
+        "cancel": "Cancel"
+    }
+}

@@ -1,13 +1,13 @@
-# Python
+# Rust
+/target/
+*.rs.bk
+
+# Python (legacy, kept for reference on main branch)
 __pycache__/
 *.py[cod]
 *$py.class
-
-# Virtual Environment
 .venv/
 venv/
-ENV/
-env/
 
 # Editor / IDE
 .vscode/
@@ -28,3 +28,6 @@ build/
 dist/
 *.spec
 *.egg-info
+
+# Backup files
+*.bak*
